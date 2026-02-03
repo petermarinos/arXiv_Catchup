@@ -123,11 +123,14 @@ if not os.path.exists(filename):
 # Load it and extract the previous runtime
 with open(filename, "r", encoding="utf-8") as f:
     text = [next(f).rstrip("\n") for _ in range(3)]
-start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]))
+start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2])).astimezone(timezone.utc)
 
 # Raise an error if the end date is before or equal to the start date
-if start_date.date() >= end_date.date():
+if start_date >= end_date:
     raise ValueError(f"Start date must be earlier that today")
+
+prev_run = end_date - start_date
+print("Days since the previous search: {:}".format(prev_run.days))
 
 # Define the search url
 url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
@@ -149,9 +152,9 @@ formatted_url_allcat = url.format(start_year  = start_date.year,
                                   cats        = "astro-ph*",
                                   start_num   = 0,
                                   end_num     = 1)
+# First request
 with urllib.request.urlopen(formatted_url_allcat) as f:
     xml_data_allcat = f.read()
-time.sleep(sleep_search)
 
 # Parse the xml
 parsed_xml_data_allcat = ET.fromstring(xml_data_allcat)
@@ -171,9 +174,10 @@ formatted_url_initial = url.format(start_year  = start_date.year,
                                    cats        = cat_string,
                                    start_num   = 0,
                                    end_num     = 1)
+# Second request. Sleep for 3s
+time.sleep(sleep_search)
 with urllib.request.urlopen(formatted_url_initial) as f:
     xml_data_initial = f.read()
-time.sleep(sleep_search)
 
 # Parse the xml
 parsed_xml_data_initial = ET.fromstring(xml_data_initial)
@@ -183,15 +187,8 @@ max_num = int(parsed_xml_data_initial.find("opensearch:totalResults", ns).text)
 
 # Perform the searches in groups of size "interval"
 entries = []
-request_count = 0
 print("Searching for papers. Estimated time: {:d} seconds".format(sleep_search*max_num//interval_search + (sleep_search if max_num%interval_search > 0 else 0)))
 for ii in range(0, max_num, interval_search):
-
-    # Sleep for "sleep_time" seconds in each "interval"
-    # Sleep before the query (except on the first round) so that there is no dead time on the last query
-    if request_count > 0:
-        time.sleep(sleep_search)
-    request_count += 1
 
     # Search over the current interval
     formatted_url = url.format(start_year  = start_date.year,
@@ -203,6 +200,9 @@ for ii in range(0, max_num, interval_search):
                                cats        = cat_string,
                                start_num   = ii,
                                end_num     = ii+interval_search)
+
+    # Sleep before the query so that there is no dead time on the last query
+    time.sleep(sleep_search)
     with urllib.request.urlopen(formatted_url) as f:
         xml_data = f.read()
 
@@ -330,8 +330,7 @@ for link_index in entries_of_note_unique:
     # print(link)
     webbrowser.open(link)
 
-
-print("There were a total of {: >{fill}} papers submitted to the astro-ph list".format(total_papers, fill=max_digits))
+print("There were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
 print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
 print("            of these, {: >{fill}} papers were opened in the web browser".format(len(entries_of_note_unique), fill=max_digits))
 
