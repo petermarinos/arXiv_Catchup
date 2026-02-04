@@ -17,6 +17,8 @@ import re
 
 """
 This script will search for all papers on the arXiv since the previous execution, then filter based on personal preferences, and open the abstract pages in the browser.
+
+Usage: run the script
 """
 
 def load_list(filename):
@@ -130,7 +132,7 @@ cdir = os.path.dirname(os.path.realpath(__file__))
 
 # Define categories that I care for
 key_categories = [
-                 # "astro-ph*", # All astrophysics categories
+                 # "astro-ph*", # All astrophysics categories. Ensure all other categories are commented out if using this one
                  # "astro-ph.CO", # Cosmology and Nongalactic Astrophysics
                  # "astro-ph.EP", # Earth and Planetary Astrophysics
                  "astro-ph.GA", # Astrophysics of Galaxies
