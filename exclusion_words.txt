@@ -1,0 +1,11 @@
+# Words to exclude. Include pluralised acronyms. Case is not important.
+extragalactic
+extra-galactic
+high-z
+quasar
+blazar
+GRB
+GRBs
+AGN
+AGNs
+high-redshift

@@ -8,6 +8,7 @@ import pandas                as pd
 import numpy                 as np
 
 import urllib.request
+import unicodedata
 import webbrowser
 import urllib
 import time
@@ -19,6 +20,89 @@ import re
 To-do:
 Make script neater, use functions
 """
+
+def load_list(filename):
+    """
+    Load search terms from a text file. These are used for regex searches, so word boundaries are added
+    """
+    items = []
+
+    with open(filename, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            items.append(r"\b"+line+r"\b")
+
+    return items
+
+def LaTeX_to_unicode(s):
+    """Stip LaTeX-style accents from the string (e.g. {\'a} -> a, and \'a -> a)
+    Note that this only covers common accents. To account for all accents and ligatures/special characters, it is best to install an additional package.
+    However, that would only be required if one of the key_authors has a special character/accent.
+    """
+
+    if s is None:
+        return ""
+    
+    # Dictionary of the LaTeX accents
+    # Same ordering as on the wikipedia page
+    LATEX_ACCENTS = {
+                    "`": "\u0300",   # grave,                              e.g. ò
+                    "'": "\u0301",   # acute,                              e.g. ó
+                    "^": "\u0302",   # circumflex,                         e.g. ô
+                    '"': "\u0308",   # umlaut, trema, or dieresis,         e.g. ö
+                    # "H": "\u030B",   # long Hungarian umlaut/double acute, e.g. ő # Causes issues with names that have the letter H
+                    "~": "\u0303",   # tilde,                              e.g. õ
+                    # "c": "\u0327",   # cedilla,                            e.g. ç # Causes issues with names that have the letter c
+                    # "k": "\u0328",   # ogonek,                             e.g. ą # Causes issues with names that have the letter k
+                                     # barred l,                           e.g. ł
+                    "=": "\u0304",   # macron,                             e.g. ō
+                                     # under-bar,                          e.g. o
+                    # ".": "\u0307",   # dot,                                e.g. ȯ # Causes issues with names that have initials
+                                     # under-dot,                          e.g. ụ
+                    # "r": "\u030A",   # ring,                               e.g. å # Causes issues with names that have the letter r
+                                     # ringed a (special case),            e.g. å
+                    # "u": "\u0306",   # breve,                              e.g. ŏ # Causes issues with names that have the letter u
+                    # "v": "\u030C",   # caron,                              e.g. š # Causes issues with names that have the letter v
+                                     # tie,                                e.g. o͡o
+                                     # slashed o,                          e.g. ø
+                                     # dotless i,                          e.g. ı
+                    }
+
+    # {\'a} style
+    for latex, combining in LATEX_ACCENTS.items():
+        s = re.sub(
+                  rf"\{{{latex}([A-Za-z])\}}",
+                  lambda m: m.group(1) + combining,
+                  s,
+                  )
+
+    # \'a style
+    for latex, combining in LATEX_ACCENTS.items():
+        s = re.sub(
+                  rf"{latex}([A-Za-z])",
+                  lambda m: m.group(1) + combining,
+                  s,
+                  )
+
+    return s
+
+def normalise_string(s):
+    """Normalise a string, i.e. remove accents (e.g. ó -> o)
+    Also accounts for LaTeX accents
+    """
+
+    # Define the form
+    form = "NFKD" # "compatibility deecomposition"
+
+    if s is None:
+        return ""
+    
+    s_stripped   = LaTeX_to_unicode(s)
+    s_normalised = unicodedata.normalize(form, s_stripped)
+    
+    return s_normalised.encode("ascii", "ignore").decode("ascii")
 
 # Define categories that I care for
 key_categories = [
@@ -32,63 +116,18 @@ key_categories = [
                  ]
 cat_string = "+OR+".join(f"cat:{c}" for c in key_categories)
 
-# Define keywords to search for
-key_words = [
-            "diffusion",
-            "diffuse",
-            "propagation",
-            "gamma",
-            "ɣ",
-            "γ",
-            "cosmic",
-            "neutrino",
-            "Milky Way",
-            "Galactic",
-            "H.E.S.S.",
-            "LHAASO",
-            "Tibet",
-            "ARGO",
-            "IceCube",
-            ]
+key_authors     = load_list("/Users/pmarinos/Documents/PYTHON/arXiv/key_authors.txt")
+key_words       = load_list("/Users/pmarinos/Documents/PYTHON/arXiv/key_words.txt")
+exclusion_words = load_list("/Users/pmarinos/Documents/PYTHON/arXiv/exclusion_words.txt")
 
-# Define keywords to exclude
-exclusion_words = [
-                  "extragalactic",
-                  "extra-galactic",
-                  "high-z",
-                  "quasar",
-                  "blazar",
-                  "GRB",
-                  "AGN",
-                  "high-redshift",
-                  ]
-
-# Define authors to search for
-key_authors = [
-              "Porter",
-              "Rowell",
-              "Moskalenko",
-              "Einecke",
-              "Mertsch",
-              "Schwefer",
-              "Vecchiotti",
-              "Mitchell",
-              "Alsulami",
-              "Koenig",
-              "Collins",
-              "Feijen",
-              "Capecchiacci",
-              "Lopez",
-              "Lange",
-              ]
-fill = len(max(key_authors, key=len)) # Length of the longest name in the key authors array
+fill = len(max(key_authors, key=len)) - 4 # Length of the longest name in the key authors array
 
 # Namespaces used by arXiv
 ns = {
-    "atom": "http://www.w3.org/2005/Atom",
-    "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
-    "arxiv": "http://arxiv.org/schemas/atom",
-}
+     "atom": "http://www.w3.org/2005/Atom",
+     "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
+     "arxiv": "http://arxiv.org/schemas/atom",
+     }
 
 # Define filename
 filename = "/Users/pmarinos/Documents/PYTHON/arXiv/catchup.txt"
@@ -142,7 +181,7 @@ sleep_opening   = 0.25
 
 print("Obtaining arXiv info. Estimated time: 6 seconds") # Always two 3-second sleeps
 
-# Perform a search over all astro-ph categories to find how many papers were posted
+# Perform a search over all astro-ph categories to find how many papers were posted since the previous search
 formatted_url_allcat = url.format(start_year  = start_date.year,
                                   start_month = start_date.month,
                                   start_day   = start_date.day,
@@ -224,7 +263,7 @@ for ii in range(0, max_num, interval_search):
         paper = {
             "arXiv Number"    : entry.find("atom:id", ns).text.split("/")[-1],
             "Title"           : entry.find("atom:title", ns).text.strip(),
-            "Authors"         : ", ".join(f"{author}" for author in author_list),
+            "Authors"         : normalise_string( ", ".join(f"{author}" for author in author_list) ),
             "Revised?"        : updated_date > published_date,
             "Abstract"        : entry.find("atom:summary", ns).text.strip(),
             "url"             : entry.find("atom:id", ns).text.strip(),
