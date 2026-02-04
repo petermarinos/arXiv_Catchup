@@ -8,9 +8,12 @@ Schwefer
 Vecchiotti
 Mitchell
 Alsulami
+# Köenig
 Koenig
 Collins
 Feijen
+Michailidis
 Capecchiacci
+# López
 Lopez
 Lange

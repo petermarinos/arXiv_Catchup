@@ -36,8 +36,11 @@ def load_list(filename):
 
 def LaTeX_to_unicode(s):
     """Stip LaTeX-style accents from the string (e.g. {\'a} -> a, and \'a -> a)
-    Note that this only covers common accents. To account for all accents and ligatures/special characters, it is best to install an additional package.
+
+    This function only covers common accents.
+    To account for all accents and ligatures/special characters, it is best to install an additional package.
     However, that would only be required if one of the key_authors has a special character/accent.
+    As I do not currently have any authors I care about with special characters, and only common accents, I leave this task for later.
     """
 
     if s is None:
@@ -356,7 +359,7 @@ for entry_count in range(0, len(df)):
     elif df["KeyWord Match"][entry_count]==True and df["ExcWord Match"][entry_count]==False:
         entries_of_note.append(entry_count)
 
-# Only keep unique entries
+# Only keep unique entries (should only matter if there are revised versions)
 entries_of_note_unique = np.unique(entries_of_note)
 
 # Loop through the list and open all in the web browser

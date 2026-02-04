@@ -3,9 +3,13 @@
 This script searches the arXiv (within the categories of interest) for all papers since the previous execution.
 It then performs some basic keyword matching, and opens all papers with matches in the web browser.
 
-Add the following to your bash script to perform the search from the CLI:
+Add the following to your bash script:
 
 `alias arxiv='python3 /path/to/arXiv_Catchup/scan.py'`
+
+The search can then be performed in the CLI from anywhere by running:
+
+`$ arxiv`
 
 ## Usage
 
