@@ -122,6 +122,9 @@ def download_search(url):
 
     return parsed_xml_data
 
+# Find the directory of the script
+cdir = os.path.dirname(os.path.realpath(__file__))
+
 # Define categories that I care for
 key_categories = [
                  # "astro-ph*", # All astrophysics categories
@@ -134,9 +137,9 @@ key_categories = [
                  ]
 cat_string = "+OR+".join(f"cat:{c}" for c in key_categories)
 
-key_authors     = load_list("/Users/pmarinos/Documents/PYTHON/arXiv/key_authors.txt")
-key_words       = load_list("/Users/pmarinos/Documents/PYTHON/arXiv/key_words.txt")
-exclusion_words = load_list("/Users/pmarinos/Documents/PYTHON/arXiv/exclusion_words.txt")
+key_authors     = load_list(cdir+"/key_authors.txt")
+key_words       = load_list(cdir+"/key_words.txt")
+exclusion_words = load_list(cdir+"/exclusion_words.txt")
 
 fill = len(max(key_authors, key=len)) - 4 # Length of the longest name in the key authors array
 
@@ -147,8 +150,8 @@ ns = {
      "arxiv": "http://arxiv.org/schemas/atom",
      }
 
-# Define filename
-filename = "/Users/pmarinos/Documents/PYTHON/arXiv/catchup.txt"
+# Define filename of the catchup file (where the date of the previous search is stored)
+catchup = cdir+"/catchup.txt"
 
 # Obtain the current date
 current_time = datetime.now(timezone.utc)
@@ -172,10 +175,10 @@ end_date = current_time - timedelta(days=dt)
 
 # The date of the previous execution is saved in a file
 # If it does not exist, create it and set the date to the previous day
-if not os.path.exists(filename):
-    write_date(filename, end_date - timedelta(days=1))
+if not os.path.exists(catchup):
+    write_date(catchup, end_date - timedelta(days=1))
 # Load it and extract the previous runtime
-with open(filename, "r", encoding="utf-8") as f:
+with open(catchup, "r", encoding="utf-8") as f:
     text = [next(f).rstrip("\n") for _ in range(3)]
 start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2])).astimezone(timezone.utc)
 
@@ -362,6 +365,7 @@ print("Opening the papers.   Estimated time: {:.2f} seconds".format(len(entries_
 for link_index in entries_of_note_unique:
 
     # # arXiv asks that you limit opening pages to four requests per second
+    # Sleep before the request to prevent an unnecessary sleep at the end
     # # Sleep for 1s every four pages (recommended)
     # if request_count % 4 == 0:
     #     time.sleep(1)
@@ -379,4 +383,4 @@ print("            of these, {: >{fill}} papers were in the categories of intere
 print("            of these, {: >{fill}} papers were opened in the web browser".format(len(entries_of_note_unique), fill=max_digits))
 
 # Write the current date to a file so for the next run
-write_date(filename, end_date)
+write_date(catchup, end_date)
