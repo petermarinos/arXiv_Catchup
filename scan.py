@@ -15,10 +15,8 @@ import time
 import os
 import re
 
-"""This script will search for all papers on the arXiv since the previous execution, then filter based on personal preferences, and open the abstract pages in the browser.
-
-To-do:
-Make script neater, use functions
+"""
+This script will search for all papers on the arXiv since the previous execution, then filter based on personal preferences, and open the abstract pages in the browser.
 """
 
 def load_list(filename):
@@ -104,6 +102,26 @@ def normalise_string(s):
     
     return s_normalised.encode("ascii", "ignore").decode("ascii")
 
+def write_date(filename, date):
+
+    with open(filename, "w") as f:
+        f.write(f"{(date).year:d}\n")
+        f.write(f"{(date).month:d}\n")
+        f.write(f"{(date).day:d}\n")
+
+    return
+
+def download_search(url):
+
+    # Query the server
+    with urllib.request.urlopen(url) as f:
+        xml_data = f.read()
+
+    # Parse the xml
+    parsed_xml_data = ET.fromstring(xml_data)
+
+    return parsed_xml_data
+
 # Define categories that I care for
 key_categories = [
                  # "astro-ph*", # All astrophysics categories
@@ -155,10 +173,7 @@ end_date = current_time - timedelta(days=dt)
 # The date of the previous execution is saved in a file
 # If it does not exist, create it and set the date to the previous day
 if not os.path.exists(filename):
-    with open(filename, "w") as f:
-        f.write(f"{(end_date - timedelta(days=1)).year:d}\n")
-        f.write(f"{(end_date - timedelta(days=1)).month:d}\n")
-        f.write(f"{(end_date - timedelta(days=1)).day:d}\n")
+    write_date(filename, end_date - timedelta(days=1))
 # Load it and extract the previous runtime
 with open(filename, "r", encoding="utf-8") as f:
     text = [next(f).rstrip("\n") for _ in range(3)]
@@ -191,12 +206,9 @@ formatted_url_allcat = url.format(start_year  = start_date.year,
                                   cats        = "astro-ph*",
                                   start_num   = 0,
                                   end_num     = 1)
-# First request
-with urllib.request.urlopen(formatted_url_allcat) as f:
-    xml_data_allcat = f.read()
 
-# Parse the xml
-parsed_xml_data_allcat = ET.fromstring(xml_data_allcat)
+# First request
+parsed_xml_data_allcat = download_search(formatted_url_allcat)
 
 # Extract the number of papers since the last time the script was executed
 total_papers = int(parsed_xml_data_allcat.find("opensearch:totalResults", ns).text)
@@ -215,11 +227,7 @@ formatted_url_initial = url.format(start_year  = start_date.year,
                                    end_num     = 1)
 # Second request. Sleep for 3s
 time.sleep(sleep_search)
-with urllib.request.urlopen(formatted_url_initial) as f:
-    xml_data_initial = f.read()
-
-# Parse the xml
-parsed_xml_data_initial = ET.fromstring(xml_data_initial)
+parsed_xml_data_initial = download_search(formatted_url_initial)
 
 # Extract the number of papers since the last time the script was executed
 max_num = int(parsed_xml_data_initial.find("opensearch:totalResults", ns).text)
@@ -242,11 +250,7 @@ for ii in range(0, max_num, interval_search):
 
     # Sleep before the query so that there is no dead time on the last query
     time.sleep(sleep_search)
-    with urllib.request.urlopen(formatted_url) as f:
-        xml_data = f.read()
-
-    # Parse the xml
-    parsed_xml = ET.fromstring(xml_data)
+    parsed_xml = download_search(formatted_url)
     
     # Loop over the entries (papers) within the current search
     for entry in parsed_xml.findall("atom:entry", ns):
@@ -260,6 +264,7 @@ for ii in range(0, max_num, interval_search):
 
         author_list = [author.find("atom:name", ns).text for author in entry.findall("atom:author", ns)]
 
+        # Place information in a dictionary
         paper = {
             "arXiv Number"    : entry.find("atom:id", ns).text.split("/")[-1],
             "Title"           : entry.find("atom:title", ns).text.strip(),
@@ -374,7 +379,4 @@ print("            of these, {: >{fill}} papers were in the categories of intere
 print("            of these, {: >{fill}} papers were opened in the web browser".format(len(entries_of_note_unique), fill=max_digits))
 
 # Write the current date to a file so for the next run
-with open(filename, "w") as f:
-    f.write(f"{end_date.year:d}\n")
-    f.write(f"{end_date.month:d}\n")
-    f.write(f"{end_date.day:d}\n")
+write_date(filename, end_date)
