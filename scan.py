@@ -110,9 +110,9 @@ def normalise_string(s):
 
 def write_date(filename, date):
 
-    print(f"{(date).year:d}")
-    print(f"{(date).month:d}")
-    print(f"{(date).day:d}")
+    # print(f"{(date).year:d}")
+    # print(f"{(date).month:d}")
+    # print(f"{(date).day:d}")
 
     with open(filename, "w") as f:
         f.write(f"{(date).year:d}\n")
@@ -189,24 +189,26 @@ if current_weekday == 6:
     dt += 1
 elif current_weekday == 0:
     dt += 2
+
 # No lists are released on certain days. These days are chosen ad-hoc, and are days that are important to USAians. It includes Christmas, their Thanksgiving, and others.
 # The search should return no results on those days (not tested).
 # If waiting extra time, there should be no missed papers (not tested).
+
 # Compute the end_date of the search
 end_date = current_time - timedelta(days=dt)
 
 # The date of the previous execution is saved in a file
 # If it does not exist, create it and set the date to the previous day
 if not os.path.exists(catchup):
-    # If it is before the release time of the list, need to subtract an extra day
-    if current_time.hour < 6:
-        write_date(catchup, end_date - timedelta(days=2))
-    else:
-        write_date(catchup, end_date - timedelta(days=1))
+    
+    write_date(catchup, end_date - timedelta(days=1))
+
 # Load it and extract the previous runtime
 with open(catchup, "r", encoding="utf-8") as f:
+
     text = [next(f).rstrip("\n") for _ in range(3)]
-start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=19, tzinfo=timezone.utc)
+
+start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=0, tzinfo=timezone.utc)
 
 prev_run = end_date - start_date
 
@@ -412,11 +414,16 @@ for link_index in entries_of_note_unique:
     
     # Open in new window if flag is set
     if args.new_window:
+
         if request_count == 0:
+
             webbrowser.open(link, new=1)  # new=1: open in a new browser window
+            
         else:
+
             webbrowser.open(link, new=2)  # new=2: open in a new tab
     else:
+
         webbrowser.open(link)  # Default behavior, just opens everything in the current window
 
     request_count += 1
