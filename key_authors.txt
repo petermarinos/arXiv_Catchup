@@ -1,3 +1,0 @@
-# Key Authors. Just include the last name, with no accents.
-# Lines starting with '#' are ignored
-# Smith
