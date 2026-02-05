@@ -132,6 +132,46 @@ def download_search(url):
 
     return parsed_xml_data
 
+def open_links(df, entries_of_note_unique):
+
+    # Loop through the list and open all in the web browser
+    request_count = 0
+    print("Opening the papers.   Estimated time: {:.2f} seconds".format(len(entries_of_note_unique)/4))
+    for link_index in entries_of_note_unique:
+
+        # # arXiv asks that you limit opening pages to four requests per second
+        # Sleep before the request to prevent an unnecessary sleep at the end
+        # # Sleep for 1s every four pages (recommended)
+        # if request_count % 4 == 0:
+        #     time.sleep(1)
+        # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
+        if request_count > 0:
+            time.sleep(sleep_opening)
+
+        link = df.loc[link_index, "url"]
+        # print(link)
+
+        # If args.force_open, start opening links
+        # Else, ask for a confirmation that states/warns the user about how many will be opened
+        
+        # Open in new window if flag is set
+        if args.new_window:
+
+            if request_count == 0:
+
+                webbrowser.open(link, new=1)  # new=1: open in a new browser window
+
+            else:
+
+                webbrowser.open(link, new=2)  # new=2: open in a new tab
+        else:
+
+            webbrowser.open(link)  # Default behavior, just opens everything in the current window
+
+        request_count += 1
+
+    return
+
 # Parse command-line arguments
 parser = argparse.ArgumentParser(prog='arXiv Catchup',
                                  description='Search arXiv for papers matching your criteria')
@@ -159,11 +199,16 @@ cat_urlstring = "+OR+".join(f"cat:{c}" for c in key_categories)
 # Define string for printing to the terminal
 cat_printstring = ", ".join(f"{c}" for c in key_categories)
 
+# Define filename of the catchup file (where the date of the previous search is stored)
+catchup = cdir+"/catchup.txt"
+
+# Load search terms from the auxiliary files
 key_authors     = load_list(cdir+"/key_authors.txt")
 key_words       = load_list(cdir+"/key_words.txt")
 exclusion_words = load_list(cdir+"/exclusion_words.txt")
 
-fill = len(max(key_authors, key=len)) # Length of the longest name in the key authors array
+# Compute the length of the longest name in the key authors array
+fill = len(max(key_authors, key=len))
 
 # Namespaces used by arXiv
 ns = {
@@ -171,9 +216,6 @@ ns = {
      "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
      "arxiv": "http://arxiv.org/schemas/atom",
      }
-
-# Define filename of the catchup file (where the date of the previous search is stored)
-catchup = cdir+"/catchup.txt"
 
 # Obtain the current date
 current_time = datetime.now(timezone.utc)
@@ -320,13 +362,6 @@ for ii in range(0, max_num, interval_search):
 # Place into a dataframe
 df = pd.DataFrame(entries)
 
-# # Print the entire dataframe
-# with pd.option_context('display.max_rows', None,
-#                        'display.max_columns', None,
-#                        'display.precision', 3,
-#                        ):
-#     print(df)
-
 # Remove duplicated arXiv numbers
 df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
 
@@ -334,10 +369,9 @@ df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
 df.drop(df[df["Revised?"]==True].index, inplace=True)
 df.reset_index(drop=True, inplace=True)
 
-entries_of_note = []
-
 # Loop over all entries
 author_match_count = 0
+entries_of_note = []
 for entry_count in range(0, len(df)):
     
     # Search all author lists for the people I care about
@@ -395,45 +429,34 @@ for entry_count in range(0, len(df)):
 # Only keep unique entries (should only matter if there are revised versions)
 entries_of_note_unique = np.unique(entries_of_note)
 
-# Loop through the list and open all in the web browser
-request_count = 0
-print("Opening the papers.   Estimated time: {:.2f} seconds".format(len(entries_of_note_unique)/4))
-for link_index in entries_of_note_unique:
+# Open all links if the force flag is True
+if args.force_open:
 
-    # # arXiv asks that you limit opening pages to four requests per second
-    # Sleep before the request to prevent an unnecessary sleep at the end
-    # # Sleep for 1s every four pages (recommended)
-    # if request_count % 4 == 0:
-    #     time.sleep(1)
-    # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
-    if request_count > 0:
-        time.sleep(sleep_opening)
+    open_links(df, entries_of_note_unique)
 
-    link = df.loc[link_index, "url"]
-    # print(link)
+# Else, prompt the user
+else:
 
-    # If args.force_open, start opening links
-    # Else, ask for a confirmation that states/warns the user about how many will be opened
-    
-    # Open in new window if flag is set
-    if args.new_window:
+    user_prompt = input(
+                       "There are {:} links. Open in the browser? [y/N]: ".format(len(entries_of_note_unique))
+                       ).strip().lower()
 
-        if request_count == 0:
+    # If they say no, print all links to the terminal
+    if user_prompt != "y":
 
-            webbrowser.open(link, new=1)  # new=1: open in a new browser window
+        print("Printing all links instead ...")
+        for link_index in entries_of_note_unique:
+            print(df.loc[link_index, "url"])
+            # Might be better to write the links to an auxiliary file instead of to the terminal
 
-        else:
-
-            webbrowser.open(link, new=2)  # new=2: open in a new tab
+    # If they say yes, open all links
     else:
 
-        webbrowser.open(link)  # Default behavior, just opens everything in the current window
-
-    request_count += 1
+        open_links(df, entries_of_note_unique)
 
 print("There were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
 print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
-print("            of these, {: >{fill}} papers were opened in the web browser".format(len(entries_of_note_unique), fill=max_digits))
+print("            of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
 
 # print("currently not updating the start date for the search")
 # Write the current date to a file so for the next run
