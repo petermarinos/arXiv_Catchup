@@ -1,0 +1,4 @@
+# Words to exclude. Include pluralised acronyms. Case is not important.
+# Lines starting with '#' are ignored
+# exampleword
+
