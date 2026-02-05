@@ -48,7 +48,7 @@ The next "deferred mailing" where this can be tested will be on Friday 2026/06/1
 
 ## Future Improvements
 
-Using a list of words to exclude can result in some intereesting papers not being opened if they include a sentence on their potential application to the wider literature.
+Using a list of words to exclude can result in some interesting papers not being opened if they include a sentence on their potential application to the wider literature.
 However, it reduces the list of papers that need to be checked manually by a significant margin.
 Additionally, using a list of key words where there needs to be one match can result in an interesting paper *not* being detected if the authors didn't include one.
 Finally, the number of papers that are genuinely interesting each week is very low, but the script still opens on the order of ~100 to be manually checked.

@@ -33,7 +33,7 @@ def load_list(filename):
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            items.append(r"\b"+line+r"\b")
+            items.append(line)
 
     return items
 
@@ -133,6 +133,8 @@ parser = argparse.ArgumentParser(prog='arXiv Catchup',
                                  description='Search arXiv for papers matching your criteria')
 parser.add_argument('-n', '--new-window', action='store_true',
                     help='Open all papers in a single new browser window as tabs')
+# parser.add_argument('-f', '--new-window', action='store_true',
+#                     help='Skip the warning about how many papers will be opened') # Not yet implemented
 args = parser.parse_args()
 
 # Find the directory of the script
@@ -148,13 +150,16 @@ key_categories = [
                  # "astro-ph.IM", # Instrumentation and Methods for Astrophysics
                  # "astro-ph.SR", # Solar and Stellar Astrophysics
                  ]
-cat_string = "+OR+".join(f"cat:{c}" for c in key_categories)
+# Define string for use in the url search
+cat_urlstring = "+OR+".join(f"cat:{c}" for c in key_categories)
+# Define string for printing to the terminal
+cat_printstring = ", ".join(f"{c}" for c in key_categories)
 
 key_authors     = load_list(cdir+"/key_authors.txt")
 key_words       = load_list(cdir+"/key_words.txt")
 exclusion_words = load_list(cdir+"/exclusion_words.txt")
 
-fill = len(max(key_authors, key=len)) - 4 # Length of the longest name in the key authors array
+fill = len(max(key_authors, key=len)) # Length of the longest name in the key authors array
 
 # Namespaces used by arXiv
 ns = {
@@ -172,7 +177,7 @@ current_time = datetime.now(timezone.utc)
 # If executing before 06:00 UTC, set the date to one day prior
 if current_time.hour < 6:
     current_time = current_time - timedelta(days=1)
-# The lists are published for the previous day. Always go back one day in the search.
+# The lists are published for the previous day, up to 19:00 UTC. Always go back one day in the search.
 dt = 1
 # No lists are published over the weekend. If it is Sunday, go back one extra day in the search, and two days for Monday.
 current_weekday = current_time.weekday()
@@ -193,14 +198,21 @@ if not os.path.exists(catchup):
 # Load it and extract the previous runtime
 with open(catchup, "r", encoding="utf-8") as f:
     text = [next(f).rstrip("\n") for _ in range(3)]
-start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2])).astimezone(timezone.utc)
-
-# Raise an error if the end date is before or equal to the start date
-if start_date >= end_date:
-    raise ValueError(f"Start date must be earlier that today")
+start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=19, tzinfo=timezone.utc)
 
 prev_run = end_date - start_date
-print("Days since the previous search: {:}".format(prev_run.days))
+
+# Raise an error if the end date is before or equal to the start date
+if prev_run.days == 0:
+    # Add a calculation to compute how long until the next search can be executed, to be included in the error message.
+    # Would need to account for weekdays.
+    raise ValueError(f"Search start/end dates are equal.")
+elif prev_run.days < 0:
+    raise ValueError(f"Search start date is after the end date. Check for timezone issues.")
+else:
+    print("Days since the previous search: {:}".format(prev_run.days))
+
+print("Searching the {:} categories with the lists posted from {:}/{:}/{:} to {:}/{:}/{:}".format(cat_printstring, start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
 
 # Define the search url
 url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
@@ -238,7 +250,7 @@ formatted_url_initial = url.format(start_year  = start_date.year,
                                    end_year    = end_date.year,
                                    end_month   = end_date.month,
                                    end_day     = end_date.day,
-                                   cats        = cat_string,
+                                   cats        = cat_urlstring,
                                    start_num   = 0,
                                    end_num     = 1)
 # Second request. Sleep for 3s
@@ -260,7 +272,7 @@ for ii in range(0, max_num, interval_search):
                                end_year    = end_date.year,
                                end_month   = end_date.month,
                                end_day     = end_date.day,
-                               cats        = cat_string,
+                               cats        = cat_urlstring,
                                start_num   = ii,
                                end_num     = ii+interval_search)
 
@@ -273,7 +285,7 @@ for ii in range(0, max_num, interval_search):
 
         # Previously, when parsing the emails, there would be 'revised' versions. I would skip them, and they typically had no abstract.
         # The search that is being used now specifically uses "submitted date" as the criteria for being included, so I think there will never be any revised papers or empty abstracts.
-        # However, I have kept the relevant columns and error checks in just in case.
+        # However, I have kept the relevant columns and error checks just in case.
 
         published_date = entry.find("atom:published", ns).text
         updated_date   = entry.find("atom:updated", ns).text
@@ -322,13 +334,14 @@ for entry_count in range(0, len(df)):
     for key_author in key_authors:
 
         # Search the author field in the entry
-        author_match = re.search(key_author, df["Authors"][entry_count])
+        author_match = re.search(r"\b"+key_author+r"\b", df["Authors"][entry_count])
 
         if author_match:
             
             # Set the entry in the dataframe for the author match to True
             df.loc[entry_count, "KeyAuthor Match"] = True
 
+            # If one author is found, output an extra line to the terminal
             if author_match_count == 0:
                 print("    Found Author(s)")
                 author_match_count = 1
@@ -339,10 +352,10 @@ for entry_count in range(0, len(df)):
     for key_word in key_words:
 
         # Search the author field in the entry
-        title_match    = re.search(key_word, df["Title"][entry_count], re.IGNORECASE)
+        title_match    = re.search(r"\b"+key_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
 
         if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
-            abstract_match = re.search(key_word, df["Abstract"][entry_count], re.IGNORECASE)
+            abstract_match = re.search(r"\b"+key_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
             
         if title_match or abstract_match:
             
@@ -352,11 +365,11 @@ for entry_count in range(0, len(df)):
     for exclusion_word in exclusion_words:
 
         # Search the author field in the entry
-        title_match    = re.search(exclusion_word, df["Title"][entry_count], re.IGNORECASE)
+        title_match    = re.search(r"\b"+exclusion_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
 
         if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
 
-            abstract_match = re.search(exclusion_word, df["Abstract"][entry_count], re.IGNORECASE)
+            abstract_match = re.search(r"\b"+exclusion_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
 
         if title_match or abstract_match:
 
@@ -385,23 +398,25 @@ for link_index in entries_of_note_unique:
     # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
     if request_count > 0:
         time.sleep(sleep_opening)
-    request_count += 1
 
     link = df.loc[link_index, "url"]
     # print(link)
     
     # Open in new window if flag is set
     if args.new_window:
-        if request_count == 1:
+        if request_count == 0:
             webbrowser.open(link, new=1)  # new=1: open in a new browser window
         else:
             webbrowser.open(link, new=2)  # new=2: open in a new tab
     else:
-        webbrowser.open(link)  # Default behavior
+        webbrowser.open(link)  # Default behavior, just opens everything in the current window
+
+    request_count += 1
 
 print("There were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
 print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
 print("            of these, {: >{fill}} papers were opened in the web browser".format(len(entries_of_note_unique), fill=max_digits))
 
+# print("currently not updating the start date for the search")
 # Write the current date to a file so for the next run
 write_date(catchup, end_date)
