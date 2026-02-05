@@ -210,7 +210,7 @@ exclusion_words = load_list(cdir+"/exclusion_words.txt")
 # Compute the length of the longest name in the key authors array
 fill = len(max(key_authors, key=len))
 
-# Namespaces used by arXiv
+# xml namespaces used by arXiv
 ns = {
      "atom": "http://www.w3.org/2005/Atom",
      "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
@@ -454,7 +454,8 @@ else:
 
         open_links(df, entries_of_note_unique)
 
-print("There were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
+# Print a summary
+print("\nThere were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
 print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
 print("            of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
 
