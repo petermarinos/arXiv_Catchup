@@ -22,9 +22,11 @@ This script will search for all papers on the arXiv since the previous execution
 Usage: run the script
 """
 
-def load_list(filename):
+def load_list(filename, empty_error=True):
     """
     Load search terms from a text file. These are used for regex searches, so word boundaries are added
+
+    If the file is empty, then an error will be raised if empty_error is True, or a warning will be printed if False
     """
     items = []
 
@@ -34,6 +36,17 @@ def load_list(filename):
             if not line or line.startswith("#"):
                 continue
             items.append(line)
+
+    # Check if any non-commented lines were loaded
+    if len(items) == 0:
+
+        if empty_error:
+
+            raise ValueError("No items were loaded from the file {:s} \n            Please check the file and add at least one item".format(filename))
+
+        else:
+
+            print("WARNING: No items were loaded from the file {:s}".format(filename))
 
     return items
 
@@ -132,7 +145,7 @@ def download_search(url):
 
     return parsed_xml_data
 
-def open_links(df, entries_of_note_unique):
+def open_links(df, entries_of_note_unique, sleep_time):
 
     # Loop through the list and open all in the web browser
     request_count = 0
@@ -146,7 +159,7 @@ def open_links(df, entries_of_note_unique):
         #     time.sleep(1)
         # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
         if request_count > 0:
-            time.sleep(sleep_opening)
+            time.sleep(sleep_time)
 
         link = df.loc[link_index, "url"]
         # print(link)
@@ -203,262 +216,262 @@ cat_printstring = ", ".join(f"{c}" for c in key_categories)
 catchup = cdir+"/catchup.txt"
 
 # Load search terms from the auxiliary files
-key_authors     = load_list(cdir+"/key_authors.txt")
 key_words       = load_list(cdir+"/key_words.txt")
-exclusion_words = load_list(cdir+"/exclusion_words.txt")
+key_authors     = load_list(cdir+"/key_authors.txt", False)
+exclusion_words = load_list(cdir+"/exclusion_words.txt", False)
 
-# Compute the length of the longest name in the key authors array
-fill = len(max(key_authors, key=len))
+# # Compute the length of the longest name in the key authors array
+# fill = len(max(key_authors, key=len))
 
-# xml namespaces used by arXiv
-ns = {
-     "atom": "http://www.w3.org/2005/Atom",
-     "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
-     "arxiv": "http://arxiv.org/schemas/atom",
-     }
+# # xml namespaces used by arXiv
+# ns = {
+#      "atom": "http://www.w3.org/2005/Atom",
+#      "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
+#      "arxiv": "http://arxiv.org/schemas/atom",
+#      }
 
-# Obtain the current date
-current_time = datetime.now(timezone.utc)
-# The list of papers is typically released before 06:00 UTC.
-# If executing before 06:00 UTC, set the date to one day prior
-if current_time.hour < 6:
-    current_time = current_time - timedelta(days=1)
-# The lists are published for the previous day, up to 19:00 UTC. Always go back one day in the search.
-dt = 1
-# No lists are published over the weekend. If it is Sunday, go back one extra day in the search, and two days for Monday.
-current_weekday = current_time.weekday()
-if current_weekday == 6:
-    dt += 1
-elif current_weekday == 0:
-    dt += 2
+# # Obtain the current date
+# current_time = datetime.now(timezone.utc)
+# # The list of papers is typically released before 06:00 UTC.
+# # If executing before 06:00 UTC, set the date to one day prior
+# if current_time.hour < 6:
+#     current_time = current_time - timedelta(days=1)
+# # The lists are published for the previous day, up to 19:00 UTC. Always go back one day in the search.
+# dt = 1
+# # No lists are published over the weekend. If it is Sunday, go back one extra day in the search, and two days for Monday.
+# current_weekday = current_time.weekday()
+# if current_weekday == 6:
+#     dt += 1
+# elif current_weekday == 0:
+#     dt += 2
 
-# No lists are released on certain days. These days are chosen ad-hoc, and are days that are important to USAians. It includes Christmas, their Thanksgiving, and others.
-# The search should return no results on those days (not tested).
-# If waiting extra time, there should be no missed papers (not tested).
+# # No lists are released on certain days. These days are chosen ad-hoc, and are days that are important to USAians. It includes Christmas, their Thanksgiving, and others.
+# # The search should return no results on those days (not tested).
+# # If waiting extra time, there should be no missed papers (not tested).
 
-# Compute the end_date of the search
-end_date = current_time - timedelta(days=dt)
+# # Compute the end_date of the search
+# end_date = current_time - timedelta(days=dt)
 
-# The date of the previous execution is saved in a file
-# If it does not exist, create it and set the date to the previous day
-if not os.path.exists(catchup):
+# # The date of the previous execution is saved in a file
+# # If it does not exist, create it and set the date to the previous day
+# if not os.path.exists(catchup):
     
-    write_date(catchup, end_date - timedelta(days=1))
+#     write_date(catchup, end_date - timedelta(days=1))
 
-# Load it and extract the previous runtime
-with open(catchup, "r", encoding="utf-8") as f:
+# # Load it and extract the previous runtime
+# with open(catchup, "r", encoding="utf-8") as f:
 
-    text = [next(f).rstrip("\n") for _ in range(3)]
+#     text = [next(f).rstrip("\n") for _ in range(3)]
 
-start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=0, tzinfo=timezone.utc)
+# start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=0, tzinfo=timezone.utc)
 
-prev_run = end_date - start_date
+# prev_run = end_date - start_date
 
-# Raise an error if the end date is before or equal to the start date
-if prev_run.days == 0:
-    # Add a calculation to compute how long until the next search can be executed, to be included in the error message.
-    # Would need to account for weekdays.
-    raise ValueError(f"Search start/end dates are equal.")
-elif prev_run.days < 0:
-    raise ValueError(f"Search start date is after the end date. Check for timezone issues.")
-else:
-    print("Days since the previous search: {:}".format(prev_run.days))
+# # Raise an error if the end date is before or equal to the start date
+# if prev_run.days == 0:
+#     # Add a calculation to compute how long until the next search can be executed, to be included in the error message.
+#     # Would need to account for weekdays.
+#     raise ValueError(f"Search start/end dates are equal.")
+# elif prev_run.days < 0:
+#     raise ValueError(f"Search start date is after the end date. Check for timezone issues.")
+# else:
+#     print("Days since the previous search: {:}".format(prev_run.days))
 
-print("Searching the {:} categories with the lists posted from {:}/{:}/{:} to {:}/{:}/{:}".format(cat_printstring, start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
+# print("Searching the {:} categories with the lists posted from {:}/{:}/{:} to {:}/{:}/{:}".format(cat_printstring, start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
 
-# Define the search url
-url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
+# # Define the search url
+# url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
 
-# arXiv asks for a courtesy 3-second pause between searches of ten papers, and a 0.25-second pause between opening links
-sleep_search    = 3
-interval_search = 10
-sleep_opening   = 0.25
+# # arXiv asks for a courtesy 3-second pause between searches of ten papers, and a 0.25-second pause between opening links
+# sleep_search    = 3
+# interval_search = 10
+# sleep_opening   = 0.25
 
-print("Obtaining arXiv info. Estimated time: 6 seconds") # Always two 3-second sleeps
+# print("Obtaining arXiv info. Estimated time: 6 seconds") # Always two 3-second sleeps
 
-# Perform a search over all astro-ph categories to find how many papers were posted since the previous search
-formatted_url_allcat = url.format(start_year  = start_date.year,
-                                  start_month = start_date.month,
-                                  start_day   = start_date.day,
-                                  end_year    = end_date.year,
-                                  end_month   = end_date.month,
-                                  end_day     = end_date.day,
-                                  cats        = "astro-ph*",
-                                  start_num   = 0,
-                                  end_num     = 1)
+# # Perform a search over all astro-ph categories to find how many papers were posted since the previous search
+# formatted_url_allcat = url.format(start_year  = start_date.year,
+#                                   start_month = start_date.month,
+#                                   start_day   = start_date.day,
+#                                   end_year    = end_date.year,
+#                                   end_month   = end_date.month,
+#                                   end_day     = end_date.day,
+#                                   cats        = "astro-ph*",
+#                                   start_num   = 0,
+#                                   end_num     = 1)
 
-# First request
-parsed_xml_data_allcat = download_search(formatted_url_allcat)
+# # First request
+# parsed_xml_data_allcat = download_search(formatted_url_allcat)
 
-# Extract the number of papers since the last time the script was executed
-total_papers = int(parsed_xml_data_allcat.find("opensearch:totalResults", ns).text)
-# Compute the number of digits. Assumes that the number of papers is positive :)
-max_digits = len(str(total_papers))
+# # Extract the number of papers since the last time the script was executed
+# total_papers = int(parsed_xml_data_allcat.find("opensearch:totalResults", ns).text)
+# # Compute the number of digits. Assumes that the number of papers is positive :)
+# max_digits = len(str(total_papers))
 
-# Perform an initial search to find how many papers there are in the categories of interest
-formatted_url_initial = url.format(start_year  = start_date.year,
-                                   start_month = start_date.month,
-                                   start_day   = start_date.day,
-                                   end_year    = end_date.year,
-                                   end_month   = end_date.month,
-                                   end_day     = end_date.day,
-                                   cats        = cat_urlstring,
-                                   start_num   = 0,
-                                   end_num     = 1)
-# Second request. Sleep for 3s
-time.sleep(sleep_search)
-parsed_xml_data_initial = download_search(formatted_url_initial)
+# # Perform an initial search to find how many papers there are in the categories of interest
+# formatted_url_initial = url.format(start_year  = start_date.year,
+#                                    start_month = start_date.month,
+#                                    start_day   = start_date.day,
+#                                    end_year    = end_date.year,
+#                                    end_month   = end_date.month,
+#                                    end_day     = end_date.day,
+#                                    cats        = cat_urlstring,
+#                                    start_num   = 0,
+#                                    end_num     = 1)
+# # Second request. Sleep for 3s
+# time.sleep(sleep_search)
+# parsed_xml_data_initial = download_search(formatted_url_initial)
 
-# Extract the number of papers since the last time the script was executed
-max_num = int(parsed_xml_data_initial.find("opensearch:totalResults", ns).text)
+# # Extract the number of papers since the last time the script was executed
+# max_num = int(parsed_xml_data_initial.find("opensearch:totalResults", ns).text)
 
-# Perform the searches in groups of size "interval"
-entries = []
-print("Searching for papers. Estimated time: {:d} seconds".format(sleep_search*max_num//interval_search + (sleep_search if max_num%interval_search > 0 else 0)))
-for ii in range(0, max_num, interval_search):
+# # Perform the searches in groups of size "interval"
+# entries = []
+# print("Searching for papers. Estimated time: {:d} seconds".format(sleep_search*max_num//interval_search + (sleep_search if max_num%interval_search > 0 else 0)))
+# for ii in range(0, max_num, interval_search):
 
-    # Search over the current interval
-    formatted_url = url.format(start_year  = start_date.year,
-                               start_month = start_date.month,
-                               start_day   = start_date.day,
-                               end_year    = end_date.year,
-                               end_month   = end_date.month,
-                               end_day     = end_date.day,
-                               cats        = cat_urlstring,
-                               start_num   = ii,
-                               end_num     = ii+interval_search)
+#     # Search over the current interval
+#     formatted_url = url.format(start_year  = start_date.year,
+#                                start_month = start_date.month,
+#                                start_day   = start_date.day,
+#                                end_year    = end_date.year,
+#                                end_month   = end_date.month,
+#                                end_day     = end_date.day,
+#                                cats        = cat_urlstring,
+#                                start_num   = ii,
+#                                end_num     = ii+interval_search)
 
-    # Sleep before the query so that there is no dead time on the last query
-    time.sleep(sleep_search)
-    parsed_xml = download_search(formatted_url)
+#     # Sleep before the query so that there is no dead time on the last query
+#     time.sleep(sleep_search)
+#     parsed_xml = download_search(formatted_url)
     
-    # Loop over the entries (papers) within the current search
-    for entry in parsed_xml.findall("atom:entry", ns):
+#     # Loop over the entries (papers) within the current search
+#     for entry in parsed_xml.findall("atom:entry", ns):
 
-        # Previously, when parsing the emails, there would be 'revised' versions. I would skip them, and they typically had no abstract.
-        # The search that is being used now specifically uses "submitted date" as the criteria for being included, so I think there will never be any revised papers or empty abstracts.
-        # However, I have kept the relevant columns and error checks just in case.
+#         # Previously, when parsing the emails, there would be 'revised' versions. I would skip them, and they typically had no abstract.
+#         # The search that is being used now specifically uses "submitted date" as the criteria for being included, so I think there will never be any revised papers or empty abstracts.
+#         # However, I have kept the relevant columns and error checks just in case.
 
-        published_date = entry.find("atom:published", ns).text
-        updated_date   = entry.find("atom:updated", ns).text
+#         published_date = entry.find("atom:published", ns).text
+#         updated_date   = entry.find("atom:updated", ns).text
 
-        author_list = [author.find("atom:name", ns).text for author in entry.findall("atom:author", ns)]
+#         author_list = [author.find("atom:name", ns).text for author in entry.findall("atom:author", ns)]
 
-        # Place information in a dictionary
-        paper = {
-            "arXiv Number"    : entry.find("atom:id", ns).text.split("/")[-1],
-            "Title"           : entry.find("atom:title", ns).text.strip(),
-            "Authors"         : normalise_string( ", ".join(f"{author}" for author in author_list) ),
-            "Revised?"        : updated_date > published_date,
-            "Abstract"        : entry.find("atom:summary", ns).text.strip(),
-            "url"             : entry.find("atom:id", ns).text.strip(),
-            "KeyAuthor Match" : False,
-            "KeyWord Match"   : False,
-            "ExcWord Match"   : False,
-        }
+#         # Place information in a dictionary
+#         paper = {
+#             "arXiv Number"    : entry.find("atom:id", ns).text.split("/")[-1],
+#             "Title"           : entry.find("atom:title", ns).text.strip(),
+#             "Authors"         : normalise_string( ", ".join(f"{author}" for author in author_list) ),
+#             "Revised?"        : updated_date > published_date,
+#             "Abstract"        : entry.find("atom:summary", ns).text.strip(),
+#             "url"             : entry.find("atom:id", ns).text.strip(),
+#             "KeyAuthor Match" : False,
+#             "KeyWord Match"   : False,
+#             "ExcWord Match"   : False,
+#         }
 
-        entries.append(paper)
+#         entries.append(paper)
 
-# Place into a dataframe
-df = pd.DataFrame(entries)
+# # Place into a dataframe
+# df = pd.DataFrame(entries)
 
-# Remove duplicated arXiv numbers
-df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
+# # Remove duplicated arXiv numbers
+# df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
 
-# Remove revised papers
-df.drop(df[df["Revised?"]==True].index, inplace=True)
-df.reset_index(drop=True, inplace=True)
+# # Remove revised papers
+# df.drop(df[df["Revised?"]==True].index, inplace=True)
+# df.reset_index(drop=True, inplace=True)
 
-# Loop over all entries
-author_match_count = 0
-entries_of_note = []
-for entry_count in range(0, len(df)):
+# # Loop over all entries
+# author_match_count = 0
+# entries_of_note = []
+# for entry_count in range(0, len(df)):
     
-    # Search all author lists for the people I care about
-    for key_author in key_authors:
+#     # Search all author lists for the people I care about
+#     for key_author in key_authors:
 
-        # Search the author field in the entry
-        author_match = re.search(r"\b"+key_author+r"\b", df["Authors"][entry_count])
+#         # Search the author field in the entry
+#         author_match = re.search(r"\b"+key_author+r"\b", df["Authors"][entry_count])
 
-        if author_match:
+#         if author_match:
             
-            # Set the entry in the dataframe for the author match to True
-            df.loc[entry_count, "KeyAuthor Match"] = True
+#             # Set the entry in the dataframe for the author match to True
+#             df.loc[entry_count, "KeyAuthor Match"] = True
 
-            # If one author is found, output an extra line to the terminal
-            if author_match_count == 0:
-                print("    Found Author(s)")
-                author_match_count = 1
+#             # If one author is found, output an extra line to the terminal
+#             if author_match_count == 0:
+#                 print("    Found Author(s)")
+#                 author_match_count = 1
                 
-            print("    {: >{fill}}:  ".format(key_author, fill=fill), df["url"][entry_count])
+#             print("    {: >{fill}}:  ".format(key_author, fill=fill), df["url"][entry_count])
     
-    # Search all titles and abstracts for words that I care about
-    for key_word in key_words:
+#     # Search all titles and abstracts for words that I care about
+#     for key_word in key_words:
 
-        # Search the author field in the entry
-        title_match    = re.search(r"\b"+key_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
+#         # Search the author field in the entry
+#         title_match    = re.search(r"\b"+key_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
 
-        if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
-            abstract_match = re.search(r"\b"+key_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
+#         if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
+#             abstract_match = re.search(r"\b"+key_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
             
-        if title_match or abstract_match:
+#         if title_match or abstract_match:
             
-            df.loc[entry_count, "KeyWord Match"] = True
+#             df.loc[entry_count, "KeyWord Match"] = True
     
-    # Search all titles and abstracts for words that I want to exclude
-    for exclusion_word in exclusion_words:
+#     # Search all titles and abstracts for words that I want to exclude
+#     for exclusion_word in exclusion_words:
 
-        # Search the author field in the entry
-        title_match    = re.search(r"\b"+exclusion_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
+#         # Search the author field in the entry
+#         title_match    = re.search(r"\b"+exclusion_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
 
-        if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
+#         if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
 
-            abstract_match = re.search(r"\b"+exclusion_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
+#             abstract_match = re.search(r"\b"+exclusion_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
 
-        if title_match or abstract_match:
+#         if title_match or abstract_match:
 
-            df.loc[entry_count, "ExcWord Match"] = True
+#             df.loc[entry_count, "ExcWord Match"] = True
 
-    # If key_authors=True, always keep
-    # If there were keyword matches and *no* matches with excluded words, keep
-    if df["KeyAuthor Match"][entry_count] == True:
-        entries_of_note.append(entry_count)
-    elif df["KeyWord Match"][entry_count]==True and df["ExcWord Match"][entry_count]==False:
-        entries_of_note.append(entry_count)
+#     # If key_authors=True, always keep
+#     # If there were keyword matches and *no* matches with excluded words, keep
+#     if df["KeyAuthor Match"][entry_count] == True:
+#         entries_of_note.append(entry_count)
+#     elif df["KeyWord Match"][entry_count]==True and df["ExcWord Match"][entry_count]==False:
+#         entries_of_note.append(entry_count)
 
-# Only keep unique entries (should only matter if there are revised versions)
-entries_of_note_unique = np.unique(entries_of_note)
+# # Only keep unique entries (should only matter if there are revised versions)
+# entries_of_note_unique = np.unique(entries_of_note)
 
-# Open all links if the force flag is True
-if args.force_open:
+# # Open all links if the force flag is True
+# if args.force_open:
 
-    open_links(df, entries_of_note_unique)
+#     open_links(df, entries_of_note_unique, sleep_opening)
 
-# Else, prompt the user
-else:
+# # Else, prompt the user
+# else:
 
-    user_prompt = input(
-                       "There are {:} links. Open in the browser? [y/N]: ".format(len(entries_of_note_unique))
-                       ).strip().lower()
+#     user_prompt = input(
+#                        "There are {:} links. Open in the browser? [y/N]: ".format(len(entries_of_note_unique))
+#                        ).strip().lower()
 
-    # If they say no, print all links to the terminal
-    if user_prompt != "y":
+#     # If they say no, print all links to the terminal
+#     if user_prompt != "y":
 
-        print("Printing all links instead ...")
-        for link_index in entries_of_note_unique:
-            print(df.loc[link_index, "url"])
-            # Might be better to write the links to an auxiliary file instead of to the terminal
+#         print("Printing all links instead ...")
+#         for link_index in entries_of_note_unique:
+#             print(df.loc[link_index, "url"])
+#             # Might be better to write the links to an auxiliary file instead of to the terminal
 
-    # If they say yes, open all links
-    else:
+#     # If they say yes, open all links
+#     else:
 
-        open_links(df, entries_of_note_unique)
+#         open_links(df, entries_of_note_unique, sleep_opening)
 
-# Print a summary
-print("\nThere were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
-print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
-print("            of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
+# # Print a summary
+# print("\nThere were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
+# print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
+# print("            of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
 
-# print("currently not updating the start date for the search")
-# Write the current date to a file so for the next run
-write_date(catchup, end_date)
+# # print("currently not updating the start date for the search")
+# # Write the current date to a file so for the next run
+# write_date(catchup, end_date)

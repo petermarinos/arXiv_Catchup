@@ -1,20 +1,3 @@
 # Key Authors. Just include the last name, with no accents.
-Porter
-Rowell
-Moskalenko
-Einecke
-Mertsch
-Schwefer
-Vecchiotti
-Mitchell
-Alsulami
-# König
-Konig
-Koenig
-Collins
-Feijen
-Michailidis
-Capecchiacci
-# López
-Lopez
-Lange
+# Lines starting with '#' are ignored
+# Smith

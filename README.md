@@ -19,17 +19,20 @@ The search can then be performed in the CLI from anywhere by running:
 `$ arxiv`
 
 ### Auxilliary Files
+
 There are three files that contain certain terms that will be searched for.
 
-`key_authors.txt` contains the last names of all authors. Every paper with a match will be opened in the browser, and a line will be written in the command line with the url.
+`key_authors.txt` contains the last names of all authors. Every paper with a match will be opened, and a line will be written in the command line with the url.
 
-`key_words.txt` contains various words. Every paper with a match will be opened in the browser, unless a word from the exclusion list is found.
+`key_words.txt` contains various words. Every paper with a match will be opened, unless a word from the exclusion list is found.
+*There must be at least one word in this file to run the script.*
 
-`exclusion_words.txt` contains various words. Every paper with a match will *not* be opened in the browser, unless a key author is also found for said paper.
+`exclusion_words.txt` contains various words. Every paper with a match will *not* be opened, unless a key author is also found for said paper.
 
-Add each term on a separate line.
+For these three files, add each term on a separate line.
 Lines starting with `#` are ignored.
 Multi-word terms can be used, as can author names with spaces.
+If adding acronyms, include their pluralised forms (e.g. SN and SNe or CR and CRs)
 
 The script creates the file `catchup.txt`, which contains the date of the previous run in the format year, month, day, all on separate lines.
 This date can be set manually to search back as far as desired.
