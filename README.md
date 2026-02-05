@@ -12,11 +12,17 @@ It then performs some basic keyword matching, and opens all papers with matches 
 
 Add the following to your bash script:
 
-`alias arxiv='python3 /path/to/arXiv_Catchup/scan.py -n'`
+`alias arxiv='python3 /path/to/arXiv_Catchup/scan.py'`
 
 The search can then be performed in the CLI from anywhere by running:
 
 `$ arxiv`
+
+There are additional arguments that can be used:
+- `-f`, `--force-open` skips the confirmation dialogue and opens all links
+- `-n`, `--new-window` opens all links in a new window (does not work on mac)
+
+If the links aren't being opened in the web browser then the script will prompt the user asking to output the links to the terminal or an output file.
 
 ### Auxilliary Files
 

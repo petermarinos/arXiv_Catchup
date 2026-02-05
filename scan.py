@@ -442,7 +442,7 @@ for entry_count in range(0, len(df)):
 # Only keep unique entries (should only matter if there are revised versions)
 entries_of_note_unique = np.unique(entries_of_note)
 
-# Open all links if the force flag is True
+# Open all links if the force-open flag is True
 if args.force_open:
 
     open_links(df, entries_of_note_unique, sleep_opening)
@@ -450,21 +450,44 @@ if args.force_open:
 # Else, prompt the user
 else:
 
-    user_prompt = input(
-                       "There are {:} links. Open in the browser? [y/N]: ".format(len(entries_of_note_unique))
-                       ).strip().lower()
+    # Ask the user if they would like to open the links in the browser
+    user_prompt_browser = input(
+                               "There are {:} links. Open in the browser? [y/N]: ".format(len(entries_of_note_unique))
+                               ).strip().lower()
 
-    # If they say no, print all links to the terminal
-    if user_prompt != "y":
+    # If they say no to opening in the browser
+    if user_prompt_browser != "y":
 
-        print("Printing all links instead ...")
-        for link_index in entries_of_note_unique:
-            print(df.loc[link_index, "url"])
-            # Might be better to write the links to an auxiliary file instead of to the terminal
+        # Ask if they would like to save the links to a file or print to the terminal
+        user_prompt_output = input(
+                                  "Save all links to a file? Otherwise they will be written to the terminal [y/N]: "
+                                  ).strip().lower()
+        
+        # If they want the output in the terminal
+        if user_prompt_output != "y":
 
-    # If they say yes, open all links
+            print("Printing all links to the terminal")
+            for link_index in entries_of_note_unique:
+
+                print(df.loc[link_index, "url"])
+
+        # If they want to save the output
+        else:
+
+            print("Writing all links to the end of the file: {:}".format(cdir+"/all_links.txt"))
+            # If the file doesn't exist, create it. Otherwise, append the links to the end
+            with open(cdir+"/all_links.txt", "a+", encoding="utf-8") as f:
+
+                for link_index in entries_of_note_unique:
+
+                    link = df.loc[link_index, "url"]
+                    
+                    f.write(f"{link}\n")
+
+    # If they say yes to opening in the browser
     else:
 
+        # Open all links
         open_links(df, entries_of_note_unique, sleep_opening)
 
 # Print a summary
