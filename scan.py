@@ -10,6 +10,7 @@ import numpy                 as np
 import urllib.request
 import unicodedata
 import webbrowser
+import argparse
 import urllib
 import time
 import os
@@ -126,6 +127,13 @@ def download_search(url):
     parsed_xml_data = ET.fromstring(xml_data)
 
     return parsed_xml_data
+
+# Parse command-line arguments
+parser = argparse.ArgumentParser(prog='arXiv Catchup',
+                                 description='Search arXiv for papers matching your criteria')
+parser.add_argument('-n', '--new-window', action='store_true',
+                    help='Open all papers in a single new browser window as tabs')
+args = parser.parse_args()
 
 # Find the directory of the script
 cdir = os.path.dirname(os.path.realpath(__file__))
@@ -381,7 +389,15 @@ for link_index in entries_of_note_unique:
 
     link = df.loc[link_index, "url"]
     # print(link)
-    webbrowser.open(link)
+    
+    # Open in new window if flag is set
+    if args.new_window:
+        if request_count == 1:
+            webbrowser.open(link, new=1)  # new=1: open in a new browser window
+        else:
+            webbrowser.open(link, new=2)  # new=2: open in a new tab
+    else:
+        webbrowser.open(link)  # Default behavior
 
 print("There were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
 print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
