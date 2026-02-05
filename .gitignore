@@ -1,4 +1,4 @@
 *.ipynb_checkpoints
 *.ipynb
+*.txt
 .DS_Store
-catchup.txt

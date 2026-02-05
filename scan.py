@@ -136,9 +136,9 @@ def download_search(url):
 parser = argparse.ArgumentParser(prog='arXiv Catchup',
                                  description='Search arXiv for papers matching your criteria')
 parser.add_argument('-n', '--new-window', action='store_true',
-                    help='Open all papers in a single new browser window as tabs')
-# parser.add_argument('-f', '--new-window', action='store_true',
-#                     help='Skip the warning about how many papers will be opened') # Not yet implemented
+                    help='Open all papers in a single new browser window as tabs') # Doesn't work on mac with firefox
+parser.add_argument('-f', '--force-open', action='store_true',
+                    help='Skip the warning about how many papers will be opened') # Not yet implemented
 args = parser.parse_args()
 
 # Find the directory of the script
@@ -411,6 +411,9 @@ for link_index in entries_of_note_unique:
 
     link = df.loc[link_index, "url"]
     # print(link)
+
+    # If args.force_open, start opening links
+    # Else, ask for a confirmation that states/warns the user about how many will be opened
     
     # Open in new window if flag is set
     if args.new_window:
@@ -418,7 +421,7 @@ for link_index in entries_of_note_unique:
         if request_count == 0:
 
             webbrowser.open(link, new=1)  # new=1: open in a new browser window
-            
+
         else:
 
             webbrowser.open(link, new=2)  # new=2: open in a new tab

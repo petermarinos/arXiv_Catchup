@@ -12,7 +12,7 @@ It then performs some basic keyword matching, and opens all papers with matches 
 
 Add the following to your bash script:
 
-`alias arxiv='python3 /path/to/arXiv_Catchup/scan.py'`
+`alias arxiv='python3 /path/to/arXiv_Catchup/scan.py -n'`
 
 The search can then be performed in the CLI from anywhere by running:
 
