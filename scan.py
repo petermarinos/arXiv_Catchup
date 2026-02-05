@@ -195,8 +195,6 @@ elif current_weekday == 0:
 # Compute the end_date of the search
 end_date = current_time - timedelta(days=dt)
 
-print(end_date)
-
 # The date of the previous execution is saved in a file
 # If it does not exist, create it and set the date to the previous day
 if not os.path.exists(catchup):
