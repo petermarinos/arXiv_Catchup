@@ -693,15 +693,15 @@ else:
 print("\nThere was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(max_num, fill=max_digits))
 print("             of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
 
-print("TESTING so not updating the start date for the search")
+# print("TESTING so not updating the start date for the search")
 
-# # Check if any papers were found
-# if len(df) == 0:
+# Check if any papers were found
+if len(df) == 0:
 
-#     print("As no papers were found, the aux. date file was not updated")
+    print("As no papers were found, the aux. date file was not updated")
 
-# # If papers were found, update the aux. file
-# else:
+# If papers were found, update the aux. file
+else:
 
-#     # Write the end date of the search to a file for the next run
-#     write_date(filename_prevsearch, end_date)
+    # Write the end date of the search to a file for the next run
+    write_date(filename_prevsearch, end_date)
