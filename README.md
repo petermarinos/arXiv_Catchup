@@ -27,7 +27,7 @@ There are additional arguments that can be used:
 - `-s`, `--start-date` manually sets the start date for the search
 - `-e`, `--end-date` manually sets the end date for the search
 
-If the links aren't being opened in the web browser then the script will prompt the user asking to output the links to the terminal or a file.
+If both `-f` and `-w` are passed, then the scipt will do both. If neither are passed, then the script will prompt the user for their preference.
 
 ### Auxilliary Files
 
