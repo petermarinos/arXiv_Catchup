@@ -13,6 +13,7 @@ import webbrowser
 import argparse
 import datetime
 import urllib
+import yaml
 import time
 import sys
 import os
@@ -26,42 +27,48 @@ Usage: run the script
 
 # Note: The 'remaining time" shown in the progress bars are based entirely on the sleep timers, and not how long things actually take.
 # This simplification is accurate if the number of papers is ~<100
-# If there are more papers then random slowdowns when connecting to the arXiv servers will make any remaining time estimate incorrect.
+# If there are more papers then random slowdowns when connecting to the arXiv servers will make any remaining time estimate inaccurate.
 
-def load_list(filename, empty_error=True):
-    """
-    Load search terms from a text file. These are used for regex searches, so word boundaries are added
+def load_searchterms(filename):
 
-    If the file is empty, then an error will be raised if empty_error is True, or a warning will be printed if False
-    """
-    items = []
+    # Load the .yaml into a dictionary
+    with open(filename, 'r') as f:
 
-    with open(filename, "r") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            items.append(line)
+        search_terms = yaml.safe_load(f)
 
-    # Check if any non-commented lines were loaded
-    if len(items) == 0:
+    # # Check the file
 
-        if empty_error:
+    # At least one category is required
+    if search_terms["Categories"] is None:
 
-            raise ValueError("No items were loaded from the file {:s}\n            Please check the file and add at least one item".format(filename))
+        raise ValueError("No search terms were found in the 'Categories' entry in the configuration file.\n            Please check the file and add at least one item")
 
-        else:
+    # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
+    # No need to catch it here
 
-            print("WARNING: No items were loaded from the file {:s}".format(filename))
+    # At least one search term is required in the "Words" key
+    if search_terms["Included Words"] is None:
 
-    return items
+        raise ValueError("No search terms were found in the 'Included Words' entry in the configuration file.\n            Please check the file and add at least one item")
+
+    # No search terms are required for the "Authors" or "Excluded Words" keys
+    # Warn the user if no terms are found
+    if search_terms["Authors"] is None:
+
+        print("WARNING: No search terms were found in the 'Authors' entry in the configuration file.")
+
+    if search_terms["Excluded Words"] is None:
+
+        print("WARNING: No search terms were found in the 'Excluded Words' entry in the configuration file.")
+
+    return search_terms
 
 def LaTeX_to_unicode(s):
     """Stip LaTeX-style accents from the string (e.g. {\'a} -> a, and \'a -> a)
 
     This function only covers common accents.
     To account for all accents and ligatures/special characters, it is best to install an additional package.
-    However, that would only be required if one of the key_authors has a special character/accent.
+    However, that would only be required if one of the Authors has a special character/accent.
     As I do not currently have any authors I care about with special characters, and only common accents, I leave this task for later.
     """
 
@@ -129,14 +136,8 @@ def normalise_string(s):
 
 def write_date(filename, date):
 
-    # print(f"{(date).year:d}")
-    # print(f"{(date).month:d}")
-    # print(f"{(date).day:d}")
-
     with open(filename, "w") as f:
-        f.write(f"{(date).year:d}\n")
-        f.write(f"{(date).month:d}\n")
-        f.write(f"{(date).day:d}\n")
+        f.write(date.isoformat())
 
     return
 
@@ -235,11 +236,8 @@ def is_posting_day_bool(dt):
     return dt.weekday() <= 4
 
 def calc_search_endtime(now, post_time, search_time):
-    """Return the datetime of the most recent arXiv daily list posting.
+    """Return the datetime of the most recent arXiv daily list posting relative to the input time `now`.
     """
-
-    # today_post = datetime.datetime.combine(now.date(), post_time)
-
 
     # If now is after post_time, search_time will be 19:00 the previous day
     if now.timetz() > post_time:
@@ -258,7 +256,7 @@ def calc_search_endtime(now, post_time, search_time):
     return search_endtime
 
 def calc_next_posttime(now, post_time):
-    """Return the datetime of the most recent arXiv daily list posting.
+    """Return the datetime of the next arXiv daily list posting relative to the input time `now`.
     """
 
     # If now is after post_time, the next post_time will be 06:00 the following day
@@ -304,32 +302,23 @@ args = parser.parse_args()
 # Find the directory of the script
 cdir = os.path.dirname(os.path.realpath(__file__))
 
-# Define categories that I care for
-key_categories = [
-                 # "astro-ph*", # All astrophysics categories. Ensure all other categories are commented out if using this one
-                 # "astro-ph.CO", # Cosmology and Nongalactic Astrophysics
-                 # "astro-ph.EP", # Earth and Planetary Astrophysics
-                 "astro-ph.GA", # Astrophysics of Galaxies
-                 "astro-ph.HE", # High Energy Astrophysical Phenomena
-                 # "astro-ph.IM", # Instrumentation and Methods for Astrophysics
-                 # "astro-ph.SR", # Solar and Stellar Astrophysics
-                 ]
+# Define filenames of the auxiliary files
+filename_prevsearch  = cdir+"/prev_search.txt" # File that stores the date of the previous run
+filename_searchterms = cdir+"/search_terms.yaml" # File that stores the search terms
+filename_paperlinks  = cdir+"/catchup.txt" # File that stores the links to the papers of interest (if writing to a file)
+
+# Load search terms from the auxiliary file
+search_terms = load_searchterms(filename_searchterms)
 
 # Define string for use in the url search
-cat_urlstring = "+OR+".join(f"cat:{c}" for c in key_categories)
+cat_urlstring = "+OR+".join(f"cat:{c}" for c in search_terms["Categories"])
 # Define string for printing to the terminal
-cat_printstring = ", ".join(f"{c}" for c in key_categories)
+cat_printstring = ", ".join(f"{c}" for c in search_terms["Categories"])
 
-# Define filename of the catchup file (where the date of the previous search is stored)
-catchup = cdir+"/catchup.txt"
-
-# Load search terms from the auxiliary files
-key_words       = load_list(cdir+"/key_words.txt")
-key_authors     = load_list(cdir+"/key_authors.txt", False)
-exclusion_words = load_list(cdir+"/exclusion_words.txt", False)
-
-# Compute the length of the longest name in the key authors array
-fill = len(max(key_authors, key=len))
+# Compute the length of the longest name in the authors array
+# Makes one of the terminal outputs prettier
+if search_terms["Authors"] is not None:
+    author_strfill = len(max(search_terms["Authors"], key=len))
 
 # xml namespaces used by arXiv
 ns = {
@@ -375,22 +364,18 @@ if end_date is None:
 # If the file does not exist, create it and set the date to the listing before the last posting
 # Only perform if the start_date was not passed in the command line
 if start_date is None:
-    if not os.path.exists(catchup):
+    if not os.path.exists(filename_prevsearch):
 
         # Compute the list time before the previous
         # This can be done by passing the end_time found above into the calc_search_endtime() function
         prev_end_time  = calc_search_endtime(end_time, list_post_time, search_time)
         
-        write_date(catchup, prev_end_time)
+        write_date(filename_prevsearch, prev_end_time.date())
 
     # Load it and extract the previous runtime
-    with open(catchup, "r", encoding="utf-8") as f:
+    with open(filename_prevsearch, "r", encoding="utf-8") as f:
 
-        start_text = [next(f).rstrip("\n") for _ in range(3)]
-
-    # Convert the plain text to a datetime object
-    start_time = datetime.datetime(year=int(start_text[0]), month=int(start_text[1]), day=int(start_text[2]), hour=19, tzinfo=timezone.utc)
-    start_date = start_time.date()
+        start_time, start_date = parse_date(next(f), filename_prevsearch, search_time)
 
 # Compute how long the search is covering
 prev_run = end_date - start_date
@@ -428,7 +413,7 @@ sleep_search    = 3
 interval_search = 10
 sleep_opening   = 0.25
 
-print("Obtaining arXiv info. Estimated time: 3 seconds") # Always two 3-second sleeps
+print("Obtaining arXiv info. Estimated time: {:d} seconds".format(sleep_search)) # Always a single sleep
 
 # progress_bar(0, 2, 3)
 
@@ -523,8 +508,8 @@ for ii in range(0, max_num, interval_search):
             "Revised?"        : updated_date > published_date,
             "Abstract"        : entry.find("atom:summary", ns).text.strip(),
             "url"             : entry.find("atom:id", ns).text.strip(),
-            "KeyAuthor Match" : False,
-            "KeyWord Match"   : False,
+            "Author Match"    : False,
+            "IncWord Match"   : False,
             "ExcWord Match"   : False,
         }
 
@@ -552,58 +537,60 @@ for entry_count in range(0, len(df)):
 
     progress_bar(entry_count, len(df)) # No time estimate as it should always be fast. ~1200 papers take less than a second on a 2023 macbook
     
-    # Search all author lists for the people I care about
-    for key_author in key_authors:
+    # Search all author lists for the key authors
+    if search_terms["Authors"] is not None:
+        for author in search_terms["Authors"]:
 
-        # Search the author field in the entry
-        author_match = re.search(r"\b"+key_author+r"\b", df["Authors"][entry_count])
+            # Search the author field in the entry
+            author_match = re.search(r"\b"+author+r"\b", df["Authors"][entry_count])
 
-        if author_match:
-            
-            # Set the entry in the dataframe for the author match to True
-            df.loc[entry_count, "KeyAuthor Match"] = True
-
-            # If one author is found, output an extra line to the terminal
-            if author_match_count == 0:
-                # print("    Found Author(s)")
-                author_str += "\n    Found Author(s)"
-                author_match_count = 1
+            if author_match:
                 
-            # print("    {: >{fill}}:  ".format(key_author, fill=fill), df["url"][entry_count])
-            author_str += "\n    {: >{fill}}:  {url:}".format(key_author, fill=fill, url=df["url"][entry_count])
+                # Set the entry in the dataframe for the author match to True
+                df.loc[entry_count, "Author Match"] = True
+
+                # If one author is found, output an extra line to the terminal
+                if author_match_count == 0:
+                    # print("    Found Author(s)")
+                    author_str += "\n    Found Author(s)"
+                    author_match_count = 1
+                    
+                # print("    {: >{fill}}:  ".format(key_author, fill=author_strfill), df["url"][entry_count])
+                author_str += "\n    {: >{fill}}:  {url:}".format(author, fill=author_strfill, url=df["url"][entry_count])
     
     # Search all titles and abstracts for words that I care about
-    for key_word in key_words:
+    for inc_word in search_terms["Included Words"]:
 
         # Search the author field in the entry
-        title_match    = re.search(r"\b"+key_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
+        title_match    = re.search(r"\b"+inc_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
 
         if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
-            abstract_match = re.search(r"\b"+key_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
+            abstract_match = re.search(r"\b"+inc_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
             
         if title_match or abstract_match:
             
-            df.loc[entry_count, "KeyWord Match"] = True
+            df.loc[entry_count, "IncWord Match"] = True
     
     # Search all titles and abstracts for words that I want to exclude
-    for exclusion_word in exclusion_words:
+    if search_terms["Excluded Words"] is not None:
+        for exc_word in search_terms["Excluded Words"]:
 
-        # Search the author field in the entry
-        title_match    = re.search(r"\b"+exclusion_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
+            # Search the author field in the entry
+            title_match    = re.search(r"\b"+exc_word+r"\b", df["Title"][entry_count], re.IGNORECASE)
 
-        if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
+            if df["Abstract"][entry_count] is not None: # Skip empty abstract entries
 
-            abstract_match = re.search(r"\b"+exclusion_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
+                abstract_match = re.search(r"\b"+exc_word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
 
-        if title_match or abstract_match:
+            if title_match or abstract_match:
 
-            df.loc[entry_count, "ExcWord Match"] = True
+                df.loc[entry_count, "ExcWord Match"] = True
 
     # If key_authors=True, always keep
     # If there were keyword matches and *no* matches with excluded words, keep
-    if df["KeyAuthor Match"][entry_count] == True:
+    if df["Author Match"][entry_count] == True:
         entries_of_note.append(entry_count)
-    elif df["KeyWord Match"][entry_count]==True and df["ExcWord Match"][entry_count]==False:
+    elif df["IncWord Match"][entry_count]==True and df["ExcWord Match"][entry_count]==False:
         entries_of_note.append(entry_count)
 
 progress_bar(len(df), len(df))
@@ -613,53 +600,61 @@ print(author_str)
 # Only keep unique entries (should only matter if there are revised versions)
 entries_of_note_unique = np.unique(entries_of_note)
 
-# Open all links if the force-open flag is True
-if args.force_open:
+# If there is at least one paper, open/prompt
 
-    open_links(df, entries_of_note_unique, sleep_opening)
+if len(entries_of_note_unique) > 0:
 
-# Else, prompt the user
-else:
+    # Open all links if the force-open flag is True
+    if args.force_open:
 
-    # Ask the user if they would like to open the links in the browser
-    user_prompt_browser = input(
-                               "There are {:} links. Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note_unique), len(entries_of_note_unique)/4)
-                               ).strip().lower()
+        open_links(df, entries_of_note_unique, sleep_opening)
 
-    # If they say no to opening in the browser
-    if user_prompt_browser != "y":
-
-        # Ask if they would like to save the links to a file or print to the terminal
-        user_prompt_output = input(
-                                  "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
-                                  ).strip().lower()
-        
-        # If they want the output in the terminal
-        if user_prompt_output != "y":
-
-            print("Printing all links to the terminal")
-            for link_index in entries_of_note_unique:
-
-                print(df.loc[link_index, "url"])
-
-        # If they want to save the output
-        else:
-
-            print("Writing all links to the end of the file: {:}".format(cdir+"/all_links.txt"))
-            # If the file doesn't exist, create it. Otherwise, append the links to the end
-            with open(cdir+"/all_links.txt", "a+", encoding="utf-8") as f:
-
-                for link_index in entries_of_note_unique:
-
-                    link = df.loc[link_index, "url"]
-                    
-                    f.write(f"{link}\n")
-
-    # If they say yes to opening in the browser
+    # Else, prompt the user
     else:
 
-        # Open all links
-        open_links(df, entries_of_note_unique, sleep_opening)
+        # Ask the user if they would like to open the links in the browser
+        user_prompt_browser = input(
+                                "There are {:} links. Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note_unique), len(entries_of_note_unique)/4)
+                                ).strip().lower()
+
+        # If they say no to opening in the browser
+        if user_prompt_browser != "y":
+
+            # Ask if they would like to save the links to a file or print to the terminal
+            user_prompt_output = input(
+                                    "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
+                                    ).strip().lower()
+            
+            # If they want the output in the terminal
+            if user_prompt_output != "y":
+
+                print("Printing all links to the terminal")
+                for link_index in entries_of_note_unique:
+
+                    print(df.loc[link_index, "url"])
+
+            # If they want to save the output
+            else:
+
+                print("Writing all links to the end of the file: {:}".format(filename_paperlinks))
+                # If the file doesn't exist, create it. Otherwise, append the links to the end
+                with open(filename_paperlinks, "a+", encoding="utf-8") as f:
+
+                    for link_index in entries_of_note_unique:
+
+                        link = df.loc[link_index, "url"]
+                        
+                        f.write(f"{link}\n")
+
+        # If they say yes to opening in the browser
+        else:
+
+            # Open all links
+            open_links(df, entries_of_note_unique, sleep_opening)
+
+else:
+
+    print("No papers of interest were found.")
 
 # Print a summary
 print("\nThere were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
@@ -677,4 +672,4 @@ if len(df) == 0:
 else:
 
     # Write the end date of the search to a file for the next run
-    write_date(catchup, end_date)
+    write_date(filename_prevsearch, end_date)

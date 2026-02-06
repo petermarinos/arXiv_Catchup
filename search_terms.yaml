@@ -1,0 +1,24 @@
+# Define categories to search
+# At least one is required
+# Examples shown only for astro-ph categories. If searching other fields, e.g. physics or computer science, find the correct format from arXiv
+Categories :
+  # - astro-ph*   # All astrophysics categories
+  # - astro-ph.CO # Cosmology and Nongalactic Astrophysics
+  # - astro-ph.EP # Earth and Planetary Astrophysics
+  # - astro-ph.GA # Astrophysics of Galaxies
+  # - astro-ph.HE # High Energy Astrophysical Phenomena
+  # - astro-ph.IM # Instrumentation and Methods for Astrophysics
+  # - astro-ph.SR # Solar and Stellar Astrophysics
+
+# Authors of interest
+Authors :
+  # - examplename
+
+# Key words to search for
+# At least one is required
+Included Words :
+  # - exampleword
+
+# Words that exclude papers being shown
+Excluded Words :
+  # - exampleword
