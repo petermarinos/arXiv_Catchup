@@ -35,10 +35,12 @@ Examples of the format required for each can be found in the provided file.
 - `Authors` defines which authors to highlight. Every paper with a match will be opened, and a line will be written in the command line with the url.
 - `Included Words` defines which words include papers in the results. Every match will be included, unless a word from the exclusion list is also found. At least one must be included.
 - `Excluded Words` defines which words exclude papers from the results. Every match blocks a paper from being included, unless one of the authors of interest is found.
+
 Lines starting with `#` are ignored.
 Multi-word terms can be used, as can author names with spaces.
 If adding acronyms, include their pluralised forms (e.g. SN and SNe or CR and CRs).
 If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree search_terms.yaml` to prevent your personal search terms updating to the main branch.
+
 
 The script creates the file `prev_search.txt`, which contains the date of the previous run in ISO format.
 This file is ignored if manually setting the start-date of the search on the CLI.
