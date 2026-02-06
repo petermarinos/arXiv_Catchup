@@ -11,6 +11,7 @@ import urllib.request
 import unicodedata
 import webbrowser
 import argparse
+import datetime
 import urllib
 import time
 import sys
@@ -47,7 +48,7 @@ def load_list(filename, empty_error=True):
 
         if empty_error:
 
-            raise ValueError("No items were loaded from the file {:s} \n            Please check the file and add at least one item".format(filename))
+            raise ValueError("No items were loaded from the file {:s}\n            Please check the file and add at least one item".format(filename))
 
         else:
 
@@ -227,6 +228,56 @@ def progress_bar(ii, total, time_estimate=None):
 
     return
 
+def is_posting_day_bool(dt):
+
+    # dt.weekday() = 0 for Monday, ..., 4 for Friday, 5 for Saturday, and 6 for Sunday
+
+    return dt.weekday() <= 4
+
+def calc_search_endtime(now, post_time, search_time):
+    """Return the datetime of the most recent arXiv daily list posting.
+    """
+
+    # today_post = datetime.datetime.combine(now.date(), post_time)
+
+
+    # If now is after post_time, search_time will be 19:00 the previous day
+    if now.hour > post_time.hour:
+        temp_date = now - timedelta(days=1)
+        while not is_posting_day_bool(temp_date):
+            temp_date -= timedelta(days=1)
+
+    # Else, if now is before post_time, search_time will be 19:00 the day before previous
+    else:
+        temp_date = now - timedelta(days=2)
+        while not is_posting_day_bool(temp_date):
+            temp_date -= timedelta(days=1)
+
+    search_endtime = datetime.datetime.combine(temp_date.date(), search_time)
+
+    return search_endtime
+
+def calc_next_posttime(now, post_time):
+    """Return the datetime of the most recent arXiv daily list posting.
+    """
+
+    # If now is after post_time, the next post_time will be 06:00 the following day
+    if now.hour > post_time.hour:
+        temp_date = now + timedelta(days=1)
+        while not is_posting_day_bool(temp_date):
+            temp_date += timedelta(days=1)
+
+    # Else, if now is before post_time, the next post_time will be 06:00 the next post_day
+    else:
+        temp_date = now
+        while not is_posting_day_bool(temp_date):
+            temp_date += timedelta(days=1)
+
+    next_post_time = datetime.datetime.combine(temp_date.date(), post_time)
+
+    return next_post_time
+
+
 # Parse command-line arguments
 parser = argparse.ArgumentParser(prog='arXiv Catchup',
                                  description='Search arXiv for papers matching your criteria')
@@ -249,6 +300,7 @@ key_categories = [
                  # "astro-ph.IM", # Instrumentation and Methods for Astrophysics
                  # "astro-ph.SR", # Solar and Stellar Astrophysics
                  ]
+
 # Define string for use in the url search
 cat_urlstring = "+OR+".join(f"cat:{c}" for c in key_categories)
 # Define string for printing to the terminal
@@ -267,65 +319,83 @@ fill = len(max(key_authors, key=len))
 
 # xml namespaces used by arXiv
 ns = {
-     "atom": "http://www.w3.org/2005/Atom",
-     "opensearch": "http://a9.com/-/spec/opensearch/1.1/",
-     "arxiv": "http://arxiv.org/schemas/atom",
+     "atom"       : "http://www.w3.org/2005/Atom",
+     "opensearch" : "http://a9.com/-/spec/opensearch/1.1/",
+     "arxiv"      : "http://arxiv.org/schemas/atom",
      }
 
-# Obtain the current date
-current_time = datetime.now(timezone.utc)
-# The list of papers is typically released before 06:00 UTC.
-# If executing before 06:00 UTC, set the date to one day prior
-if current_time.hour < 6:
-    yesterday    = current_time - timedelta(days=1)
-    current_time = datetime(year=yesterday.year, month=yesterday.month, day=yesterday.day, hour=19, tzinfo=timezone.utc)
-else:
-    current_time = datetime(year=current_time.year, month=current_time.month, day=current_time.day, hour=19, tzinfo=timezone.utc)
-# The lists are published for the previous day, up to 19:00 UTC. Always go back one day in the search.
-dt = 1
-# No lists are published over the weekend. If it is Sunday, go back one extra day in the search, and two days for Monday.
-current_weekday = current_time.weekday()
-if current_weekday == 6:
-    dt += 1
-elif current_weekday == 0:
-    dt += 2
+# This script is not tied to the daily listings and when they are posted.
+# However, as the API is not updated simultaneously, it is best to time the searches around the daily listings.
+# The daily list of papers is typically released around 02:00 UTC to 06:00 UTC.
+# They are published on Monday, Tuesday, Wednesday, Thursday, and Friday (UTC).
+# The lists contain all papers published from 19:00 UTC two posting days ago to 19:00 UTC on the prior posting day
+# Our searches here are based on these times
+
+# For example:
+#     If searching on Wednesday at 20:00 UTC, we need to search the list posted on Wednesday at 06:00 UTC, which will include papers from Monday 19:00 UTC to Tuesday 19:00 UTC.
+#     If searching on Tuesday at 05:00 UTC, we need to search the list posted on Monday day at 06:00 UTC, which will include papers from Thursday 19:00 UTC to Friday 19:00 UTC.
 
 # No lists are released on certain days. These days are chosen ad-hoc, and are days that are important to USAians. It includes Christmas, their Thanksgiving, and others.
-# The search should return no results on those days (not tested).
-# If waiting extra time, there should be no missed papers (not tested).
+# As this script is not tied to the daily listings, and provides a large offset in the search, no papers *should* be missed (not tested)
 
-# Compute the end_date of the search
-end_date = current_time - timedelta(days=dt)
+# Define the posting time of the daily list
+list_post_time = datetime.time(6, 0, tzinfo=timezone.utc) # 06:00 UTC
+
+# Define the posting time of the daily list
+search_time    = datetime.time(19, 0, tzinfo=timezone.utc) # 19:00 UTC
+
+# Obtain the current time, converted to the UTC timezone
+current_time = datetime.datetime.now(timezone.utc)
+
+# Compute the time at the end of the search
+end_time = calc_search_endtime(current_time, list_post_time, search_time)
+end_date = end_time.date()
 
 # The date of the previous execution is saved in a file
-# If it does not exist, create it and set the date to the previous day
+# If the file does not exist, create it and set the date to the listing before the last posting
 if not os.path.exists(catchup):
+
+    # Compute the list time before the previous
+    # This can be done by passing the end_time found above into the calc_search_endtime() function
+    prev_end_time  = calc_search_endtime(end_time, list_post_time, search_time)
     
-    write_date(catchup, end_date - timedelta(days=1))
+    write_date(catchup, prev_end_time)
 
 # Load it and extract the previous runtime
 with open(catchup, "r", encoding="utf-8") as f:
 
-    text = [next(f).rstrip("\n") for _ in range(3)]
+    start_text = [next(f).rstrip("\n") for _ in range(3)]
 
-start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=19, tzinfo=timezone.utc)
+# Convert the plain text to a datetime object
+start_time = datetime.datetime(year=int(start_text[0]), month=int(start_text[1]), day=int(start_text[2]), hour=19, tzinfo=timezone.utc)
+start_date = start_time.date()
 
+# Compute how long the search is covering
 prev_run = end_date - start_date
 
-# Raise an error if the end date is before or equal to the start date
+# If the end date equal to the start date, raise an error and tell the user to wait
 if prev_run.days == 0:
-    # Add a calculation to compute how long until the next search can be executed, to be included in the error message.
-    # Would need to account for weekdays.
-    raise ValueError(f"Search start/end dates are equal.")
+
+    # Compute the time that the next list will be posted
+    nextlist_time   = calc_next_posttime(current_time, list_post_time)
+    time_until_next = nextlist_time - current_time
+
+    raise ValueError("Search start/end dates are equal.\n            The next list will be posted in {:} days, {:} hours, and {:} minutes.".format(time_until_next.days, time_until_next.seconds//3600, time_until_next.seconds//60))
+
+# If the end date is before the start date, raise an error
 elif prev_run.days < 0:
+
     raise ValueError(f"Search start date is after the end date. Check for timezone issues.")
+
+# If there are no issues, let the user know how many days we are searching over
 else:
+
     print("Days since the previous search: {:}".format(prev_run.days))
 
 print("Searching the {:} categories from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19:00 UTC".format(cat_printstring, start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
 
 # Define the search url
-url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
+url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
 
 # arXiv asks for a courtesy 3-second pause between searches of ten papers, and a 0.25-second pause between opening links
 sleep_search    = 3
@@ -343,7 +413,7 @@ formatted_url_allcat = url.format(start_year  = start_date.year,
                                   end_year    = end_date.year,
                                   end_month   = end_date.month,
                                   end_day     = end_date.day,
-                                  cats        = "astro-ph*",
+                                  cats        = "cat:astro-ph*",
                                   start_num   = 0,
                                   end_num     = 1)
 
