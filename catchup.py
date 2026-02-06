@@ -284,18 +284,34 @@ def parse_date(date_str, name, search_time):
     except ValueError:
         raise ValueError(f"{name} must be in YYYY-MM-DD format")
 
+def write_links(filename, df, entries):
+
+    print("Writing all links to the end of the file: {:}".format(filename))
+
+    with open(filename, "a+", encoding="utf-8") as f:
+
+        for link_index in entries:
+
+            link = df.loc[link_index, "url"]
+            
+            f.write(f"{link}\n")
+
+    return
+
 # Parse command-line arguments
 parser = argparse.ArgumentParser(prog='arXiv Catchup',
                                  description='Search arXiv for papers matching your criteria')
 
-parser.add_argument('-n', '--new-window', action='store_true',
-                    help='Open all papers in a single new browser window as tabs') # Doesn't work on mac with firefox
 parser.add_argument('-f', '--force-open', action='store_true',
-                    help='Skip the warning about how many papers will be opened')
+                    help='Skip the warning about how many papers will be opened.')
+parser.add_argument('-w', '--write-to-file', action='store_true',
+                    help='Skip opening links and user prompts, writing all links straight to a file.')
+parser.add_argument('-n', '--new-window', action='store_true',
+                    help='Open all papers in a single new browser window as tabs.') # Doesn't work on mac with firefox
 parser.add_argument('-s', '--start-date', type=str,
-                    help='Start time for the search, YYYY-MM-DD (19:00 UTC)\nIgnores the aux. file')
+                    help='Set the start time for the search, YYYY-MM-DD (19:00 UTC)\nIgnores the date in the `prev_search.txt`.')
 parser.add_argument('-e', '--end-date', type=str,
-                    help='End time for the search, YYYY-MM-DD (19:00 UTC)')
+                    help='Set the end time for the search, YYYY-MM-DD (19:00 UTC).')
 
 args = parser.parse_args()
 
@@ -409,32 +425,37 @@ print("Searching the {:} categories from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19
 url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
 
 # arXiv asks for a courtesy 3-second pause between searches of ten papers, and a 0.25-second pause between opening links
+# The maximum number of papers that can be downloaded per search is 2000
 sleep_search    = 3
 interval_search = 10
 sleep_opening   = 0.25
 
 print("Obtaining arXiv info. Estimated time: {:d} seconds".format(sleep_search)) # Always a single sleep
 
-# progress_bar(0, 2, 3)
+progress_bar(0, 1, 3)
 
 # Perform a search over all astro-ph categories to find how many papers were posted since the previous search
-formatted_url_allcat = url.format(start_year  = start_date.year,
-                                  start_month = start_date.month,
-                                  start_day   = start_date.day,
-                                  end_year    = end_date.year,
-                                  end_month   = end_date.month,
-                                  end_day     = end_date.day,
-                                  cats        = "cat:astro-ph*",
-                                  start_num   = 0,
-                                  end_num     = 1)
+# This should be the top-category(ies) for the cats. included in the .yaml.
+# i.e. astro-ph* for astro-ph.subcats, cs* for sc.subcats
+# The only reason to do this is to see how many papers were published within the given subfield.
+# As this is not particularly meaningful, it is skipped.
+# formatted_url_allcat = url.format(start_year  = start_date.year,
+#                                   start_month = start_date.month,
+#                                   start_day   = start_date.day,
+#                                   end_year    = end_date.year,
+#                                   end_month   = end_date.month,
+#                                   end_day     = end_date.day,
+#                                   cats        = "cat:astro-ph*",
+#                                   start_num   = 0,
+#                                   end_num     = 1)
 
-# First request
-parsed_xml_data_allcat = download_search(formatted_url_allcat)
+# # First request
+# parsed_xml_data_allcat = download_search(formatted_url_allcat)
 
-# Extract the number of papers since the last time the script was executed
-total_papers = int(parsed_xml_data_allcat.find("opensearch:totalResults", ns).text)
-# Compute the number of digits. Assumes that the number of papers is positive :)
-max_digits = len(str(total_papers))
+# # Extract the number of papers since the last time the script was executed
+# total_papers = int(parsed_xml_data_allcat.find("opensearch:totalResults", ns).text)
+# # Compute the number of digits. Assumes that the number of papers is positive :)
+# max_digits = len(str(total_papers))
 
 # Perform an initial search to find how many papers there are in the categories of interest
 formatted_url_initial = url.format(start_year  = start_date.year,
@@ -447,16 +468,23 @@ formatted_url_initial = url.format(start_year  = start_date.year,
                                    start_num   = 0,
                                    end_num     = 1)
 
-progress_bar(1, 2, 3)
-# Second request. Sleep for 3s
-time.sleep(sleep_search)
+# progress_bar(1, 2, 3)
+# # Second request. Sleep for 3s
+# time.sleep(sleep_search)
 parsed_xml_data_initial = download_search(formatted_url_initial)
 
-progress_bar(2, 2)
+progress_bar(1, 1)
 print("")
 
 # Extract the number of papers since the last time the script was executed
 max_num = int(parsed_xml_data_initial.find("opensearch:totalResults", ns).text)
+
+# Compute the number of digits. Assumes that the number of papers is positive :)
+max_digits = len(str(max_num))
+
+# The arXiv API will likely return an error in the first search
+if max_num >= 30000:
+    raise ValueError("Number of papers is too large. Refine search dates and/or categories.")
 
 # Perform the searches in groups of size "interval"
 entries = []
@@ -601,15 +629,25 @@ print(author_str)
 entries_of_note_unique = np.unique(entries_of_note)
 
 # If there is at least one paper, open/prompt
-
 if len(entries_of_note_unique) > 0:
 
-    # Open all links if the force-open flag is True
-    if args.force_open:
+    # If -f and -w are passed, both open and write the links
+    if args.force_open and args.write_to_file:
+
+        open_links(df, entries_of_note_unique, sleep_opening)
+        write_links(filename_paperlinks, df, entries_of_note_unique)
+
+    # If -f is passed and -w is not, only open the links
+    elif args.force_open and not args.write_to_file:
 
         open_links(df, entries_of_note_unique, sleep_opening)
 
-    # Else, prompt the user
+    # If if is not passed and -w is, only write the links
+    elif not args.force_open and args.write_to_file:
+
+        write_links(filename_paperlinks, df, entries_of_note_unique)
+
+    # Else, if neither -f nor -w were passed, prompt the user to ask for the behaviour they prefer
     else:
 
         # Ask the user if they would like to open the links in the browser
@@ -636,15 +674,8 @@ if len(entries_of_note_unique) > 0:
             # If they want to save the output
             else:
 
-                print("Writing all links to the end of the file: {:}".format(filename_paperlinks))
                 # If the file doesn't exist, create it. Otherwise, append the links to the end
-                with open(filename_paperlinks, "a+", encoding="utf-8") as f:
-
-                    for link_index in entries_of_note_unique:
-
-                        link = df.loc[link_index, "url"]
-                        
-                        f.write(f"{link}\n")
+                write_links(filename_paperlinks, df, entries_of_note_unique)
 
         # If they say yes to opening in the browser
         else:
@@ -657,19 +688,20 @@ else:
     print("No papers of interest were found.")
 
 # Print a summary
-print("\nThere were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
-print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
-print("            of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
+# print("\nThere were a total of {: >{fill}} papers submitted to the astro-ph list since the previous search".format(total_papers, fill=max_digits))
+# print("            of these, {: >{fill}} papers were in the categories of interest ".format(max_num, fill=max_digits))
+print("\nThere was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(max_num, fill=max_digits))
+print("             of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
 
-# print("TESTING so not updating the start date for the search")
+print("TESTING so not updating the start date for the search")
 
-# Check if any papers were found
-if len(df) == 0:
+# # Check if any papers were found
+# if len(df) == 0:
 
-    print("As no papers were found, the aux. date file was not updated")
+#     print("As no papers were found, the aux. date file was not updated")
 
-# If papers were found, update the aux. file
-else:
+# # If papers were found, update the aux. file
+# else:
 
-    # Write the end date of the search to a file for the next run
-    write_date(filename_prevsearch, end_date)
+#     # Write the end date of the search to a file for the next run
+#     write_date(filename_prevsearch, end_date)

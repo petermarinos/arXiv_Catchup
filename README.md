@@ -6,6 +6,8 @@ Here is the solution!
 This script searches the arXiv (within the categories of interest) for all papers since the previous execution.
 It then performs some basic keyword matching, and opens all papers with matches in the web browser.
 
+Thank you to arXiv for use of its open access interoperability.
+
 ## Usage
 
 ### Running
@@ -19,7 +21,8 @@ The search can then be performed in the CLI from anywhere by running:
 `$ arxiv`
 
 There are additional arguments that can be used:
-- `-f`, `--force-open` skips the confirmation dialogue and opens all links
+- `-f`, `--force-open` skips all confirmation dialogues and opens all links
+- `-w`, `--write-to-file` skips all confirmation dialogues and writes all links to a file
 - `-n`, `--new-window` opens all links in a new window (does not work on mac)
 - `-s`, `--start-date` manually sets the start date for the search
 - `-e`, `--end-date` manually sets the end date for the search
@@ -31,8 +34,8 @@ If the links aren't being opened in the web browser then the script will prompt 
 The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
 Examples of the format required for each can be found in the provided file.
-- `Categories` defines which arXiv categories are searched over. At least one must be included.
-- `Authors` defines which authors to highlight. Every paper with a match will be opened, and a line will be written in the command line with the url.
+- `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found at https://arxiv.org/category_taxonomy
+- `Authors` defines which authors to highlight. Every paper with a match will be opened, and a line will be written in the command line with the url. Do not include accented characters/ligatures/etc, these are handled by the script. For example, only include 'Lopez' -- variations such as 'López' are handled automatically.
 - `Included Words` defines which words include papers in the results. Every match will be included, unless a word from the exclusion list is also found. At least one must be included.
 - `Excluded Words` defines which words exclude papers from the results. Every match blocks a paper from being included, unless one of the authors of interest is found.
 
