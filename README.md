@@ -21,6 +21,8 @@ The search can then be performed in the CLI from anywhere by running:
 There are additional arguments that can be used:
 - `-f`, `--force-open` skips the confirmation dialogue and opens all links
 - `-n`, `--new-window` opens all links in a new window (does not work on mac)
+- `-s`, `--start-date` manually sets the start date for the search
+- `-e`, `--end-date` manually sets the end date for the search
 
 If the links aren't being opened in the web browser then the script will prompt the user asking to output the links to the terminal or a file.
 
@@ -47,13 +49,15 @@ This date can be set manually to search back as far as desired.
 
 There are no daily listings posted over the weekend or on some USA public holidays.
 
-Weekends are handled by the script, which will not bother searching if run on a weekend.
+Weekends are handled by the script, which will give an error if being executed before the next listing is posted.
 The papers posted on the weekend will be caught when run on Monday.
 
-The USA public holidays are typically ad-hoc, so there is no way to account for them.
-It is currently untested, but I expect the search would just return zero results, and said papers would be caught in the following search.
-I may need to add a check to not update `catchup.txt` if there are zero found listings.
-The next "deferred mailing" where this can be tested will be on Friday 2026/06/19.
+There are also "deferred mailing" days.
+These days are chosen ad-hoc, and are days that are important to USAians.
+It includes Christmas, their Thanksgiving, and others
+Technically, this script is not tied to the daily listings, and uses a large offset in the search times.
+Hence, no papers *should* be missed from the deferred mailing days (not tested).
+The next deferred mailing where this can be tested will be on Friday 2026/06/19.
 
 ## Future Improvements
 

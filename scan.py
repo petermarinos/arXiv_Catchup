@@ -277,14 +277,28 @@ def calc_next_posttime(now, post_time):
 
     return next_post_time
 
+def parse_date(date_str, name, search_time):
+    try:
+        raw_datetime = datetime.datetime.combine(datetime.datetime.strptime(date_str, "%Y-%m-%d"), search_time)
+        parsed_date = raw_datetime.date()
+        parsed_time = raw_datetime.timetz()
+        return parsed_time, parsed_date
+    except ValueError:
+        raise ValueError(f"{name} must be in YYYY-MM-DD format")
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(prog='arXiv Catchup',
                                  description='Search arXiv for papers matching your criteria')
+
 parser.add_argument('-n', '--new-window', action='store_true',
                     help='Open all papers in a single new browser window as tabs') # Doesn't work on mac with firefox
 parser.add_argument('-f', '--force-open', action='store_true',
-                    help='Skip the warning about how many papers will be opened') # Not yet implemented
+                    help='Skip the warning about how many papers will be opened')
+parser.add_argument('-s', '--start-date', type=str,
+                    help='Start time for the search, YYYY-MM-DD (19:00 UTC)\nIgnores the aux. file')
+parser.add_argument('-e', '--end-date', type=str,
+                    help='End time for the search, YYYY-MM-DD (19:00 UTC)')
+
 args = parser.parse_args()
 
 # Find the directory of the script
@@ -347,28 +361,36 @@ search_time    = datetime.time(19, 0, tzinfo=timezone.utc) # 19:00 UTC
 # Obtain the current time, converted to the UTC timezone
 current_time = datetime.datetime.now(timezone.utc)
 
+# If start/end dates were passed on the command line, use them. Otherwise, set to None
+start_time, start_date = parse_date(args.start_date, "start-date", search_time) if args.start_date else [None, None]
+end_time,   end_date   = parse_date(args.end_date,   "end-date", search_time)   if args.end_date   else [None, None]
+
 # Compute the time at the end of the search
-end_time = calc_search_endtime(current_time, list_post_time, search_time)
-end_date = end_time.date()
+# Only perform if the end_date was not passed in the command line
+if end_date is None:
+    end_time = calc_search_endtime(current_time, list_post_time, search_time)
+    end_date = end_time.date()
 
 # The date of the previous execution is saved in a file
 # If the file does not exist, create it and set the date to the listing before the last posting
-if not os.path.exists(catchup):
+# Only perform if the start_date was not passed in the command line
+if start_date is None:
+    if not os.path.exists(catchup):
 
-    # Compute the list time before the previous
-    # This can be done by passing the end_time found above into the calc_search_endtime() function
-    prev_end_time  = calc_search_endtime(end_time, list_post_time, search_time)
-    
-    write_date(catchup, prev_end_time)
+        # Compute the list time before the previous
+        # This can be done by passing the end_time found above into the calc_search_endtime() function
+        prev_end_time  = calc_search_endtime(end_time, list_post_time, search_time)
+        
+        write_date(catchup, prev_end_time)
 
-# Load it and extract the previous runtime
-with open(catchup, "r", encoding="utf-8") as f:
+    # Load it and extract the previous runtime
+    with open(catchup, "r", encoding="utf-8") as f:
 
-    start_text = [next(f).rstrip("\n") for _ in range(3)]
+        start_text = [next(f).rstrip("\n") for _ in range(3)]
 
-# Convert the plain text to a datetime object
-start_time = datetime.datetime(year=int(start_text[0]), month=int(start_text[1]), day=int(start_text[2]), hour=19, tzinfo=timezone.utc)
-start_date = start_time.date()
+    # Convert the plain text to a datetime object
+    start_time = datetime.datetime(year=int(start_text[0]), month=int(start_text[1]), day=int(start_text[2]), hour=19, tzinfo=timezone.utc)
+    start_date = start_time.date()
 
 # Compute how long the search is covering
 prev_run = end_date - start_date
@@ -584,7 +606,6 @@ for entry_count in range(0, len(df)):
     elif df["KeyWord Match"][entry_count]==True and df["ExcWord Match"][entry_count]==False:
         entries_of_note.append(entry_count)
 
-
 progress_bar(len(df), len(df))
 print(author_str)
 # print("")
@@ -645,6 +666,15 @@ print("\nThere were a total of {: >{fill}} papers submitted to the astro-ph list
 print("            of these, {: >{fill}} papers were in the categories of interest".format(max_num, fill=max_digits))
 print("            of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
 
-# print("currently not updating the start date for the search")
-# Write the current date to a file so for the next run
-write_date(catchup, end_date)
+# print("TESTING so not updating the start date for the search")
+
+# Check if any papers were found
+if len(df) == 0:
+
+    print("As no papers were found, the aux. date file was not updated")
+
+# If papers were found, update the aux. file
+else:
+
+    # Write the end date of the search to a file for the next run
+    write_date(catchup, end_date)
