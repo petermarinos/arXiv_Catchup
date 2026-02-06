@@ -242,7 +242,7 @@ def calc_search_endtime(now, post_time, search_time):
 
 
     # If now is after post_time, search_time will be 19:00 the previous day
-    if now.hour > post_time.hour:
+    if now.timetz() > post_time:
         temp_date = now - timedelta(days=1)
         while not is_posting_day_bool(temp_date):
             temp_date -= timedelta(days=1)
@@ -262,7 +262,7 @@ def calc_next_posttime(now, post_time):
     """
 
     # If now is after post_time, the next post_time will be 06:00 the following day
-    if now.hour > post_time.hour:
+    if now.timetz() > post_time:
         temp_date = now + timedelta(days=1)
         while not is_posting_day_bool(temp_date):
             temp_date += timedelta(days=1)
@@ -380,7 +380,11 @@ if prev_run.days == 0:
     nextlist_time   = calc_next_posttime(current_time, list_post_time)
     time_until_next = nextlist_time - current_time
 
-    raise ValueError("Search start/end dates are equal.\n            The next list will be posted in {:} days, {:} hours, and {:} minutes.".format(time_until_next.days, time_until_next.seconds//3600, time_until_next.seconds//60))
+    t_days    = time_until_next.days
+    t_hours   = time_until_next.seconds//3600
+    t_minutes = (time_until_next.seconds//60) - t_hours * 60
+
+    raise ValueError("Search start/end dates are equal.\n            The next list will be posted in {:} days, {:} hours, and {:} minutes.".format(t_days, t_hours, t_minutes))
 
 # If the end date is before the start date, raise an error
 elif prev_run.days < 0:
