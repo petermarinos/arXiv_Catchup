@@ -13,6 +13,7 @@ import webbrowser
 import argparse
 import urllib
 import time
+import sys
 import os
 import re
 
@@ -21,6 +22,10 @@ This script will search for all papers on the arXiv since the previous execution
 
 Usage: run the script
 """
+
+# Note: The 'remaining time" shown in the progress bars are based entirely on the sleep timers, and not how long things actually take.
+# This simplification is accurate if the number of papers is ~<100
+# If there are more papers then random slowdowns when connecting to the arXiv servers will make any remaining time estimate incorrect.
 
 def load_list(filename, empty_error=True):
     """
@@ -147,10 +152,16 @@ def download_search(url):
 
 def open_links(df, entries_of_note_unique, sleep_time):
 
+    # Calculate the number of links
+    total = len(entries_of_note_unique)
+
     # Loop through the list and open all in the web browser
     request_count = 0
-    print("Opening the papers.   Estimated time: {:.2f} seconds".format(len(entries_of_note_unique)/4))
+    time_start = time.time()
+    print("Opening the papers. Estimated time: {:.2f} seconds".format(total/4))
     for link_index in entries_of_note_unique:
+
+        progress_bar(request_count, total, ( total - request_count ) / 4)
 
         # # arXiv asks that you limit opening pages to four requests per second
         # Sleep before the request to prevent an unnecessary sleep at the end
@@ -182,6 +193,37 @@ def open_links(df, entries_of_note_unique, sleep_time):
             webbrowser.open(link)  # Default behavior, just opens everything in the current window
 
         request_count += 1
+
+    progress_bar(total, total)
+    print("")
+
+    return
+
+def progress_bar(ii, total, time_estimate=None):
+    """Print a progress bar that updates
+    """
+
+    percent_progress = 100 * ii / total
+
+    width = 50 # Width of the progress bar in characters
+    bar_string = "■" * int( np.floor( percent_progress * width/100 ) ) + "□" * int( width - np.floor( percent_progress * width/100 ) )
+
+    if time_estimate is not None:
+        if time_estimate <= 60:
+            progress_message = "|{:s}|  {: >3}%  Remaining: {:.2f} seconds".format( bar_string, int(np.ceil(percent_progress)), time_estimate )
+        elif 60 < time_estimate <= 3600:
+            progress_message = "|{:s}|  {: >3}%  Remaining: {:.1f} minutes".format( bar_string, int(np.ceil(percent_progress)), time_estimate/60 )
+        else:
+            progress_message = "|{:s}|  {: >3}%  Remaining: {:.1f} hours".format( bar_string, int(np.ceil(percent_progress)), time_estimate/3600 )
+    else:
+        progress_message = "|{:s}|  {: >3}%".format( bar_string, int(np.ceil(percent_progress)) )
+
+    # Compute the padding to overwrite all text with whitespace
+    # Maximum length of the message is width+33+{extra digits before the decimal on the remaining time}
+    pad = " " * ( width + 33 + 3 - len(progress_message))
+
+    sys.stdout.write("\r" + progress_message + pad) # Move cursor to the start of the line and print the progress message
+    sys.stdout.flush()
 
     return
 
@@ -235,7 +277,10 @@ current_time = datetime.now(timezone.utc)
 # The list of papers is typically released before 06:00 UTC.
 # If executing before 06:00 UTC, set the date to one day prior
 if current_time.hour < 6:
-    current_time = current_time - timedelta(days=1)
+    yesterday    = current_time - timedelta(days=1)
+    current_time = datetime(year=yesterday.year, month=yesterday.month, day=yesterday.day, hour=19, tzinfo=timezone.utc)
+else:
+    current_time = datetime(year=current_time.year, month=current_time.month, day=current_time.day, hour=19, tzinfo=timezone.utc)
 # The lists are published for the previous day, up to 19:00 UTC. Always go back one day in the search.
 dt = 1
 # No lists are published over the weekend. If it is Sunday, go back one extra day in the search, and two days for Monday.
@@ -263,7 +308,7 @@ with open(catchup, "r", encoding="utf-8") as f:
 
     text = [next(f).rstrip("\n") for _ in range(3)]
 
-start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=0, tzinfo=timezone.utc)
+start_date = datetime(year=int(text[0]), month=int(text[1]), day=int(text[2]), hour=19, tzinfo=timezone.utc)
 
 prev_run = end_date - start_date
 
@@ -277,7 +322,7 @@ elif prev_run.days < 0:
 else:
     print("Days since the previous search: {:}".format(prev_run.days))
 
-print("Searching the {:} categories with the lists posted from {:}/{:}/{:} to {:}/{:}/{:}".format(cat_printstring, start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
+print("Searching the {:} categories from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19:00 UTC".format(cat_printstring, start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
 
 # Define the search url
 url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"
@@ -287,7 +332,9 @@ sleep_search    = 3
 interval_search = 10
 sleep_opening   = 0.25
 
-print("Obtaining arXiv info. Estimated time: 6 seconds") # Always two 3-second sleeps
+print("Obtaining arXiv info. Estimated time: 3 seconds") # Always two 3-second sleeps
+
+# progress_bar(0, 2, 3)
 
 # Perform a search over all astro-ph categories to find how many papers were posted since the previous search
 formatted_url_allcat = url.format(start_year  = start_date.year,
@@ -318,17 +365,32 @@ formatted_url_initial = url.format(start_year  = start_date.year,
                                    cats        = cat_urlstring,
                                    start_num   = 0,
                                    end_num     = 1)
+
+progress_bar(1, 2, 3)
 # Second request. Sleep for 3s
 time.sleep(sleep_search)
 parsed_xml_data_initial = download_search(formatted_url_initial)
+
+progress_bar(2, 2)
+print("")
 
 # Extract the number of papers since the last time the script was executed
 max_num = int(parsed_xml_data_initial.find("opensearch:totalResults", ns).text)
 
 # Perform the searches in groups of size "interval"
 entries = []
-print("Searching for papers. Estimated time: {:d} seconds".format(sleep_search*max_num//interval_search + (sleep_search if max_num%interval_search > 0 else 0)))
+print("Searching for papers. Estimated time: {:d} seconds".format(-sleep_search*(max_num//-interval_search)))
 for ii in range(0, max_num, interval_search):
+
+    # Compute the progress of the loop
+    if ii+interval_search > max_num:
+        remaining_steps = 1
+    else:
+        # remaining_steps = ( max_num - ii + 1 ) // interval_search
+        remaining_steps = -((max_num-ii)//-interval_search)
+
+    # Print the progress bar
+    progress_bar(ii, max_num, remaining_steps * sleep_search)
 
     # Search over the current interval
     formatted_url = url.format(start_year  = start_date.year,
@@ -372,6 +434,9 @@ for ii in range(0, max_num, interval_search):
 
         entries.append(paper)
 
+progress_bar(max_num, max_num)
+print("")
+
 # Place into a dataframe
 df = pd.DataFrame(entries)
 
@@ -385,7 +450,11 @@ df.reset_index(drop=True, inplace=True)
 # Loop over all entries
 author_match_count = 0
 entries_of_note = []
+author_str = ""
+print("Finding papers of interest.")
 for entry_count in range(0, len(df)):
+
+    progress_bar(entry_count, len(df)) # No time estimate as it should always be fast. ~1200 papers take less than a second on a 2023 macbook
     
     # Search all author lists for the people I care about
     for key_author in key_authors:
@@ -400,10 +469,12 @@ for entry_count in range(0, len(df)):
 
             # If one author is found, output an extra line to the terminal
             if author_match_count == 0:
-                print("    Found Author(s)")
+                # print("    Found Author(s)")
+                author_str += "\n    Found Author(s)"
                 author_match_count = 1
                 
-            print("    {: >{fill}}:  ".format(key_author, fill=fill), df["url"][entry_count])
+            # print("    {: >{fill}}:  ".format(key_author, fill=fill), df["url"][entry_count])
+            author_str += "\n    {: >{fill}}:  {url:}".format(key_author, fill=fill, url=df["url"][entry_count])
     
     # Search all titles and abstracts for words that I care about
     for key_word in key_words:
@@ -439,6 +510,11 @@ for entry_count in range(0, len(df)):
     elif df["KeyWord Match"][entry_count]==True and df["ExcWord Match"][entry_count]==False:
         entries_of_note.append(entry_count)
 
+
+progress_bar(len(df), len(df))
+print(author_str)
+# print("")
+
 # Only keep unique entries (should only matter if there are revised versions)
 entries_of_note_unique = np.unique(entries_of_note)
 
@@ -452,7 +528,7 @@ else:
 
     # Ask the user if they would like to open the links in the browser
     user_prompt_browser = input(
-                               "There are {:} links. Open in the browser? [y/N]: ".format(len(entries_of_note_unique))
+                               "There are {:} links. Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note_unique), len(entries_of_note_unique)/4)
                                ).strip().lower()
 
     # If they say no to opening in the browser
@@ -460,7 +536,7 @@ else:
 
         # Ask if they would like to save the links to a file or print to the terminal
         user_prompt_output = input(
-                                  "Save all links to a file? Otherwise they will be written to the terminal [y/N]: "
+                                  "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
                                   ).strip().lower()
         
         # If they want the output in the terminal

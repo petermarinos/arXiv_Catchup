@@ -22,7 +22,7 @@ There are additional arguments that can be used:
 - `-f`, `--force-open` skips the confirmation dialogue and opens all links
 - `-n`, `--new-window` opens all links in a new window (does not work on mac)
 
-If the links aren't being opened in the web browser then the script will prompt the user asking to output the links to the terminal or an output file.
+If the links aren't being opened in the web browser then the script will prompt the user asking to output the links to the terminal or a file.
 
 ### Auxilliary Files
 
@@ -31,7 +31,7 @@ There are three files that contain certain terms that will be searched for.
 `key_authors.txt` contains the last names of all authors. Every paper with a match will be opened, and a line will be written in the command line with the url.
 
 `key_words.txt` contains various words. Every paper with a match will be opened, unless a word from the exclusion list is found.
-*There must be at least one word in this file to run the script.*
+*There must be at least one entry in this file to run the script.*
 
 `exclusion_words.txt` contains various words. Every paper with a match will *not* be opened, unless a key author is also found for said paper.
 
