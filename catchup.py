@@ -1,7 +1,8 @@
 # Load packages
-from datetime import timedelta
-from datetime import timezone
-from datetime import datetime
+from pylatexenc.latex2text import LatexNodes2Text
+from datetime              import timedelta
+from datetime              import timezone
+from datetime              import datetime
 
 import xml.etree.ElementTree as ET
 import pandas                as pd
@@ -64,75 +65,40 @@ def load_searchterms(filename):
     return search_terms
 
 def LaTeX_to_unicode(s):
-    """Stip LaTeX-style accents from the string (e.g. {\'a} -> a, and \'a -> a)
-
-    This function only covers common accents.
-    To account for all accents and ligatures/special characters, it is best to install an additional package.
-    However, that would only be required if one of the Authors has a special character/accent.
-    As I do not currently have any authors I care about with special characters, and only common accents, I leave this task for later.
+    """Stip LaTeX-style accents, special characters, and ligatures from the string and convert to unicode (e.g. {\'o} and \'o -> ó
+    This function covers all commands built into LaTeX.
     """
 
     if s is None:
         return ""
-    
-    # Dictionary of the LaTeX accents
-    # Same ordering as on the wikipedia page
-    LATEX_ACCENTS = {
-                    "`": "\u0300",   # grave,                              e.g. ò
-                    "'": "\u0301",   # acute,                              e.g. ó
-                    "^": "\u0302",   # circumflex,                         e.g. ô
-                    '"': "\u0308",   # umlaut, trema, or dieresis,         e.g. ö
-                    # "H": "\u030B",   # long Hungarian umlaut/double acute, e.g. ő # Causes issues with names that have the letter H
-                    "~": "\u0303",   # tilde,                              e.g. õ
-                    # "c": "\u0327",   # cedilla,                            e.g. ç # Causes issues with names that have the letter c
-                    # "k": "\u0328",   # ogonek,                             e.g. ą # Causes issues with names that have the letter k
-                                     # barred l,                           e.g. ł
-                    "=": "\u0304",   # macron,                             e.g. ō
-                                     # under-bar,                          e.g. o
-                    # ".": "\u0307",   # dot,                                e.g. ȯ # Causes issues with names that have initials
-                                     # under-dot,                          e.g. ụ
-                    # "r": "\u030A",   # ring,                               e.g. å # Causes issues with names that have the letter r
-                                     # ringed a (special case),            e.g. å
-                    # "u": "\u0306",   # breve,                              e.g. ŏ # Causes issues with names that have the letter u
-                    # "v": "\u030C",   # caron,                              e.g. š # Causes issues with names that have the letter v
-                                     # tie,                                e.g. o͡o
-                                     # slashed o,                          e.g. ø
-                                     # dotless i,                          e.g. ı
-                    }
 
-    # {\'a} style
-    for latex, combining in LATEX_ACCENTS.items():
-        s = re.sub(
-                  rf"\{{{latex}([A-Za-z])\}}",
-                  lambda m: m.group(1) + combining,
-                  s,
-                  )
+    # Convert LaTeX accents/ligatures/special characters to unicode
+    s_unicode = LatexNodes2Text().latex_to_text(s)
 
-    # \'a style
-    for latex, combining in LATEX_ACCENTS.items():
-        s = re.sub(
-                  rf"{latex}([A-Za-z])",
-                  lambda m: m.group(1) + combining,
-                  s,
-                  )
-
-    return s
+    return s_unicode
 
 def normalise_string(s):
     """Normalise a string, i.e. remove accents (e.g. ó -> o)
-    Also accounts for LaTeX accents
+    Also accounts for LaTeX accents, ligatures, and special characters
     """
 
-    # Define the form
-    form = "NFKD" # "compatibility deecomposition"
-
+    # If s is None then return an empty string
     if s is None:
         return ""
     
-    s_stripped   = LaTeX_to_unicode(s)
-    s_normalised = unicodedata.normalize(form, s_stripped)
+    # Define the form for the normalisation
+    form = "NFKD" # "compatibility deecomposition"
     
-    return s_normalised.encode("ascii", "ignore").decode("ascii")
+    # Convert any latex commands to unicode
+    s_unicode = LaTeX_to_unicode(s)
+
+    # Normalise the string
+    s_normalised = unicodedata.normalize(form, s_unicode)
+
+    # Convert the string to ASCII
+    s_ascii = s_normalised.encode("ascii", "ignore").decode("ascii")
+    
+    return s_ascii
 
 def write_date(filename, date):
 
@@ -479,12 +445,17 @@ print("")
 # Extract the number of papers since the last time the script was executed
 max_num = int(parsed_xml_data_initial.find("opensearch:totalResults", ns).text)
 
-# Compute the number of digits. Assumes that the number of papers is positive :)
-max_digits = len(str(max_num))
-
-# The arXiv API will likely return an error in the first search
+# If there are too many papers then there can be issues with the arXiv API.
+# While the API will likely return an error, catch it here as well just in case
 if max_num >= 30000:
     raise ValueError("Number of papers is too large. Refine search dates and/or categories.")
+
+# If no papers were found in the search, raise an error
+if max_num == 0:
+    raise ValueError("There were no papers submitted to the arXiv. Refine search dates and/or categories.")
+
+# Compute the number of digits. Assumes that the number of papers is positive :)
+max_digits = len(str(max_num))
 
 # Perform the searches in groups of size "interval"
 entries = []
@@ -650,7 +621,7 @@ if len(entries_of_note_unique) > 0:
     # Else, if neither -f nor -w were passed, prompt the user to ask for the behaviour they prefer
     else:
 
-        # Ask the user if they would like to open the links in the browser
+        # Ask the user if they would like to open the links in the browser. Default is no
         user_prompt_browser = input(
                                 "There are {:} links. Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note_unique), len(entries_of_note_unique)/4)
                                 ).strip().lower()
@@ -658,7 +629,7 @@ if len(entries_of_note_unique) > 0:
         # If they say no to opening in the browser
         if user_prompt_browser != "y":
 
-            # Ask if they would like to save the links to a file or print to the terminal
+            # Ask if they would like to save the links to a file or print to the terminal. Default is no
             user_prompt_output = input(
                                     "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
                                     ).strip().lower()

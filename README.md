@@ -35,7 +35,7 @@ The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
 Examples of the format required for each can be found in the provided file.
 - `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found at https://arxiv.org/category_taxonomy
-- `Authors` defines which authors to highlight. Every paper with a match will be opened, and a line will be written in the command line with the url. Do not include accented characters/ligatures/etc, these are handled by the script. For example, only include 'Lopez' -- variations such as 'López' are handled automatically.
+- `Authors` defines which authors to highlight. Every paper with a match will be opened, and a line will be written in the command line with the url. Do not include accented characters/ligatures/etc, these are handled by the script. For example, only include 'Lopez' -- variations such as 'López' and L{\'o}pez are handled automatically. If unsure on how a special character/LaTeX command is presented in ASCII, test on the function `normalise_string()`. For submissions to journals that are more restrictive on special characters, some authors may use a spelling different to the ASCII encoding -- for those cases it is recommended to also include the alternative spellings.
 - `Included Words` defines which words include papers in the results. Every match will be included, unless a word from the exclusion list is also found. At least one must be included.
 - `Excluded Words` defines which words exclude papers from the results. Every match blocks a paper from being included, unless one of the authors of interest is found.
 
