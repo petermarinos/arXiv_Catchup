@@ -199,7 +199,27 @@ def is_posting_day_bool(dt):
 
     # dt.weekday() = 0 for Monday, ..., 4 for Friday, 5 for Saturday, and 6 for Sunday
 
+    # Lists are posted for 0 <= dt.weekday() <= 4
+
     return dt.weekday() <= 4
+
+def is_searching_day_bool(dt):
+
+    # dt.weekday() = 0 for Monday, ..., 4 for Friday, 5 for Saturday, and 6 for Sunday
+
+    # Searching days are 0 <= dt.weekday() <=3 and dt.weekday() == 6
+
+    if dt.weekday() == 6:
+
+        return True
+    
+    elif 0 <= dt.weekday() <= 3:
+
+        return True
+    
+    else:
+
+        return False
 
 def calc_search_endtime(now, post_time, search_time):
     """Return the datetime of the most recent arXiv daily list posting relative to the input time `now`.
@@ -208,14 +228,14 @@ def calc_search_endtime(now, post_time, search_time):
     # If now is after post_time, search_time will be 19:00 the previous day
     if now.timetz() > post_time:
         temp_date = now - timedelta(days=1)
-        while not is_posting_day_bool(temp_date):
-            temp_date -= timedelta(days=1)
 
     # Else, if now is before post_time, search_time will be 19:00 the day before previous
     else:
         temp_date = now - timedelta(days=2)
-        while not is_posting_day_bool(temp_date):
-            temp_date -= timedelta(days=1)
+
+    while not is_searching_day_bool(temp_date):
+
+        temp_date -= timedelta(days=1)
 
     search_endtime = datetime.datetime.combine(temp_date.date(), search_time)
 
@@ -227,15 +247,16 @@ def calc_next_posttime(now, post_time):
 
     # If now is after post_time, the next post_time will be 06:00 the following day
     if now.timetz() > post_time:
+
         temp_date = now + timedelta(days=1)
-        while not is_posting_day_bool(temp_date):
-            temp_date += timedelta(days=1)
 
     # Else, if now is before post_time, the next post_time will be 06:00 the next post_day
     else:
         temp_date = now
-        while not is_posting_day_bool(temp_date):
-            temp_date += timedelta(days=1)
+
+    while not is_posting_day_bool(temp_date):
+
+        temp_date += timedelta(days=1)
 
     next_post_time = datetime.datetime.combine(temp_date.date(), post_time)
 
@@ -362,23 +383,41 @@ if start_date is None:
 # Compute how long the search is covering
 prev_run = end_date - start_date
 
-# If the end date equal to the start date, raise an error and tell the user to wait
-if prev_run.days == 0:
+# Compute the time that the next list will be posted
+nextlist_time   = calc_next_posttime(current_time, list_post_time)
+time_until_next = nextlist_time - current_time
 
-    # Compute the time that the next list will be posted
-    nextlist_time   = calc_next_posttime(current_time, list_post_time)
-    time_until_next = nextlist_time - current_time
+t_days    = time_until_next.days
+t_hours   = time_until_next.seconds//3600
+t_minutes = (time_until_next.seconds//60) - t_hours * 60
 
-    t_days    = time_until_next.days
-    t_hours   = time_until_next.seconds//3600
-    t_minutes = (time_until_next.seconds//60) - t_hours * 60
+next_post_string = "\n            The next list will be posted at {:}\n            ({:} days, {:} hours, and {:} minutes from now).".format(nextlist_time, t_days, t_hours, t_minutes)
 
-    raise ValueError("Search start/end dates are equal.\n            The next list will be posted in {:} days, {:} hours, and {:} minutes.".format(t_days, t_hours, t_minutes))
+# Compute number of days between now and the start of the search
+deltadays_now_to_search = ( current_time.date() - start_date ).days
 
-# If the end date is before the start date, raise an error
+# Raise some errors
+# If the search start date is in the future:
+if deltadays_now_to_search < 0:
+    raise ValueError("Search start date is in the future.")
+
+# If the search end date is in the future:
+elif ( current_time.date() - end_date ).days < 0:
+    raise ValueError("Search end date is in the future.")
+
+# If the end date is equal to the start date, tell the user to wait
+elif prev_run.days == 0:
+    raise ValueError("Search start/end dates are equal."+next_post_string)
+
+# If the end date is before the start date
 elif prev_run.days < 0:
-
     raise ValueError(f"Search start date is after the end date. Check for timezone issues.")
+
+# If the search period doesn't cover any searching days, tell the user to wait
+# This statement is a mess. It should only be activated if start/end dates are input incorrectly, and doesn't capture all potential issues
+# It would be better to check for issues when parsing the start/end from the command line and the start_date from the file, and by ensuring the end_date can never be wrong when writing to the file
+elif deltadays_now_to_search < 7 and ( ( not is_searching_day_bool(start_date) or not is_searching_day_bool(end_date) ) and prev_run.days < 3):
+    raise ValueError("No valid search dates are included."+next_post_string)
 
 # If there are no issues, let the user know how many days we are searching over
 else:
@@ -665,6 +704,8 @@ print("\nThere was a total of {: >{fill}} papers submitted to the categories of 
 print("             of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note_unique), fill=max_digits))
 
 # print("TESTING so not updating the start date for the search")
+# df = []
+# df=[1, 1]
 
 # Check if any papers were found
 if len(df) == 0:
