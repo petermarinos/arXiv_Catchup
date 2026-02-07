@@ -263,12 +263,24 @@ def calc_next_posttime(now, post_time):
     return next_post_time
 
 def parse_date(date_str, name, search_time):
+
     try:
+
         raw_datetime = datetime.datetime.combine(datetime.datetime.strptime(date_str, "%Y-%m-%d"), search_time)
-        parsed_date = raw_datetime.date()
-        parsed_time = raw_datetime.timetz()
+        parsed_date  = raw_datetime.date()
+        parsed_time  = raw_datetime.timetz()
+
+        # If the date is not a valid search date, warn the user and roll the day back to the previous valid day
+        if not is_searching_day_bool(parsed_date):
+
+            print("WARNING: {:} is not a valid search date. Rolling back to the previous valid day".format(name))
+
+            parsed_date = calc_search_endtime(raw_datetime, search_time, list_post_time).date()
+
         return parsed_time, parsed_date
+    
     except ValueError:
+
         raise ValueError(f"{name} must be in YYYY-MM-DD format")
 
 def write_links(filename, df, entries):
@@ -396,6 +408,13 @@ next_post_string = "\n            The next list will be posted at {:}\n         
 # Compute number of days between now and the start of the search
 deltadays_now_to_search = ( current_time.date() - start_date ).days
 
+# Count the number of valid search days between start_date and end_date
+valid_search_days = 0
+temp_date = end_date
+while temp_date > start_date:
+    valid_search_days += 1
+    temp_date -= timedelta(days=1)
+
 # Raise some errors
 # If the search start date is in the future:
 if deltadays_now_to_search < 0:
@@ -414,14 +433,12 @@ elif prev_run.days < 0:
     raise ValueError(f"Search start date is after the end date. Check for timezone issues.")
 
 # If the search period doesn't cover any searching days, tell the user to wait
-# This statement is a mess. It should only be activated if start/end dates are input incorrectly, and doesn't capture all potential issues
-# It would be better to check for issues when parsing the start/end from the command line and the start_date from the file, and by ensuring the end_date can never be wrong when writing to the file
-elif deltadays_now_to_search < 7 and ( ( not is_searching_day_bool(start_date) or not is_searching_day_bool(end_date) ) and prev_run.days < 3):
+# Typically one of the previous errors will occur before this one if the entire search period is invalid
+elif deltadays_now_to_search < 7 and valid_search_days == 0:
     raise ValueError("No valid search dates are included."+next_post_string)
 
 # If there are no issues, let the user know how many days we are searching over
 else:
-
     print("Days since the previous search: {:}".format(prev_run.days))
 
 print("Searching the {:} categories from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19:00 UTC".format(cat_printstring, start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
