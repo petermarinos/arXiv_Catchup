@@ -1,13 +1,13 @@
 unicodedata
-pylatexenc
+pylatexenc==2.10
 webbrowser
 argparse
 datetime
-pandas
+pandas==2.2.3
 urllib
-numpy
+numpy==2.2.4
 time
-yaml
+yaml==6.0.2
 sys
 xml
 os

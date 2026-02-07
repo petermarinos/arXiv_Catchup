@@ -44,13 +44,12 @@ Multi-word terms can be used, as can author names with spaces.
 If adding acronyms, include their pluralised forms (e.g. SN and SNe or CR and CRs).
 If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree search_terms.yaml` to prevent your personal search terms updating to the main branch.
 
-
 The script creates the file `prev_search.txt`, which contains the date of the previous run in ISO format.
 This file is ignored if manually setting the start-date of the search on the CLI.
 
 All links are written to a file `catchup.txt` (if choosing to write to the file). Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
 
-### Other Notes
+### Daily Mailings
 
 There are no daily listings posted over the weekend or on some USA public holidays.
 
@@ -63,6 +62,11 @@ It includes Christmas, their Thanksgiving, and others
 Technically, this script is not tied to the daily listings, and uses a large offset in the search times.
 Hence, no papers *should* be missed from the deferred mailing days (not tested).
 The next deferred mailing where this can be tested will be on Friday 2026/06/19.
+
+### Requirements
+
+Only four packages are not part of the default python3 standard library, `pylatexenc`, `numpy`, `pandas`, and `yaml`.
+As only the core functionalities are used for these packages, it is unlikely that this script depends on any specific version(s).
 
 ## Future Improvements
 
