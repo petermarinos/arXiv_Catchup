@@ -403,7 +403,10 @@ t_days    = time_until_next.days
 t_hours   = time_until_next.seconds//3600
 t_minutes = (time_until_next.seconds//60) - t_hours * 60
 
-next_post_string = "\n            The next list will be posted at {:}\n            ({:} days, {:} hours, and {:} minutes from now).".format(nextlist_time, t_days, t_hours, t_minutes)
+next_post_string = ( "\n            "
+                   + "The next list will be posted at {:%Y-%m-%d %H:%M (%Z)},".format(nextlist_time)
+                   + "\n            "
+                   + "which is {:} days, {:} hours, and {:} minutes from now.".format(t_days, t_hours, t_minutes) )
 
 # Compute number of days between now and the start of the search
 deltadays_now_to_search = ( current_time.date() - start_date ).days
