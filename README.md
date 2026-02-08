@@ -10,6 +10,11 @@ Thank you to arXiv for use of its open access interoperability.
 
 ## Usage
 
+### Requirements
+
+Four of the required packages are not part of the default python3 standard library: `pylatexenc`, `numpy`, `pandas`, and `yaml`.
+Use the included `requirements.txt` file with pip to create an environment.
+
 ### Running
 
 The script can be executed from any directory by running:
@@ -86,11 +91,6 @@ It includes Christmas, their Thanksgiving, and others
 Technically, this script is not tied to the daily listings, and uses a large offset in the search times.
 Hence, no papers *should* be missed from the deferred mailing days (not tested).
 The next deferred mailing where this can be tested will be on Friday 2026/06/19.
-
-### Requirements
-
-Four of the required packages are not part of the default python3 standard library: `pylatexenc`, `numpy`, `pandas`, and `yaml`.
-Use the included `requirements.txt` file with pip to create an environment.
 
 ## Future Improvements
 
