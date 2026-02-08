@@ -1,4 +1,4 @@
-# Readme
+# README
 
 Tired of reading all the Titles/Abstracts/Author Lists of every paper posted on the arXiv every single day?
 Here is the solution!
@@ -12,13 +12,19 @@ Thank you to arXiv for use of its open access interoperability.
 
 ### Running
 
-Add the following to your bash script:
+The script can be executed from any directory by running:
+
+`python3 /path/to/arXiv_Catchup/catchup.py`
+
+For frequent execution, add the following to your bash script:
 
 `alias arxiv='python3 /path/to/arXiv_Catchup/catchup.py'`
 
-The search can then be performed in the CLI from anywhere by running:
+The search can then be performed in the CLI from any directory by running:
 
 `$ arxiv`
+
+### CLI Arguments
 
 There are additional arguments that can be used:
 - `-f`, `--force-open` skips all confirmation dialogues and opens all links
@@ -28,8 +34,9 @@ There are additional arguments that can be used:
 - `-e`, `--end-date` manually sets the end date for the search
 
 If both `-f` and `-w` are passed, then the scipt will do both. If neither are passed, then the script will prompt the user for their preference.
+These CLI arguments can be added to the bash alias.
 
-### Auxilliary Files
+### Auxiliary Files
 
 The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
@@ -66,7 +73,7 @@ The next deferred mailing where this can be tested will be on Friday 2026/06/19.
 ### Requirements
 
 Only four packages are not part of the default python3 standard library, `pylatexenc`, `numpy`, `pandas`, and `yaml`.
-As only the core functionalities are used for these packages, it is unlikely that this script depends on any specific version(s).
+Use the included `requirements.txt` file with pip to create an environment.
 
 ## Future Improvements
 
