@@ -1,14 +1,16 @@
-unicodedata
-pylatexenc==2.10
-webbrowser
-argparse
-datetime
-pandas==2.2.3
-urllib
+# Requirements
 numpy==2.2.4
-time
-yaml==6.0.2
-sys
-xml
-os
-re
+pandas==2.2.3
+pylatexenc==2.10
+PyYAML==6.0.2
+# # Other required packages that are included in the python standard library:
+# argparse
+# datetime
+# os
+# re
+# sys
+# time
+# unicodedata
+# urllib
+# webbrowser
+# xml
