@@ -1,9 +1,9 @@
-# Requirements
+# Requirements:
 numpy==2.2.4
 pandas==2.2.3
 pylatexenc==2.10
 PyYAML==6.0.2
-# # Other required packages that are included in the python standard library:
+# # Other required packages that are included in the python standard library and so do not need to be installed:
 # argparse
 # datetime
 # os
