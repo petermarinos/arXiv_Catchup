@@ -3,8 +3,8 @@
 Tired of reading all the Titles/Abstracts/Author Lists of every paper posted on the arXiv every single day?
 Here is the solution!
 
-This script searches the arXiv (within the categories of interest) for all papers since the previous execution.
-It then performs some basic keyword matching, and opens all papers with matches in the web browser.
+This script searches the [arXiv](https://arxiv.org/) (within the categories of interest) for all papers since the previous execution.
+It then performs some basic keyword matching, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
 
 Thank you to arXiv for use of its open access interoperability.
 
@@ -14,7 +14,7 @@ Thank you to arXiv for use of its open access interoperability.
 
 The script can be executed from any directory by running:
 
-`python3 /path/to/arXiv_Catchup/catchup.py`
+`$ python3 /path/to/arXiv_Catchup/catchup.py`
 
 For frequent execution, add the following to your bash script:
 
@@ -60,7 +60,7 @@ All links are written to a file `catchup.txt` (if choosing to write to the file)
 
 There are no daily listings posted over the weekend or on some USA public holidays.
 
-Weekends are handled by the script, which will give an error if being executed before the next listing is posted.
+Weekends are handled by the script, which will raise an error if being executed before the next listing is posted.
 The papers posted on the weekend will be caught when run on Monday.
 
 There are also "deferred mailing" days.
@@ -72,7 +72,7 @@ The next deferred mailing where this can be tested will be on Friday 2026/06/19.
 
 ### Requirements
 
-Only four packages are not part of the default python3 standard library, `pylatexenc`, `numpy`, `pandas`, and `yaml`.
+Four of the required packages are not part of the default python3 standard library: `pylatexenc`, `numpy`, `pandas`, and `yaml`.
 Use the included `requirements.txt` file with pip to create an environment.
 
 ## Future Improvements
@@ -82,7 +82,15 @@ However, it reduces the list of papers that need to be checked manually by a sig
 Additionally, using a list of key words where there needs to be one match can result in an interesting paper *not* being detected if the authors didn't include one.
 Finally, the number of papers that are genuinely interesting each week is very low, but the script still opens on the order of ~100 to be manually checked.
 
-This could be solved by adding a machine learning module.
-- Look in a directory containing `.pdf` files of all the papers you have found interesting in the past to train the model
+There are two potential solutions.
+
+Ranking system:
+- Rate each paper based on what matches were found, the number of matches, etc
+- Open papers above some threshold
+    - Would need to find appropriate values. Would likely depend on the number of terms in the included/excluded word lists
+- Print titles just below the threshold to the terminal for manual checking?
+
+Machine learning module:
+- Look in a directory containing `.pdf` files of all the papers the user has found interesting in the past, and use these to train a model
 - Run the model on the titles/abstracts of each paper and rate them
 - Only open the papers if their rating is above some threshold
