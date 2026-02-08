@@ -44,19 +44,27 @@ The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
 Examples of the format required for each can be found in the provided file.
 - `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found on the [arXiv Category Taxonomy](https://arxiv.org/category_taxonomy) page.
-- `Authors` defines which authors to highlight. Every paper with a match will be opened. Do not include accented characters/ligatures/etc. as these are handled by the script -- for example, including 'Lopez' will automatically include authors named 'López' and 'L{\'o}pez'.
+- `Authors` defines which authors to highlight. Every paper with a match will be opened. Do not include accents/special characters/etc..
 - `Included Words` defines which words include papers in the results. Every match will be included, unless a word from the exclusion list is also found. At least one must be included.
 - `Excluded Words` defines which words exclude papers from the results. Every match blocks a paper from being included, unless one of the authors of interest is found.
 
 Lines starting with `#` are ignored.
 Multi-word terms can be used, as can author names with spaces.
 If adding acronyms, include their pluralised forms (e.g. SN and SNe or CR and CRs).
+If including terms that are frequently displayed with a symbol, include all possibilities (e.g. gamma, ɣ, and γ). 
+
 If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree search_terms.yaml` to prevent your personal search terms updating to the main branch.
 
 ##### Notes on Author Names
 
-Accented/special characters and ligatures are handled by the script.
-If unsure on how a special character/LaTeX command is presented in ASCII, test by importing the function `normalise_string()` and passing the string with LaTeX commands. For submissions to journals that are more restrictive on special characters, some authors may use a spelling different to the ASCII encoding -- for those cases it is recommended to also include the alternative spellings.
+Accented/special characters and ligatures for author names are handled by the script.
+Only include plain ASCII in the `search_terms.yaml` file.
+
+For example, papers with 'López' or 'L{\'o}pez' written in the author field will have the author name normalised to 'Lopez' by the script, so only the latter should be included in the file.
+If unsure on how a special character/LaTeX command is presented in ASCII, test by importing the function `normalise_string()` and passing the author's name (with LaTeX commands).
+
+For submissions to journals that are more restrictive on special characters, some authors may use a spelling different to the ASCII encoding -- for example, an author may choose to write 'ö' (and 'o' with an umlaut) as 'oe'.
+For these cases it is recommended to include both the normalised ASCII and the alternative spellings in the `search_terms.yaml` file to capture all possibilities.
 
 #### Generated Files
 
