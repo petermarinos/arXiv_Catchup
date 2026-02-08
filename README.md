@@ -38,11 +38,13 @@ These CLI arguments can be added to the bash alias.
 
 ### Auxiliary Files
 
+#### Search Term File
+
 The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
 Examples of the format required for each can be found in the provided file.
-- `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found at https://arxiv.org/category_taxonomy
-- `Authors` defines which authors to highlight. Every paper with a match will be opened, and a line will be written in the command line with the url. Do not include accented characters/ligatures/etc, these are handled by the script. For example, only include 'Lopez' -- variations such as 'López' and L{\'o}pez are handled automatically. If unsure on how a special character/LaTeX command is presented in ASCII, test on the function `normalise_string()`. For submissions to journals that are more restrictive on special characters, some authors may use a spelling different to the ASCII encoding -- for those cases it is recommended to also include the alternative spellings.
+- `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found on the [arXiv Category Taxonomy](https://arxiv.org/category_taxonomy) page.
+- `Authors` defines which authors to highlight. Every paper with a match will be opened. Do not include accented characters/ligatures/etc. as these are handled by the script -- for example, including 'Lopez' will automatically include authors named 'López' and 'L{\'o}pez'.
 - `Included Words` defines which words include papers in the results. Every match will be included, unless a word from the exclusion list is also found. At least one must be included.
 - `Excluded Words` defines which words exclude papers from the results. Every match blocks a paper from being included, unless one of the authors of interest is found.
 
@@ -50,6 +52,13 @@ Lines starting with `#` are ignored.
 Multi-word terms can be used, as can author names with spaces.
 If adding acronyms, include their pluralised forms (e.g. SN and SNe or CR and CRs).
 If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree search_terms.yaml` to prevent your personal search terms updating to the main branch.
+
+##### Notes on Author Names
+
+Accented/special characters and ligatures are handled by the script.
+If unsure on how a special character/LaTeX command is presented in ASCII, test by importing the function `normalise_string()` and passing the string with LaTeX commands. For submissions to journals that are more restrictive on special characters, some authors may use a spelling different to the ASCII encoding -- for those cases it is recommended to also include the alternative spellings.
+
+#### Generated Files
 
 The script creates the file `prev_search.txt`, which contains the date of the previous run in ISO format.
 This file is ignored if manually setting the start-date of the search on the CLI.
