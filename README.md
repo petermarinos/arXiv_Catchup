@@ -65,10 +65,10 @@ If cloning the repo, please add this file to the ignored list via the command `$
 Accented/special characters and ligatures for author names are handled by the script.
 Only include plain ASCII in the `search_terms.yaml` file.
 
-For example, papers with 'López' or 'L{\'o}pez' written in the author field will have the author name normalised to 'Lopez' by the script, so only the latter should be included in the file.
-If unsure on how a special character/LaTeX command is presented in ASCII, test by importing the function `normalise_string()` and passing the author's name (with LaTeX commands).
+For example, papers with 'López' or 'L{\\'o}pez' written in the author field will have the author name normalised to 'Lopez' by the script, so only the latter should be included in the file.
+If unsure on how a special character/LaTeX command is presented in ASCII, test by importing the function `normalise_string()` and passing the author's name with the LaTeX encoding/commands.
 
-For submissions to journals that are more restrictive on special characters, some authors may use a spelling different to the ASCII encoding -- for example, an author may choose to write 'ö' (and 'o' with an umlaut) as 'oe'.
+For submissions to journals that are more restrictive on special characters, some authors may use a spelling that is different to the ASCII encoding -- for example, an author may choose to write 'ö' as 'oe'.
 For these cases it is recommended to include both the normalised ASCII and the alternative spellings in the `search_terms.yaml` file to capture all possibilities.
 
 #### Generated Files
