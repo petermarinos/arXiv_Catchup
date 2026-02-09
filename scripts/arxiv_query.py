@@ -24,21 +24,24 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize):
         
         raise ValueError("Number of papers is too large. Refine search dates and/or categories.")
     
-    # 200 papers will take one minute. Print a warning.
-    if 200 <= max_num < 2000:
+    # Compute the time it will take to download all papers
+    time_to_search_minutes = max_num*sleep_timer/(blocksize*60)
+    
+    # Print a warning if it is going to take a long time
+    if 1 <= time_to_search_minutes < 5:
 
-        print("WARNING: there are {:d} papers. The search will take {:.1f} minutes.".format(max_num, max_num*sleep_timer/(blocksize*60)))
+        print("WARNING: there are {:d} papers. The search will take {:.1f} minutes.".format(max_num, time_to_search_minutes))
 
-    # 2,000 papers will take ten minutes. Prompt the user.
-    elif max_num >= 2000:
+    # Prompt the user if it is going to take a really long time.
+    elif time_to_search_minutes >= 5:
 
-        user_prompt = input("WARNING: there are {:d} papers. The search will take {:.1f} minutes. Continue? [y/N]: ".format(max_num, max_num*sleep_timer/(blocksize*60))).strip().lower()
+        user_prompt = input("WARNING: there are {:d} papers. The search will take {:.1f} minutes. Continue? [y/N]: ".format(max_num,time_to_search_minutes)).strip().lower()
 
         # If they want to continue, do nothing.
         # If they do not want to continue, end the search
         if user_prompt != "y":
 
-            sys.exit("Cancelling the search.")
+            sys.exit("Cancelling the search. Reduce search window to decrease the number of results.")
 
     return
 
@@ -127,7 +130,7 @@ def extract_paper(ns, xml):
 
     return papers
 
-def arxiv_loop_pull(ns, url, start_date, end_date, cats, max_num, search_sleeptimer, search_blocksize):
+def arxiv_search(ns, url, start_date, end_date, cats, max_num, search_sleeptimer, search_blocksize):
     """Performs the initial query to obtain important run information
     """
 

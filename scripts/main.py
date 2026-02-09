@@ -2,7 +2,7 @@
 # Takes in arguments and runs the entire pipeline
 
 # Import libraries
-from scripts.arxiv_query import arxiv_initial_pull, arxiv_loop_pull
+from scripts.arxiv_query import arxiv_initial_pull, arxiv_search
 from scripts.constants   import aux_filenames, arxiv_constants
 from scripts.filtering   import filter_papers
 from scripts.output      import display_results
@@ -37,15 +37,15 @@ def main(cdir):
                                  )
 
     # Loop through the searches and obtain all papers
-    df_papers = arxiv_loop_pull(ns,
-                                url,
-                                start_date,
-                                end_date,
-                                cat_urlstring,
-                                max_num,
-                                sleep_search,
-                                search_blocksize
-                                )
+    df_papers = arxiv_search(ns,
+                             url,
+                             start_date,
+                             end_date,
+                             cat_urlstring,
+                             max_num,
+                             sleep_search,
+                             search_blocksize
+                             )
 
     # Filter the papers
     papers_of_note = filter_papers(df_papers, search_terms)
