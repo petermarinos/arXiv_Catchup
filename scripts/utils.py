@@ -2,6 +2,7 @@
 import numpy as np
 
 import argparse
+import pathlib
 import yaml
 import sys
 
@@ -107,5 +108,28 @@ def progress_bar(ii, total, time_estimate=None):
 
     sys.stdout.write("\r" + progress_message + pad) # Move cursor to the start of the line and print the progress message
     sys.stdout.flush()
+
+    return
+
+def clear_catchup(filename, links):
+
+    # Ask the user if they would like to open the links in the browser. Default is no
+    user_prompt = input(
+                        "WARNING: There are {:} links in {:}.\n         Delete them all? This action cannot be reversed, only do so if they have been checked. [y/N]: ".format(len(links), filename)
+                        ).strip().lower()
+    
+    # If the user says yes, delete the file (it will be recreated later if writing links)
+    if user_prompt == "y":
+
+        print("Deleting the file.")
+
+        # Delete the file
+        file = pathlib.Path(filename)
+        file.unlink()
+
+    # Else, do nothing
+    else:
+
+        print("Doing nothing.")
 
     return

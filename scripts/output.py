@@ -5,6 +5,43 @@ from scripts.dates import write_date
 import webbrowser
 import time
 
+def read_catchup(filename, sleep_time):
+
+    links = []
+
+    with open(filename, "r") as f:
+
+        for line in f:
+
+            link = line.strip()
+
+            links.append(link)
+
+    total = len(links)
+
+    request_count = 0
+    for link in links:
+
+        progress_bar(request_count, total, ( total - request_count ) * sleep_time)
+
+        if request_count > 0:
+            time.sleep(sleep_time)
+
+        if request_count == 0:
+
+            webbrowser.open(link, new=1)  # new=1: open in a new browser window
+
+        else:
+
+            webbrowser.open(link, new=2)  # new=2: open in a new tab
+
+        request_count += 1
+
+    progress_bar(total, total)
+    print("")
+
+    return links
+
 def open_links(args, df, entries_of_note_unique, sleep_time):
 
     # Calculate the number of links
@@ -13,10 +50,10 @@ def open_links(args, df, entries_of_note_unique, sleep_time):
     # Loop through the list and open all in the web browser
     request_count = 0
     time_start = time.time()
-    print("Opening the papers. Estimated time: {:.2f} seconds".format(total/4))
+    print("Opening the papers. Estimated time: {:.2f} seconds".format(total * sleep_time))
     for link_index in entries_of_note_unique:
 
-        progress_bar(request_count, total, ( total - request_count ) / 4)
+        progress_bar(request_count, total, ( total - request_count ) * sleep_time)
 
         # # arXiv asks that you limit opening pages to four requests per second
         # Sleep before the request to prevent an unnecessary sleep at the end
