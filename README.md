@@ -3,10 +3,11 @@
 Tired of reading all the Titles/Abstracts/Author Lists of every paper posted on the arXiv every single day?
 Here is the solution!
 
-This script searches the [arXiv](https://arxiv.org/) (within the categories of interest) for all papers since the previous execution.
+This script searches the [arXiv](https://arxiv.org/) (within the categories of interest) for **all papers since the previous execution**.
 It then performs some basic keyword matching, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
 
-Thank you to arXiv for use of its open access interoperability.
+> [!NOTE]
+> Similar projects, such as [this one](https://github.com/TideDra/zotero-arxiv-daily), can send you an email every day. This method can become a chore if missing one or more weeks due to personal or professional circumstances.
 
 ## Usage
 
@@ -49,7 +50,7 @@ The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
 Examples of the format required for each can be found in the provided file.
 - `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found on the [arXiv Category Taxonomy](https://arxiv.org/category_taxonomy) page.
-- `Authors` defines which authors to highlight. Every paper with a match will be opened. Do not include accents/special characters/etc..
+- `Authors` defines which authors to highlight. Use surnames. Every paper with a match will be opened. Do not include accents/special characters/etc..
 - `Included Words` defines which words include papers in the results. Every match will be included, unless a word from the exclusion list is also found. At least one must be included.
 - `Excluded Words` defines which words exclude papers from the results. Every match blocks a paper from being included, unless one of the authors of interest is found.
 
@@ -58,7 +59,8 @@ Multi-word terms can be used, as can author names with spaces.
 If adding acronyms, include their pluralised forms (e.g. SN and SNe or CR and CRs).
 If including terms that are frequently displayed with a symbol, include all possibilities (e.g. gamma, ɣ, and γ). 
 
-If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree search_terms.yaml` to prevent your personal search terms updating to the main branch.
+> [!IMPORTANT]
+> If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree search_terms.yaml` to prevent your personal search terms updating to the main branch.
 
 ##### Notes on Author Names
 
@@ -66,7 +68,7 @@ Accented/special characters and ligatures for author names are handled by the sc
 Only include plain ASCII in the `search_terms.yaml` file.
 
 For example, papers with 'López' or 'L{\\'o}pez' written in the author field will have the author name normalised to 'Lopez' by the script, so only the latter should be included in the file.
-If unsure on how a special character/LaTeX command is presented in ASCII, test by importing the function `normalise_string()` and passing the author's name with the LaTeX encoding/commands.
+If unsure on how a special character/LaTeX command is presented in ASCII, run `python3 /path/to/arXiv_Catchup/test_string_norm.py -s "{test}"`, where `{test}` is the author's name with the LaTeX encoding/commands.
 
 For submissions to journals that are more restrictive on special characters, some authors may use a spelling that is different to the ASCII encoding -- for example, an author may choose to write 'ö' as 'oe'.
 For these cases it is recommended to include both the normalised ASCII and the alternative spellings in the `search_terms.yaml` file to capture all possibilities.
@@ -77,6 +79,7 @@ The script creates the file `prev_search.txt`, which contains the date of the pr
 This file is ignored if manually setting the start-date of the search on the CLI.
 
 All links are written to a file `catchup.txt` (if choosing to write to the file). Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
+All links in this file can be opened in a browser by running `python3 /path/to/arXiv_Catchup/open_catchup.py`.
 
 ### Daily Mailings
 
@@ -91,6 +94,10 @@ It includes Christmas, their Thanksgiving, and others
 Technically, this script is not tied to the daily listings, and uses a large offset in the search times.
 Hence, no papers *should* be missed from the deferred mailing days (not tested).
 The next deferred mailing where this can be tested will be on Friday 2026/06/19.
+
+## Acknowledgemeents
+
+Thank you to arXiv for use of its open access interoperability.
 
 ## Future Improvements
 

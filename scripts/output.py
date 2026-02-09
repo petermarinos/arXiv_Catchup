@@ -1,0 +1,192 @@
+# Import libraries
+from scripts.utils import progress_bar
+from scripts.dates import write_date
+
+import webbrowser
+import time
+
+def read_catchup(filename, sleep_time):
+
+    links = []
+
+    with open(filename, "r") as f:
+
+        for line in f:
+
+            link = line.strip()
+
+            links.append(link)
+
+    total = len(links)
+
+    request_count = 0
+    for link in links:
+
+        progress_bar(request_count, total, ( total - request_count ) * sleep_time)
+
+        if request_count > 0:
+            time.sleep(sleep_time)
+
+        if request_count == 0:
+
+            webbrowser.open(link, new=1)  # new=1: open in a new browser window
+
+        else:
+
+            webbrowser.open(link, new=2)  # new=2: open in a new tab
+
+        request_count += 1
+
+    progress_bar(total, total)
+    print("")
+
+    return links
+
+def open_links(args, df, entries_of_note_unique, sleep_time):
+
+    # Calculate the number of links
+    total = len(entries_of_note_unique)
+
+    # Loop through the list and open all in the web browser
+    request_count = 0
+    time_start = time.time()
+    print("Opening the papers. Estimated time: {:.2f} seconds".format(total * sleep_time))
+    for link_index in entries_of_note_unique:
+
+        progress_bar(request_count, total, ( total - request_count ) * sleep_time)
+
+        # # arXiv asks that you limit opening pages to four requests per second
+        # Sleep before the request to prevent an unnecessary sleep at the end
+        # # Sleep for 1s every four pages (recommended)
+        # if request_count % 4 == 0:
+        #     time.sleep(1)
+        # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
+        if request_count > 0:
+            time.sleep(sleep_time)
+
+        link = df.loc[link_index, "url"]
+        # print(link)
+
+        # If args.force_open, start opening links
+        # Else, ask for a confirmation that states/warns the user about how many will be opened
+        
+        # Open in new window if flag is set
+        if args.new_window:
+
+            if request_count == 0:
+
+                webbrowser.open(link, new=1)  # new=1: open in a new browser window
+
+            else:
+
+                webbrowser.open(link, new=2)  # new=2: open in a new tab
+        else:
+
+            webbrowser.open(link)  # Default behavior, just opens everything in the current window
+
+        request_count += 1
+
+    progress_bar(total, total)
+    print("")
+
+    return
+
+def write_links(filename, df, entries):
+
+    print("Writing all links to the end of the file: {:}".format(filename))
+
+    with open(filename, "a+", encoding="utf-8") as f:
+
+        for link_index in entries:
+
+            link = df.loc[link_index, "url"]
+            
+            f.write(f"{link}\n")
+
+    return
+
+def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile, end_date, max_num):
+    """
+
+    entries_of_note : list
+        Contains the indices of all papers that were found to be interesting in the filtering
+    """
+
+    # If there is at least one paper, open/prompt
+    if len(entries_of_note) > 0:
+
+        # If both -f and -w are passed, both open and write the links
+        if args.force_open and args.write_to_file:
+
+            open_links(df, entries_of_note, sleep_time)
+            write_links(outfile, df, entries_of_note)
+
+        # If -f is passed and -w is not, only open the links
+        elif args.force_open and not args.write_to_file:
+
+            open_links(df, entries_of_note, sleep_time)
+
+        # If -f is not passed and -w is, only write the links
+        elif not args.force_open and args.write_to_file:
+
+            write_links(outfile, df, entries_of_note)
+
+        # If neither -f nor -w were passed, prompt the user to ask for the behaviour they prefer
+        else:
+
+            # Ask the user if they would like to open the links in the browser. Default is no
+            user_prompt_browser = input(
+                                    "There are {:} links. Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note), len(entries_of_note)/4)
+                                    ).strip().lower()
+
+            # If they say no to opening in the browser
+            if user_prompt_browser != "y":
+
+                # Ask if they would like to save the links to a file or print to the terminal. Default is no
+                user_prompt_output = input(
+                                        "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
+                                        ).strip().lower()
+                
+                # If they want the output in the terminal
+                if user_prompt_output != "y":
+
+                    print("Printing all links to the terminal")
+                    for link_index in entries_of_note:
+
+                        print(df.loc[link_index, "url"])
+
+                # If they want to save the output
+                else:
+
+                    # If the file doesn't exist, create it. Otherwise, append the links to the end
+                    write_links(outfile, df, entries_of_note)
+
+            # If they say yes to opening in the browser
+            else:
+
+                # Open all links
+                open_links(df, entries_of_note, sleep_time)
+
+    else:
+
+        print("No papers of interest were found.")
+
+    # Compute the number of digits. Assumes that the number of papers is positive :)
+    max_digits = len(str(max_num))
+
+    # Print a summary
+    print("\nThere was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(max_num, fill=max_digits))
+    print("           of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note), fill=max_digits))
+
+    # Check if any papers were found
+    if len(df) == 0:
+
+        print("As no papers were found, the aux. date file was not updated")
+
+    # If papers were found, update the aux. file
+    else:
+
+        # Write the end date of the search to a file for the next run
+        write_date(prev_outfile, end_date)
+
+    return
