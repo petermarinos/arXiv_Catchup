@@ -1,6 +1,9 @@
+# Search terms file
+# See README for important notes
+
 # Define categories to search
 # At least one is required
-# Examples shown only for astro-ph categories. If searching other fields, e.g. physics or computer science, find the correct format from arXiv
+# Examples shown only for astro-ph categories. If searching other fields, e.g. physics or computer science, find the correct format from arXiv https://arxiv.org/category_taxonomy
 Categories :
   # - astro-ph*   # All astrophysics categories
   # - astro-ph.CO # Cosmology and Nongalactic Astrophysics
@@ -11,6 +14,7 @@ Categories :
   # - astro-ph.SR # Solar and Stellar Astrophysics
 
 # Authors of interest
+# Use surnames, only use plain ASCII
 Authors :
   # - examplename
 
@@ -22,3 +26,4 @@ Included Words :
 # Words that exclude papers being shown
 Excluded Words :
   # - exampleword
+  
