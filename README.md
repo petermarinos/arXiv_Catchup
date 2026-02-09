@@ -90,9 +90,10 @@ The papers posted on the weekend will be caught when run on Monday.
 
 There are also "deferred mailing" days.
 These days are chosen ad-hoc, and are days that are important to USAians.
-It includes Christmas, their Thanksgiving, and others
-Technically, this script is not tied to the daily listings, and uses a large offset in the search times.
-Hence, no papers *should* be missed from the deferred mailing days (not tested).
+It includes Christmas, their Thanksgiving, and others.
+
+On these days, the search *should* return zero results, and raise an error.
+Hence, no papers *should* be missed from the deferred mailing days, as said papers would appear in the next search (not tested).
 The next deferred mailing where this can be tested will be on Friday 2026/06/19.
 
 ## Acknowledgemeents
