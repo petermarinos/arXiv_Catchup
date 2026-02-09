@@ -115,7 +115,7 @@ def clear_catchup(filename, links):
 
     # Ask the user if they would like to open the links in the browser. Default is no
     user_prompt = input(
-                        "WARNING: There are {:} links in {:}.\n         Delete them all? This action cannot be reversed, only do so if they have been checked. [y/N]: ".format(len(links), filename)
+                        "WARNING: There are {:} links in {:}.\n         Delete them all? This action cannot be reversed, only do so if the papers have been reviewed. [y/N]: ".format(len(links), filename)
                         ).strip().lower()
     
     # If the user says yes, delete the file (it will be recreated later if writing links)
