@@ -59,7 +59,7 @@ def load_searchterms(filename):
 
             cat_printstring = ", ".join(f"{c}" for c in search_terms["Categories"])
 
-        # Print which categories we are searching over
+        # Print which categories are being searched over
         print("Searching the {:} categories".format(cat_printstring))
 
     # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories

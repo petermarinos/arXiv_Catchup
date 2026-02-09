@@ -21,6 +21,7 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize):
     # If there are too many papers then there can be issues with the arXiv API.
     # While the API will likely return an error, catch it here as well just in case
     if max_num >= 30000:
+        
         raise ValueError("Number of papers is too large. Refine search dates and/or categories.")
     
     # 200 papers will take one minute. Print a warning.

@@ -33,7 +33,8 @@ def main(cdir):
                                  end_date,
                                  cat_urlstring,
                                  sleep_search,
-                                 search_blocksize)
+                                 search_blocksize
+                                 )
 
     # Loop through the searches and obtain all papers
     df_papers = arxiv_loop_pull(ns,
@@ -43,7 +44,8 @@ def main(cdir):
                                 cat_urlstring,
                                 max_num,
                                 sleep_search,
-                                search_blocksize)
+                                search_blocksize
+                                )
 
     # Filter the papers
     papers_of_note = filter_papers(df_papers, search_terms)
