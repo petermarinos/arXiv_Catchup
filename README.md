@@ -99,6 +99,12 @@ The next deferred mailing where this can be tested will be on Friday 2026/06/19.
 
 Thank you to arXiv for use of its open access interoperability.
 
+We make use of the following packages:
+- `pylatexenc` -- [homepage](https://github.com/phfaist/pylatexenc)
+- `numpy` -- [homepage](https://numpy.org/citing-numpy/)
+- `pandas` -- [homepage](https://pandas.pydata.org)
+- `yaml` -- [homepage](https://pyyaml.org/)
+
 ## Future Improvements
 
 Using a list of words to exclude can result in some interesting papers not being opened if they include a sentence on their potential application to the wider literature.
