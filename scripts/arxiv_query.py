@@ -96,15 +96,19 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, search_sleeptimer, s
 """Example arXiv API pull:
 <ns0:feed xmlns:ns0="http://www.w3.org/2005/Atom" xmlns:ns1="http://a9.com/-/spec/opensearch/1.1/" xmlns:ns2="http://arxiv.org/schemas/atom">
   <ns0:id>https://arxiv.org/api/RdGiJmCzUo9LqFSmMy0zaOoHqng</ns0:id>
-  <ns0:title>arXiv Query: search_query=submittedDate:"{start_date}1900 TO {end_date}1900" AND cat:{cat_urlstring}&amp;id_list=&amp;start={ii}&amp;max_results={max_num}</ns0:title>
+  <ns0:title>arXiv Query: search_query=submittedDate:"{start_date}1900 TO {end_date}1900" AND cat:{cat_urlstring}&amp;id_list=&amp;start={ii}&amp;max_results={interval}</ns0:title>
   <ns0:updated>YYYY-mm-ddTHH:MM:SSZ</ns0:updated>
-  <ns0:link href="{url_search}" type="application/atom+xml" />
+  <ns0:link href="{formatted_url}" type="application/atom+xml" />
   <ns1:itemsPerPage>{interval}</ns1:itemsPerPage>
   <ns1:totalResults>{max_num}}</ns1:totalResults>
   <ns1:startIndex>{ii}}</ns1:startIndex>
   <ns0:entry>
-    [paper entries, see below]
+    [paper entry 0]
   </ns0:entry>
+  <ns0:entry>
+    [paper entry 1]
+  </ns0:entry>
+  ...
 </ns0:feed>
 """
 
@@ -118,6 +122,7 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, search_sleeptimer, s
     <ns0:summary>Abstract text</ns0:summary>
     <ns0:category term="cat0" scheme="http://arxiv.org/schemas/atom" />
     <ns0:category term="cat1" scheme="http://arxiv.org/schemas/atom" />
+    ...
     <ns0:published>2026-02-06T18:51:45Z</ns0:published>
     <ns2:comment>Comment text</ns2:comment>
     <ns2:primary_category term="cat0" />
@@ -127,6 +132,7 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, search_sleeptimer, s
     <ns0:author>
       <ns0:name>example name 1</ns0:name>
     </ns0:author>
+    ...
   </ns0:entry>
 """
 
