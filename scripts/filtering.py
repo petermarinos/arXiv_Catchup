@@ -7,6 +7,7 @@ import re
 
 def filter_papers(df, search_terms):
     """Filters the papers based on some criteria (currently the search terms).
+    Note that all search terms are surrounded by break identifiers (\b).
 
     inputs
     ------
