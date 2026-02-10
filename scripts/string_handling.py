@@ -27,8 +27,7 @@ def LaTeX_to_unicode(s):
     return s_unicode
 
 def normalise_string(s):
-    """Convert a string to ASCII.
-    First removes LaTeX commands/etc., then normalises the string (i.e. ensures a consisted unicode encoding), then converts to ASCII.
+    """First removes LaTeX commands/etc., then normalises the string (i.e. ensures a consisted unicode encoding), then converts to ASCII.
 
     inputs
     ------
