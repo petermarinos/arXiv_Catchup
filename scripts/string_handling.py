@@ -1,7 +1,7 @@
 # Import libraries
-from pylatexenc.latex2text import LatexNodes2Text
+from unicodedata import normalize as normalise
 
-import unicodedata
+from pylatexenc.latex2text import LatexNodes2Text
 
 def LaTeX_to_unicode(s):
     """Stip LaTeX-style accents, special characters, and ligatures from the string and convert to unicode (e.g. {\'o} and \'o -> ó).
@@ -27,8 +27,8 @@ def LaTeX_to_unicode(s):
     return s_unicode
 
 def normalise_string(s):
-    """Normalise a string, i.e. remove accents (e.g. ó -> o).
-    Also accounts for LaTeX accents, ligatures, and special characters.
+    """Convert a string to ASCII.
+    First removes LaTeX commands/etc., then normalises the string (i.e. ensures a consisted unicode encoding), then converts to ASCII.
 
     inputs
     ------
@@ -52,7 +52,7 @@ def normalise_string(s):
     s_unicode = LaTeX_to_unicode(s)
 
     # Normalise the string
-    s_normalised = unicodedata.normalize(form, s_unicode)
+    s_normalised = normalise(form, s_unicode) # Function from unicodedata
 
     # Convert the string to ASCII
     s_ascii = s_normalised.encode("ascii", "ignore").decode("ascii")
