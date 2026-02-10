@@ -4,6 +4,7 @@ from scripts.utils           import progress_bar
 
 import xml.etree.ElementTree as ET
 import pandas                as pd
+import numpy                 as np
 
 import urllib.request
 import time
@@ -195,10 +196,15 @@ def extract_paper(ns, xml):
 
     inputs
     ------
+    ns  : dict
+        XML namespaces that arXiv uses.
+    xml : Element
+        XML data from the arXiv query.
 
     outputs
     -------
     papers : list
+        All papers in the entry.
     """
     
     papers = []
@@ -267,8 +273,10 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
         # Compute the progress of the loop
         if ii+blocksize > max_num:
             remaining_steps = 1
+            search_endnum   = max_num
         else:
             remaining_steps = -((max_num-ii)//-blocksize)
+            search_endnum   = ii + blocksize
 
         # Print the progress bar
         progress_bar(ii, max_num, remaining_steps * sleeptimer)
@@ -276,7 +284,7 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
         time.sleep(sleeptimer)
 
         # Query the API
-        parsed_xml = arxiv_query(url, start_date, end_date, cats, ii, ii+blocksize)
+        parsed_xml = arxiv_query(url, start_date, end_date, cats, ii, search_endnum)
         
         entries.extend(extract_paper(ns, parsed_xml))
 
@@ -284,6 +292,13 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
     print("")
 
     # Place into a dataframe
-    df = pd.DataFrame(entries)
+    df = pd.DataFrame( entries )
+
+    # Drop duplicate papers, if they exist
+    df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
+
+    # Remove revised papers
+    df.drop(df[df["Revised?"]==True].index, inplace=True)
+    df.reset_index(drop=True, inplace=True)
 
     return df
