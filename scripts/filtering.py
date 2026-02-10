@@ -6,6 +6,20 @@ import numpy as np
 import re
 
 def filter_papers(df, search_terms):
+    """Filters the papers based on some criteria (currently the search terms).
+
+    inputs
+    ------
+    df           : pandas.DataFrame
+        Contains all papers and their information.
+    search_terms : dict
+        Contains all search terms used to filter papers.
+
+    outputs
+    -------
+    entries_of_note_unique : list
+        Contains the indices of all papers that pass the filter.
+    """
 
     if search_terms["Authors"] is not None:
         author_strfill = len(max(search_terms["Authors"], key=len))

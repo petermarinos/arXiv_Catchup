@@ -6,6 +6,20 @@ import webbrowser
 import time
 
 def read_catchup(filename, sleep_time):
+    """Read the `catchup.txt` file and open all links in the browser.
+
+    inputs
+    ------
+    filename   : str
+        Path_filename of the `catchup.txt` file.
+    sleep_time : float
+        Wait time between opening links in the browser.
+
+    outputs
+    -------
+    links : list
+        Contains all arXiv paper links from the `catchup.txt` file.
+    """
 
     links = []
 
@@ -42,16 +56,29 @@ def read_catchup(filename, sleep_time):
 
     return links
 
-def open_links(args, df, entries_of_note_unique, sleep_time):
+def open_links(args, df, entries, sleep_time):
+    """Opens all arXiv links in a webbrowser.
+
+    inputs
+    ------
+    args       : namespace
+        CLI arguments.
+    df         : pandas.DataFrame
+        Contains all papers and all their information.
+    entries    : list
+        Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
+    sleep_time : float
+        Waiting time between opening links.
+    """
 
     # Calculate the number of links
-    total = len(entries_of_note_unique)
+    total = len(entries)
 
     # Loop through the list and open all in the web browser
     request_count = 0
-    time_start = time.time()
+    # time_start = time.time()
     print("Opening the papers. Estimated time: {:.2f} seconds".format(total * sleep_time))
-    for link_index in entries_of_note_unique:
+    for link_index in entries:
 
         progress_bar(request_count, total, ( total - request_count ) * sleep_time)
 
@@ -65,11 +92,7 @@ def open_links(args, df, entries_of_note_unique, sleep_time):
             time.sleep(sleep_time)
 
         link = df.loc[link_index, "url"]
-        # print(link)
 
-        # If args.force_open, start opening links
-        # Else, ask for a confirmation that states/warns the user about how many will be opened
-        
         # Open in new window if flag is set
         if args.new_window:
 
@@ -80,6 +103,8 @@ def open_links(args, df, entries_of_note_unique, sleep_time):
             else:
 
                 webbrowser.open(link, new=2)  # new=2: open in a new tab
+
+        # Otherwise, open in the current window
         else:
 
             webbrowser.open(link)  # Default behavior, just opens everything in the current window
@@ -92,6 +117,17 @@ def open_links(args, df, entries_of_note_unique, sleep_time):
     return
 
 def write_links(filename, df, entries):
+    """Write all links to the `catchup.txt` file.
+
+    inputs
+    ------
+    filename : str
+        Path+filename of the `catchup.txt` file.
+    df       : pandas.DataFrame
+        Contains all papers and their information.
+    entries  : list
+        Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
+    """
 
     print("Writing all links to the end of the file: {:}".format(filename))
 
@@ -106,10 +142,27 @@ def write_links(filename, df, entries):
     return
 
 def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile, end_date, max_num):
-    """
+    """'Displays' all results, either by opening the links in the browser, outputting them to a file, or by writing them to a file.
+    The given display method is chosen by the CLI arguments or user prompts.
 
+    inputs
+    ------
+    args            : namespace
+        CLI arguments
+    df              : pandas.DataFrame
+        Contains all papers and their information
     entries_of_note : list
-        Contains the indices of all papers that were found to be interesting in the filtering
+        Contains the indices of all papers that were found to be interesting in the filtering.
+    sleep_time      : float
+        Wait time between opening links in the browser.
+    outfile         : str
+        Path+filename of the `catchup.txt` file.
+    prev_outfile    : str
+        Path+filename of the `prev_search.txt` file.
+    end_date        : datetime.date
+        End date of the arXiv search period.
+    max_num         : int
+        Number of papers found in the categories of interest.
     """
 
     # If there is at least one paper, open/prompt
@@ -118,13 +171,13 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
         # If both -f and -w are passed, both open and write the links
         if args.force_open and args.write_to_file:
 
-            open_links(df, entries_of_note, sleep_time)
+            open_links(args, df, entries_of_note, sleep_time)
             write_links(outfile, df, entries_of_note)
 
         # If -f is passed and -w is not, only open the links
         elif args.force_open and not args.write_to_file:
 
-            open_links(df, entries_of_note, sleep_time)
+            open_links(args, df, entries_of_note, sleep_time)
 
         # If -f is not passed and -w is, only write the links
         elif not args.force_open and args.write_to_file:
@@ -165,7 +218,7 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
             else:
 
                 # Open all links
-                open_links(df, entries_of_note, sleep_time)
+                open_links(args, df, entries_of_note, sleep_time)
 
     else:
 

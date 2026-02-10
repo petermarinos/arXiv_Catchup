@@ -15,9 +15,19 @@ import os
 #     If searching on Tuesday at 05:00 UTC, we need to search the list posted on Monday day at 06:00 UTC, which will include papers from Thursday 19:00 UTC to Friday 19:00 UTC.
 
 # No lists are released on certain days. These days are chosen ad-hoc, and are days that are important to USAians. It includes Christmas, their Thanksgiving, and others.
-# As this script is not tied to the daily listings, and provides a large offset in the search, no papers *should* be missed (not tested)
+# The API is not updated on these days, so the search should return zero results, and raise an error.
+# Running the following day should work, and no papers *should* be missed (not tested)
 
 def write_date(filename, date):
+    """Write a datetime.date object to a file.
+
+    inputs
+    ------
+    filename : str
+        Path+filename of the `prev_search.txt` file.
+    date     : datetime.date
+        Date that is being written
+    """
 
     with open(filename, "w") as f:
         f.write(date.isoformat())
@@ -25,6 +35,19 @@ def write_date(filename, date):
     return
 
 def is_posting_day_bool(dt):
+    """Determines if the input day iss an arXiv posting day.
+    Does not account for deferred listings.
+
+    inputs
+    ------
+    dt : datetime.date
+        Date to be checked if it is a posting day
+
+    outputs
+    -------
+    : bool
+        True if date is valid, False otherwise
+    """
 
     # dt.weekday() = 0 for Monday, ..., 4 for Friday, 5 for Saturday, and 6 for Sunday
 
@@ -33,6 +56,18 @@ def is_posting_day_bool(dt):
     return dt.weekday() <= 4
 
 def is_searching_day_bool(dt):
+    """Determines if the input day is a valid arXiv search day.
+
+    inputs
+    ------
+    dt : datetime.date
+        Date to be checked if it is a valid search day
+
+    outputs
+    -------
+    : bool
+        True if date is valid, False otherwise
+    """
 
     # dt.weekday() = 0 for Monday, ..., 4 for Friday, 5 for Saturday, and 6 for Sunday
 
@@ -51,7 +86,19 @@ def is_searching_day_bool(dt):
         return False
 
 def calc_search_endtime(now, post_time, search_time):
-    """Return the datetime of the most recent arXiv daily list posting relative to the input time `now`.
+    """Computes the most recent arXiv daily list posting relative to the input time.
+
+    inputs
+    ------
+    now       : datetime.time (with timezone and date)
+        Either the current time, or the time input from the CLI.
+    post_time : datetime.time (with timezone)
+        Time that arXiv postings occur
+
+    outputs
+    -------
+    search_endtime : datetime.time (with timezone and date)
+        Most recent valid search endtime relative to the input `now`.
     """
 
     # If now is after post_time, search_time will be 19:00 the previous day
@@ -72,6 +119,18 @@ def calc_search_endtime(now, post_time, search_time):
 
 def calc_next_posttime(now, post_time):
     """Return the datetime of the next arXiv daily list posting relative to the input time `now`.
+
+    inputs
+    ------
+    now       : datetime.time (with timezone and date)
+        Either the current time, or the time input from the CLI.
+    post_time : datetime.time (with timezone)
+        Time that arXiv postings occur
+
+    outputs
+    -------
+    next_post_time : datetime.time (with timezone and date)
+        Next valid arXiv list post time relative to the input `now`.
     """
 
     # If now is after post_time, the next post_time will be 06:00 the following day
@@ -92,6 +151,26 @@ def calc_next_posttime(now, post_time):
     return next_post_time
 
 def parse_date(date_str, name, search_time, list_post_time):
+    """Take an input string and convert to the correct datetime object.
+
+    inputs
+    ------
+    date_str       : str
+        ISO representation of the date
+    name           : str
+        Name of the date (e.g. start_time, end_time)
+    search_time    : datetime.time (timezone aware)
+        Time of the arXiv search start/end points
+    list_post_time : datetime.time (timezone aware)
+        Time of the arXiv daily postings
+
+    outputs
+    -------
+    parsed_time : datetime.time (timezone aware)
+        Time, with the correct timezone
+    parsed_date : datetime.date (timezone aware)
+        Date, with the correct timezone
+    """
 
     try:
 
@@ -113,6 +192,19 @@ def parse_date(date_str, name, search_time, list_post_time):
         raise ValueError(f"{name} must be in YYYY-MM-DD format")
 
 def date_error_check(current_time, start_date, end_date, list_post_time):
+    """Performs some error checks on the dates to ensure the search period is valid.
+
+    inputs
+    ------
+    current_time   : datetime.time (timezone aware)
+        Time the script was executed.
+    start_date     : datetime.date (timezone aware)
+        Start date of the search.
+    end_date       : datetime.date (timezone aware)
+        End date of the search.
+    list_post_time : datetime.time (timezone aware)
+        Time that the arXiv daily postings occur.
+    """
 
     # Compute how long the search is covering
     prev_run = end_date - start_date
@@ -169,6 +261,22 @@ def date_error_check(current_time, start_date, end_date, list_post_time):
     return
 
 def date_setup(args, filename_prevsearch):
+    """Set up the date that the script uses for the arXiv API calls.
+
+    inputs
+    ------
+    args                : namespace
+        CLI arguments.
+    filename_prevsearch : str
+        Path+filename of the `prev_search.txt` file that contains the date of the previous run.
+
+    outputs
+    -------
+    start_date : datetime.date
+        Start date of the arXiv API query.
+    end_date   : datetime.date
+        End date of the arXiv API query.
+    """
 
     # Define the posting time of the daily list
     list_post_time = datetime.time(6, 0, tzinfo=datetime.timezone.utc) # 06:00 UTC

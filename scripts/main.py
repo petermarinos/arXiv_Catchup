@@ -1,6 +1,3 @@
-# The main script
-# Takes in arguments and runs the entire pipeline
-
 # Import libraries
 from scripts.arxiv_query import arxiv_initial_pull, arxiv_search
 from scripts.constants   import aux_filenames, arxiv_constants
@@ -9,6 +6,8 @@ from scripts.output      import display_results
 from scripts.utils       import load_searchterms, cli_args
 from scripts.dates       import date_setup
 
+# The main script
+# Performs the entire pipeline
 def main(cdir):
 
     # # Parse command-line arguments

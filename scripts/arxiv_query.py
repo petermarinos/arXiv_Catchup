@@ -10,7 +10,16 @@ import time
 import sys
 
 def arxiv_errorcheck(max_num, sleep_timer, blocksize):
-    """Runs some basic error checks on the reesults of the arXiv API pull
+    """Runs some error checks on the results of the arXiv API pull.
+
+    inputs
+    ------
+    max_num     : int
+        Number of papers in the search.
+    sleep_timer : float
+        Time between searches.
+    blocksize   : int
+        Number of papers returned in each search.
     """
 
     # If no papers were found in the search, raise an error
@@ -46,6 +55,31 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize):
     return
 
 def arxiv_query(url, start_date, end_date, cats, start_num, end_num):
+    """Queries the arXiv API.
+
+    inputs
+    ------
+    url        : str
+        URL for the arXiv API.
+    start_date : datetime.date
+        Start date for the search.
+    end_date   : datetime.date
+        End date for the search.
+    cats       : str
+        Categories that will be searched over (must be formatted for the search).
+    start_num  : int
+        Starting paper number for the search query.
+    end_num    : int
+        Ending paper number for the search query.
+
+    outputs
+    -------
+    parsed_xml_data : Element
+        XML data from the arXiv query.
+
+    TO-DO:
+    1) Catch some common HTTP errors and implement workarounds/retries
+    """
 
     # Format the url
     formatted_url = url.format(start_year  = start_date.year,
@@ -67,11 +101,31 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num):
 
     return parsed_xml_data
 
-def arxiv_initial_pull(ns, url, start_date, end_date, cats, search_sleeptimer, search_blocksize):
-    """Performs the initial query to obtain important run information
+def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize):
+    """Performs the initial query to obtain important run information.
+
+    inputs
+    ------
+    url        : str
+        URL for the arXiv API.
+    start_date : datetime.date
+        Start date for the search.
+    end_date   : datetime.date
+        End date for the search.
+    cats       : str
+        Categories that will be searched over (must be formatted for the search).
+    sleeptimer : float
+        Time in seconds to wait between searches.
+    blocksize  : int
+        Number of papers to return from the search.
+
+    outputs
+    -------
+    max_num : int
+        Number of papers that were found in the categories of interest.
     """
 
-    print("Obtaining arXiv info. Estimated time: {:d} seconds".format(search_sleeptimer)) # Always a single sleep
+    print("Obtaining arXiv info. Estimated time: {:d} seconds".format(sleeptimer)) # Always a single sleep
 
     # Display a progress bar
     progress_bar(0, 1, 3)
@@ -89,7 +143,7 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, search_sleeptimer, s
     progress_bar(1, 1)
     print("")
 
-    arxiv_errorcheck(max_num, search_sleeptimer, search_blocksize)
+    arxiv_errorcheck(max_num, sleeptimer, blocksize)
 
     return max_num
 
@@ -138,7 +192,12 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, search_sleeptimer, s
 
 def extract_paper(ns, xml):
     """
-    returns
+
+    inputs
+    ------
+
+    outputs
+    -------
     papers : list
     """
     
@@ -173,27 +232,51 @@ def extract_paper(ns, xml):
 
     return papers
 
-def arxiv_search(ns, url, start_date, end_date, cats, max_num, search_sleeptimer, search_blocksize):
-    """Performs the initial query to obtain important run information
+def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, blocksize):
+    """Performs the initial query to obtain important run information.
+
+    inputs
+    ------
+    ns         : dict
+        XML namespaces that arXiv uses.
+    url        : str
+        URL for the arXiv API.
+    start_date : datetime.date
+        Start date for the search.
+    end_date   : datetime.date
+        End date for the search.
+    cats       : str
+        Categories that will be searched over (must be formatted for the search).
+    max_num    : int
+        Total number of papers found in the categories of interest.
+    sleeptimer : float
+        Time in seconds to wait between searches.
+    blocksize  : int
+        Number of papers to return from the search.
+
+    outputs
+    -------
+    df : pandas.DataFrame
+        Contains all papers and their information.
     """
 
     entries = []
-    print("Searching for papers. Estimated time: {:d} seconds".format(-search_sleeptimer*(max_num//-search_blocksize)))
-    for ii in range(0, max_num, search_blocksize):
+    print("Searching for papers. Estimated time: {:d} seconds".format(-sleeptimer*(max_num//-blocksize)))
+    for ii in range(0, max_num, blocksize):
 
         # Compute the progress of the loop
-        if ii+search_blocksize > max_num:
+        if ii+blocksize > max_num:
             remaining_steps = 1
         else:
-            remaining_steps = -((max_num-ii)//-search_blocksize)
+            remaining_steps = -((max_num-ii)//-blocksize)
 
         # Print the progress bar
-        progress_bar(ii, max_num, remaining_steps * search_sleeptimer)
+        progress_bar(ii, max_num, remaining_steps * sleeptimer)
         # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
-        time.sleep(search_sleeptimer)
+        time.sleep(sleeptimer)
 
         # Query the API
-        parsed_xml = arxiv_query(url, start_date, end_date, cats, ii, ii+search_blocksize)
+        parsed_xml = arxiv_query(url, start_date, end_date, cats, ii, ii+blocksize)
         
         entries.extend(extract_paper(ns, parsed_xml))
 

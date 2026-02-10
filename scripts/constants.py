@@ -1,4 +1,20 @@
 def aux_filenames(cdir):
+    """Compute the filenames of various auxiliary files that may or may not be used.
+
+    inputs
+    ------
+    cdir : str
+        Top directory of the project, i.e. `/path/to/arXiv_Catchup/`.
+
+    outputs
+    -------
+    prevsearch  : str
+        Path+filename of the `prev_search.txt` file, that contains the date of the previous execution.
+    searchterms : str
+        Path+filename of the `search_terms.yaml` file, that contains all terms that are used in the search.
+    paperlinks  : str
+        Path+filename of the `catchup.txt` file, that contains all links of found papers.
+    """
 
     # Define filenames
     prevsearch  = cdir+"/prev_search.txt" # File that stores the date of the previous run
@@ -8,6 +24,21 @@ def aux_filenames(cdir):
     return prevsearch, searchterms, paperlinks
 
 def arxiv_constants():
+    """Define the constants that will be used when making API calls to arXiv.
+
+    outputs
+    -------
+    url              : str
+        Unformatted url that is used for the API calls to arXiv.
+    ns               : dict
+        XML namespaces used by arXiv.
+    sleep_opening    :
+        Sleep timer (in seconds) between opening links in the browser. arXiv asks this to be limited to 0.25s per link.
+    sleep_search     :
+        Sleep timer (in seconds) between searches of papers. arXiv asks this to be limited to 3s per search.
+    search_blocksize : int
+        Size of the block used when searching through the papers. arXiv asks this to be limited to 10.
+    """
 
     # Define the search url
     url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={end_num:d}"

@@ -7,6 +7,13 @@ import yaml
 import sys
 
 def cli_args():
+    """Defines and parses the CLI arguments passed when running the script.
+
+    outputs
+    -------
+    args : namespace
+        Contains all parsed arguments and their values.
+    """
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(prog='arXiv Catchup',
@@ -28,6 +35,20 @@ def cli_args():
     return args
 
 def load_searchterms(filename):
+    """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
+
+    inputs
+    ------
+    filename : str
+        Path+filename of the `search_terms.yaml` file.
+
+    outputs
+    -------
+    search_terms  : dict
+        Dictionary of all loaded search terms.
+    cat_urlstring : str
+        String containing the url used in the arXiv API queries
+    """
 
     # Load the .yaml into a dictionary
     with open(filename, 'r') as f:
@@ -84,7 +105,16 @@ def load_searchterms(filename):
     return search_terms, cat_urlstring
 
 def progress_bar(ii, total, time_estimate=None):
-    """Print a progress bar that updates
+    """Prints a progress bar that updates as the loop progresses.
+
+    inputs
+    ------
+    ii            : int
+        Current step in the loop.
+    total         : int
+        Final step in the loop.
+    time_estimate : float
+        Estimate of the remaining time of the loop.
     """
 
     percent_progress = 100 * ii / total
@@ -112,6 +142,18 @@ def progress_bar(ii, total, time_estimate=None):
     return
 
 def clear_catchup(filename, links):
+    """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
+
+    inputs
+    ------
+    filename : str
+        Path+filename of the `catchup.txt` file.
+    links : list
+        List containing all arXiv links in the file.
+
+    TO-DO:
+    1) This function will delete any file passed to it. Perform a check that the file is actually what we expect. While it is only called after opening all files, there should be a check here just in case.
+    """
 
     # Ask the user if they would like to open the links in the browser. Default is no
     user_prompt = input(
