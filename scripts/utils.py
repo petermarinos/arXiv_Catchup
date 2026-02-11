@@ -2,6 +2,7 @@
 import numpy as np
 
 import argparse
+import logging
 import pathlib
 import yaml
 import sys
@@ -29,12 +30,50 @@ def cli_args():
                         help='Set the start time for the search, YYYY-MM-DD (19:00 UTC)\nIgnores the date in the `prev_search.txt`.')
     parser.add_argument('-e', '--end-date', type=str,
                         help='Set the end time for the search, YYYY-MM-DD (19:00 UTC).')
+    parser.add_argument('-v', '--verbosity', type=int, default=3,
+                        help='Verbosity level.')
 
     args = parser.parse_args()
 
     return args
 
-def load_searchterms(filename):
+def logger_setup(args):
+    """Set up the logger.
+    Note: There are currently no messages with levels set to CRITICAL. Verbosity must be set to 1 or higher to show any messages.
+
+    inputs
+    ------
+    verbosity : int
+        Defines the level for the logger.
+        0 => only critical errors
+        1 => errors                 and all of the above
+        2 => warnings               and all of the above
+        3 => info                   and all of the above
+        4 => debug                  and all of the above
+    """
+
+    # Define logging message
+    # logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s') # Show time
+    logging.basicConfig(format="%(levelname)s: %(message)s") # Don't show time
+
+    # Initialise the logger
+    logger = logging.getLogger()
+
+    # Set the logging level
+    if args.verbosity == 0:
+        logger.setLevel(logging.CRITICAL)
+    elif args.verbosity == 1:
+        logger.setLevel(logging.ERROR)
+    elif args.verbosity == 2:
+        logger.setLevel(logging.WARNING)
+    elif args.verbosity == 3:
+        logger.setLevel(logging.INFO)
+    elif args.verbosity >= 4:
+        logger.setLevel(logging.DEBUG)
+
+    return logger
+
+def load_searchterms(filename, logger):
     """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
 
     inputs
@@ -82,7 +121,7 @@ def load_searchterms(filename):
             cat_printstring = ", ".join(f"{c}" for c in search_terms["Categories"])
 
         # Print which categories are being searched over
-        print("Searching the {:} categories".format(cat_printstring))
+        logger.info("Searching the {:} categories".format(cat_printstring))
 
     # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
     # No need to catch it here
@@ -96,11 +135,11 @@ def load_searchterms(filename):
     # Warn the user if no terms are found
     if search_terms["Authors"] is None:
 
-        print("WARNING: No search terms were found in the 'Authors' entry in the configuration file.")
+        logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
 
     if search_terms["Excluded Words"] is None:
 
-        print("WARNING: No search terms were found in the 'Excluded Words' entry in the configuration file.")
+        logger.warning("No search terms were found in the 'Excluded Words' entry in the configuration file.")
 
     return search_terms, cat_urlstring
 
@@ -139,9 +178,13 @@ def progress_bar(ii, total, time_estimate=None):
     sys.stdout.write("\r" + progress_message + pad) # Move cursor to the start of the line and print the progress message
     sys.stdout.flush()
 
+    # If it is the final call, print a blank line
+    if ii == total:
+        print("")
+
     return
 
-def clear_catchup(filename, links):
+def clear_catchup(filename, links, logger):
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
 
     inputs
@@ -156,14 +199,15 @@ def clear_catchup(filename, links):
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no
+    logger.warning("There are {:} links in {:}.".format(len(links), filename))
     user_prompt = input(
-                        "WARNING: There are {:} links in {:}.\n         Delete them all? This action cannot be reversed, only do so if the papers have been reviewed. [y/N]: ".format(len(links), filename)
+                        "    Delete them all? This action cannot be reversed, only do so if the papers have been reviewed. [y/N]: "
                         ).strip().lower()
     
     # If the user says yes, delete the file (it will be recreated later if writing links)
     if user_prompt == "y":
 
-        print("Deleting the file.")
+        logger.info("Deleting the file.")
 
         # Delete the file
         file = pathlib.Path(filename)
@@ -172,6 +216,6 @@ def clear_catchup(filename, links):
     # Else, do nothing
     else:
 
-        print("Doing nothing.")
+        logger.info("Doing nothing.")
 
     return

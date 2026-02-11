@@ -5,7 +5,7 @@ import numpy as np
 
 import re
 
-def filter_papers(df, search_terms):
+def filter_papers(df, search_terms, logger):
     """Filters the papers based on some criteria (currently the search terms).
     Note that all search terms are surrounded by break identifiers (\b).
 
@@ -26,10 +26,10 @@ def filter_papers(df, search_terms):
         author_strfill = len(max(search_terms["Authors"], key=len))
 
     # Loop over all entries
-    author_match_count = 0
+    author_match_bool = False
     entries_of_note = []
-    author_str = ""
-    print("Finding papers of interest.")
+    author_str = "    Found Author(s)"
+    logger.info("Finding papers of interest.")
     for entry_count in range(0, len(df)):
 
         progress_bar(entry_count, len(df)) # No time estimate as it should always be fast. ~1200 papers take less than a second on a 2023 macbook
@@ -46,13 +46,11 @@ def filter_papers(df, search_terms):
                     # Set the entry in the dataframe for the author match to True
                     df.loc[entry_count, "Author Match"] = True
 
-                    # If one author is found, output an extra line to the terminal
-                    if author_match_count == 0:
-                        # print("    Found Author(s)")
-                        author_str += "\n    Found Author(s)"
-                        author_match_count = 1
+                    # If an author is found, set the author_match flag to True
+                    if not author_match_bool:
+
+                        author_match_bool = True
                         
-                    # print("    {: >{fill}}:  ".format(key_author, fill=author_strfill), df["url"][entry_count])
                     author_str += "\n    {: >{fill}}:  {url:}".format(author, fill=author_strfill, url=df["url"][entry_count])
         
         # Search all titles and abstracts for words that I care about
@@ -91,7 +89,11 @@ def filter_papers(df, search_terms):
             entries_of_note.append(entry_count)
 
     progress_bar(len(df), len(df))
-    print(author_str)
+
+    # Print the list of the found authors and their papers
+    # Do not pass this through the logger -- it should always be shown (if at least one was found)
+    if author_match_bool:
+        print(author_str)
 
     entries_of_note_unique = np.unique(entries_of_note)
 

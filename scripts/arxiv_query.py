@@ -10,7 +10,7 @@ import urllib.request
 import time
 import sys
 
-def arxiv_errorcheck(max_num, sleep_timer, blocksize):
+def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
     """Runs some error checks on the results of the arXiv API pull.
 
     inputs
@@ -40,12 +40,12 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize):
     # Print a warning if it is going to take a long time
     if 1 <= time_to_search_minutes < 5:
 
-        print("WARNING: there are {:d} papers. The search will take {:.1f} minutes.".format(max_num, time_to_search_minutes))
+        logger.warning("There are {:d} papers. The search will take {:.1f} minutes.".format(max_num, time_to_search_minutes))
 
     # Prompt the user if it is going to take a really long time.
     elif time_to_search_minutes >= 5:
 
-        user_prompt = input("WARNING: there are {:d} papers. The search will take {:.1f} minutes. Continue? [y/N]: ".format(max_num,time_to_search_minutes)).strip().lower()
+        user_prompt = input("There are {:d} papers. The search will take {:.1f} minutes. Continue? [y/N]: ".format(max_num,time_to_search_minutes)).strip().lower()
 
         # If they want to continue, do nothing.
         # If they do not want to continue, end the search
@@ -102,7 +102,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num):
 
     return parsed_xml_data
 
-def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize):
+def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize, logger):
     """Performs the initial query to obtain important run information.
 
     inputs
@@ -126,7 +126,7 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
         Number of papers that were found in the categories of interest.
     """
 
-    print("Obtaining arXiv info. Estimated time: {:d} seconds".format(sleeptimer)) # Always a single sleep
+    logger.info("Obtaining arXiv info. Estimated time: {:d} seconds".format(sleeptimer)) # Always a single sleep
 
     # Display a progress bar
     progress_bar(0, 1, 3)
@@ -142,9 +142,8 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
     max_num = int(xml_data.find("opensearch:totalResults", ns).text)
     
     progress_bar(1, 1)
-    print("")
 
-    arxiv_errorcheck(max_num, sleeptimer, blocksize)
+    arxiv_errorcheck(max_num, sleeptimer, blocksize, logger)
 
     return max_num
 
@@ -195,7 +194,7 @@ def extract_paper(ns, xml):
 
     return papers
 
-def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, blocksize):
+def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, blocksize, logger):
     """Performs the initial query to obtain important run information.
 
     inputs
@@ -224,7 +223,7 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
     """
 
     entries = []
-    print("Searching for papers. Estimated time: {:d} seconds".format(-sleeptimer*(max_num//-blocksize)))
+    logger.info("Searching for papers. Estimated time: {:d} seconds".format(-sleeptimer*(max_num//-blocksize)))
     for ii in range(0, max_num, blocksize):
 
         # Compute the progress of the loop
@@ -246,7 +245,6 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
         entries.extend(extract_paper(ns, parsed_xml))
 
     progress_bar(max_num, max_num)
-    print("")
 
     # Place into a dataframe
     df = pd.DataFrame( entries )

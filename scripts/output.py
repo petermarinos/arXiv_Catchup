@@ -52,11 +52,10 @@ def read_catchup(filename, sleep_time):
         request_count += 1
 
     progress_bar(total, total)
-    print("")
 
     return links
 
-def open_links(args, df, entries, sleep_time):
+def open_links(args, df, entries, sleep_time, logger):
     """Opens all arXiv links in a webbrowser.
 
     inputs
@@ -77,7 +76,7 @@ def open_links(args, df, entries, sleep_time):
     # Loop through the list and open all in the web browser
     request_count = 0
     # time_start = time.time()
-    print("Opening the papers. Estimated time: {:.2f} seconds".format(total * sleep_time))
+    logger.info("Opening the papers. Estimated time: {:.2f} seconds".format(total * sleep_time))
     for link_index in entries:
 
         progress_bar(request_count, total, ( total - request_count ) * sleep_time)
@@ -112,11 +111,10 @@ def open_links(args, df, entries, sleep_time):
         request_count += 1
 
     progress_bar(total, total)
-    print("")
 
     return
 
-def write_links(filename, df, entries):
+def write_links(filename, df, entries, logger):
     """Write all links to the `catchup.txt` file.
 
     inputs
@@ -129,7 +127,7 @@ def write_links(filename, df, entries):
         Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
     """
 
-    print("Writing all links to the end of the file: {:}".format(filename))
+    logger.info("Writing all links to the end of the file: {:}".format(filename))
 
     with open(filename, "a+", encoding="utf-8") as f:
 
@@ -141,7 +139,7 @@ def write_links(filename, df, entries):
 
     return
 
-def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile, end_date, max_num):
+def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile, end_date, max_num, logger):
     """'Displays' all results, either by opening the links in the browser, outputting them to a file, or by writing them to a file.
     The given display method is chosen by the CLI arguments or user prompts.
 
@@ -171,18 +169,18 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
         # If both -f and -w are passed, both open and write the links
         if args.force_open and args.write_to_file:
 
-            open_links(args, df, entries_of_note, sleep_time)
-            write_links(outfile, df, entries_of_note)
+            open_links(args, df, entries_of_note, sleep_time, logger)
+            write_links(outfile, df, entries_of_note, logger)
 
         # If -f is passed and -w is not, only open the links
         elif args.force_open and not args.write_to_file:
 
-            open_links(args, df, entries_of_note, sleep_time)
+            open_links(args, df, entries_of_note, sleep_time, logger)
 
         # If -f is not passed and -w is, only write the links
         elif not args.force_open and args.write_to_file:
 
-            write_links(outfile, df, entries_of_note)
+            write_links(outfile, df, entries_of_note, logger)
 
         # If neither -f nor -w were passed, prompt the user to ask for the behaviour they prefer
         else:
@@ -203,7 +201,7 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
                 # If they want the output in the terminal
                 if user_prompt_output != "y":
 
-                    print("Printing all links to the terminal")
+                    logger.info("Printing all links to the terminal")
                     for link_index in entries_of_note:
 
                         print(df.loc[link_index, "url"])
@@ -212,29 +210,30 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
                 else:
 
                     # If the file doesn't exist, create it. Otherwise, append the links to the end
-                    write_links(outfile, df, entries_of_note)
+                    write_links(outfile, df, entries_of_note, logger)
 
             # If they say yes to opening in the browser
             else:
 
                 # Open all links
-                open_links(args, df, entries_of_note, sleep_time)
+                open_links(args, df, entries_of_note, sleep_time, logger)
 
     else:
 
-        print("No papers of interest were found.")
+        logger.warning("No papers of interest were found.")
 
     # Compute the number of digits. Assumes that the number of papers is positive :)
     max_digits = len(str(max_num))
 
     # Print a summary
-    print("\nThere was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(max_num, fill=max_digits))
-    print("           of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note), fill=max_digits))
+    print("")
+    logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(max_num, fill=max_digits))
+    logger.info("           of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note), fill=max_digits))
 
     # Check if any papers were found
     if len(df) == 0:
 
-        print("As no papers were found, the aux. date file was not updated")
+        logger.warning("As no papers were found, the aux. date file was not updated")
 
     # If papers were found, update the aux. file
     else:
