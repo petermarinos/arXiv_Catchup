@@ -83,6 +83,10 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
     -------
     parsed_xml_data : Element
         XML data from the arXiv query.
+
+    TO-DO:
+    1) If the xml was successfully downloaded and parsed, save it to a file. Also clear this file if the script finishes successfully.
+    2) If all of the retries fail, write a file that can be used to restart the search as if nothing occured by rerunning the script.
     """
 
     # Define some values for retry attempts. These are magic values and kept from the users.
@@ -167,7 +171,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
             # # It is rare error and difficult to know the cause (has only ever occured in historical searches when testing)
 
             print("")
-            logger.critical("XML parsing error.")
+            logger.critical("XML parsing error.\n")
             raise
 
         # If there have been too many retries, raise an eerror
@@ -178,7 +182,6 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
             raise
 
         # Sleep before retrying
-        clear_progress_bar()
         logger.debug("Sleeping for {:} seconds".format(wait_time))
         time.sleep(wait_time)
 
@@ -187,7 +190,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
     
     # Raise an error if the function reaches here somehow
     print("")
-    logger.critical("Something went wrong...?")
+    logger.critical("Something went wrong...?\n")
     raise
 
 def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize, logger):
