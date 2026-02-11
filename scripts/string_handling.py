@@ -18,8 +18,8 @@ def LaTeX_to_unicode(s):
         The input string, stripped of all LaTeX commands.
     """
 
-    if s is None:
-        return ""
+    # if s is None:
+    #     return ""
 
     # Convert LaTeX accents/ligatures/special characters to unicode
     s_unicode = LatexNodes2Text().latex_to_text(s)

@@ -150,7 +150,7 @@ def calc_next_posttime(now, post_time):
 
     return next_post_time
 
-def parse_date(date_str, name, search_time, list_post_time):
+def parse_date(date_str, name, search_time, list_post_time, logger):
     """Take an input string and convert to the correct datetime object.
 
     inputs
@@ -181,7 +181,7 @@ def parse_date(date_str, name, search_time, list_post_time):
         # If the date is not a valid search date, warn the user and roll the day back to the previous valid day
         if not is_searching_day_bool(parsed_date):
 
-            print("WARNING: {:} is not a valid search date. Rolling back to the previous valid day".format(name))
+            logger.warning("{:} is not a valid search date. Rolling back to the previous valid day".format(name))
 
             parsed_date = calc_search_endtime(raw_datetime, search_time, list_post_time).date()
 
@@ -191,7 +191,7 @@ def parse_date(date_str, name, search_time, list_post_time):
 
         raise ValueError(f"{name} must be in YYYY-MM-DD format")
 
-def date_error_check(current_time, start_date, end_date, list_post_time):
+def date_error_check(current_time, start_date, end_date, list_post_time, logger):
     """Performs some error checks on the dates to ensure the search period is valid.
 
     inputs
@@ -218,9 +218,9 @@ def date_error_check(current_time, start_date, end_date, list_post_time):
     t_minutes = (time_until_next.seconds//60) - t_hours * 60
 
     next_post_string = ( "\n            "
-                    + "The next list will be posted at {:%Y-%m-%d %H:%M (%Z)},".format(nextlist_time)
-                    + "\n            "
-                    + "which is {:} days, {:} hours, and {:} minutes from now.".format(t_days, t_hours, t_minutes) )
+                       + "The next list will be posted at {:%Y-%m-%d %H:%M (%Z)},".format(nextlist_time)
+                       + "\n            "
+                       + "which is {:} days, {:} hours, and {:} minutes from now.".format(t_days, t_hours, t_minutes) )
 
     # Compute number of days between now and the start of the search
     deltadays_now_to_search = ( current_time.date() - start_date ).days
@@ -256,11 +256,11 @@ def date_error_check(current_time, start_date, end_date, list_post_time):
 
     # If there are no issues, let the user know how many days we are searching over
     else:
-        print("Days since the previous search: {:}".format(prev_run.days))
+        logger.info("Days since the previous search: {:}".format(prev_run.days))
 
     return
 
-def date_setup(args, filename_prevsearch):
+def date_setup(args, filename_prevsearch, logger):
     """Set up the date that the script uses for the arXiv API calls.
 
     inputs
@@ -288,8 +288,8 @@ def date_setup(args, filename_prevsearch):
     current_time = datetime.datetime.now(datetime.timezone.utc)
 
     # If start/end dates were passed on the command line, use them. Otherwise, set to None
-    start_time, start_date = parse_date(args.start_date, "start-date", search_time, list_post_time) if args.start_date else [None, None]
-    end_time,   end_date   = parse_date(args.end_date,   "end-date", search_time, list_post_time)   if args.end_date   else [None, None]
+    start_time, start_date = parse_date(args.start_date, "start-date", search_time, list_post_time, logger) if args.start_date else [None, None]
+    end_time,   end_date   = parse_date(args.end_date,   "end-date", search_time, list_post_time, logger)   if args.end_date   else [None, None]
 
     # Compute the time at the end of the search
     # Only perform if the end_date was not passed in the command line
@@ -312,11 +312,11 @@ def date_setup(args, filename_prevsearch):
         # Load it and extract the previous runtime
         with open(filename_prevsearch, "r", encoding="utf-8") as f:
 
-            start_time, start_date = parse_date(next(f), filename_prevsearch, search_time, list_post_time)
+            start_time, start_date = parse_date(next(f), filename_prevsearch, search_time, list_post_time, logger)
 
     # Print some information. Useful to do it before error checks so that all information is visible
-    print("Searching from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19:00 UTC".format(start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
+    logger.info("Searching from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19:00 UTC".format(start_date.year, start_date.month, start_date.day, end_date.year, end_date.month, end_date.day))
 
-    date_error_check(current_time, start_date, end_date, list_post_time)
+    date_error_check(current_time, start_date, end_date, list_post_time, logger)
 
     return start_date, end_date
