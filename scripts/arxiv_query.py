@@ -12,7 +12,8 @@ import time
 import ssl
 import sys
 
-# # # Import libraries used to test API connections and errors
+# # Import libraries used to test API connections and errors
+# from email.message import Message
 # from unittest.mock import patch
 
 def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
@@ -62,6 +63,87 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
 
     return
 
+def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger):
+
+    # If the HTTP error is in our list of codes that tell us to retry
+    if error.code in retry_codes:
+
+        # If there are no headers
+        if error.headers is None:
+
+            logger.debug("No header found")
+            retry_after = None
+
+        # Else, if there are headers
+        else:
+
+            logger.debug("Header found")
+
+            # If there is a Retry-After header
+            if error.headers["Retry-After"] is not None:
+
+                logger.debug("Found Retry-After header")
+                retry_after = error.headers["Retry-After"]
+                wait_time = retry_after
+
+            # Else, if there are headers but no retry-after header
+            else:
+
+                logger.debug("No Retry-After header")
+                retry_after = None
+
+        # Print a warning and retry
+        clear_progress_bar()
+        logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
+
+    # Otherwise, raise an error
+    else:
+
+        print("")
+        logger.critical("HTTP error code '{:}': {:}\n".format(error.code, error.reason))
+        raise
+
+    return retry_after
+
+def url_errorcheck(error, cert_error_bool, wait_time, logger):
+
+    # If it is a certificate verification error, and no certification error has occured before:
+    if isinstance(error.reason, ssl.SSLCertVerificationError) and not cert_error_bool:
+
+        # Warn the user that verification failed
+        clear_progress_bar()
+        logger.warning("Connection error: {:}. Updating certificate and retrying in {:} seconds ...".format(error.reason, wait_time))
+
+        # Try verifying
+        ssl_context = ssl.create_default_context(cafile=certifi.where())
+
+        # Set the certification error flag to True
+        cert_error_bool = True
+
+    # If it is a certificate verification error, and we have tried certifying earlier:
+    elif isinstance(error.reason, ssl.SSLCertVerificationError) and cert_error_bool:
+
+        # Warn the user that we are disabling verification
+        clear_progress_bar()
+        logger.warning("Verification still failed.")
+        logger.info("This could potentially be an issue with your OS and its trust store, or the certifi package version.")
+        logger.info("Current certifi version: {:}. Recommended: >2026.01.04.".format(certifi.__version__))
+        logger.info("This issue should be fixed before rerunning the script.")
+        logger.warning("Disabling verification and retrying in {:} seconds ...".format(wait_time))
+
+        # Disable verification
+        ssl._create_default_https_context = ssl._create_unverified_context
+        ssl_context                       = None
+
+    # Otherwise, if it is any other type of URL error, raise an error
+    else:
+
+        print("")
+        logger.critical("Connection error: {:}\n".format(error.reason))
+        raise
+
+    return ssl_context, cert_error_bool
+
 def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
     """Queries the arXiv API.
     Will catch errors and attempt retries.
@@ -106,9 +188,13 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
                    504, # Gateway timeout
                   )
 
-    # Set default ssl_context and define a flag to check if a certification error was raiseed previously
+    # Set default ssl_context and define a flag to check if a certification error was raised previously
     ssl_context     = None
     cert_error_bool = False
+
+    # If an error gives a "Retry-After" demand, we will wait for that time instead of the exponential backoff
+    # Initialise to None
+    retry_after = None
 
     # Format the url
     formatted_url = url.format(start_year  = start_date.year,
@@ -128,11 +214,34 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
 
             # # Test error handling
             # # Indent the "attempt to connect to arXiv" to "return parsed_xml_date" lines by one additional indentation
+
             # # HTTP ERRORS
-            # err = urllib.error.HTTPError(url=None, code=504, msg="fake error that I made up", hdrs=None, fp=None)
+
+            # # http error with a random code and no header
+            # err = urllib.error.HTTPError(url=None, code=47, msg="fake error that should exit", hdrs=None, fp=None)
             # with patch("urllib.request.urlopen", side_effect=err):
+
+            # # http repeating error code with no header
+            # err = urllib.error.HTTPError(url=None, code=408, msg="non-repeating code", hdrs=None, fp=None)
+            # with patch("urllib.request.urlopen", side_effect=err):
+
+            # # http non-repeating error code with a useless header
+            # headers = Message()
+            # headers["blank"] = 'nothing'
+            # err = urllib.error.HTTPError(url=None, code=408, msg="non-repeating code", hdrs=headers, fp=None)
+            # with patch("urllib.request.urlopen", side_effect=err):
+
+            # # http error with a retry-after header
+            # headers = Message()
+            # headers["Retry-After"] = 40
+            # err = urllib.error.HTTPError(url=None, code=429, msg="repeating code", hdrs=headers, fp=None)
+            # with patch("urllib.request.urlopen", side_effect=err):
+
+            # # URL ERRORS
+
             # # non-Verification errors
             # with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("DNS fail")):
+
             # # Verification errors
             # err = urllib.error.URLError(ssl.SSLCertVerificationError("certificate verify failed: unable to get local issuer certificate"))
             # with patch("urllib.request.urlopen", side_effect=err):
@@ -151,64 +260,12 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
         # If there is a HTTP error:
         except urllib.error.HTTPError as error:
 
-            # If the HTTP error is in our list of codes that tell us to retry
-            if error.code in retry_codes:
-
-                # Check if there is a 'retry after' demand
-                retry_after = error.headers.get("Retry-After")
-
-                # If there is a retry after demand
-                # not tested
-                if retry_after is not None:
-                    wait_time = retry_after
-
-                # Print a warning and retry
-                clear_progress_bar()
-                logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
-
-            # Otherwise, raise an error
-            else:
-
-                print("")
-                logger.critical("HTTP error code '{:}': {:}\n".format(error.code, error.reason))
-                raise
+            retry_after = http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
 
         # If there is a URL error:
         except urllib.error.URLError as error:
 
-            # If it is a certificate verification error, and no certification error has occured before:
-            if isinstance(error.reason, ssl.SSLCertVerificationError) and not cert_error_bool:
-
-                # Warn the user that verification failed
-                clear_progress_bar()
-                logger.warning("Connection error: {:}. Updating certificate and retrying in {:} seconds ...".format(error.reason, wait_time))
-
-                # Try verifying
-                ssl_context = ssl.create_default_context(cafile=certifi.where())
-
-                # Set the certification error flag to True
-                cert_error_bool = True
-
-            # If it is a certificate verification error, and we have tried certifying earlier:
-            elif isinstance(error.reason, ssl.SSLCertVerificationError) and cert_error_bool:
-
-                # Warn the user that we are disabling verification
-                clear_progress_bar()
-                logger.warning("Verification still failed.")
-                logger.info("This could potentially be an issue with your OS and its trust store, or the certifi package version.")
-                logger.info("Current certifi version: {:}. Recommended: >2026.01.04.".format(certifi.__version__))
-                logger.info("This issue should be fixed before rerunning the script.")
-                logger.warning("Disabling verification and retrying in {:} seconds ...".format(wait_time))
-
-                # Disable verification
-                ssl._create_default_https_context = ssl._create_unverified_context
-
-            # Otherwise, if it is any other type of URL error, raise an error
-            else:
-
-                print("")
-                logger.critical("Connection error: {:}\n".format(error.reason))
-                raise
+            ssl_context, cert_error_bool = url_errorcheck(error, cert_error_bool, wait_time, logger)
 
         # If there is an error parsing the xml, raise an error
         except ET.ParseError as error:
