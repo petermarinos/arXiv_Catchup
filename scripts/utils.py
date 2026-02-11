@@ -52,12 +52,19 @@ def logger_setup(args):
         4 => debug                  and all of the above
     """
 
-    # Define logging message
-    # logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s') # Show time
-    logging.basicConfig(format="%(levelname)s: %(message)s") # Don't show time
-
     # Initialise the logger
     logger = logging.getLogger()
+
+    # Configure the logger
+    # # Brute force writing to stderr
+    # logging._handlers.clear()
+    # handler = logging.StreamHandler(sys.stderr)
+    # handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    # logger.addHandler(handler)
+    # # Default method to force writing to stderr
+    # logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s') # Show time
+    logging.basicConfig(format="%(levelname)s: %(message)s", # Don't show time
+                        stream=sys.stderr, force=True) # Print to stderr
 
     # Set the logging level
     if args.verbosity == 0:
@@ -99,7 +106,8 @@ def load_searchterms(filename, logger):
     # At least one category is required
     if search_terms["Categories"] is None:
 
-        raise ValueError("No search terms were found in the 'Categories' entry in the configuration file.\n            Please check the file and add at least one item")
+        logger.critical("No search terms were found in the 'Categories' entry in the configuration file.\n          Please check the file and add at least one item.\n")
+        raise
     
     else:
 
@@ -129,7 +137,8 @@ def load_searchterms(filename, logger):
     # At least one search term is required in the "Words" key
     if search_terms["Included Words"] is None:
 
-        raise ValueError("No search terms were found in the 'Included Words' entry in the configuration file.\n            Please check the file and add at least one item")
+        logger.critical("No search terms were found in the 'Included Words' entry in the configuration file.\n          Please check the file and add at least one item.\n")
+        raise
 
     # No search terms are required for the "Authors" or "Excluded Words" keys
     # Warn the user if no terms are found
@@ -217,5 +226,14 @@ def clear_catchup(filename, links, logger):
     else:
 
         logger.info("Doing nothing.")
+
+    return
+
+def clear_progress_bar():
+    """Clears the progress bar.
+    """
+
+    sys.stdout.write("\r\033[K")
+    sys.stdout.flush()
 
     return

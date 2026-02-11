@@ -189,7 +189,8 @@ def parse_date(date_str, name, search_time, list_post_time, logger):
     
     except ValueError:
 
-        raise ValueError(f"{name} must be in YYYY-MM-DD format")
+        logger.critical("{:} must be in the YYYY-mm-dd format.\n".format(name))
+        raise
 
 def date_error_check(current_time, start_date, end_date, list_post_time, logger):
     """Performs some error checks on the dates to ensure the search period is valid.
@@ -235,24 +236,29 @@ def date_error_check(current_time, start_date, end_date, list_post_time, logger)
     # Raise some errors
     # If the search start date is in the future:
     if deltadays_now_to_search < 0:
-        raise ValueError("Search start date is in the future.")
+        logger.critical("Search start date is in the future.\n")
+        raise
 
     # If the search end date is in the future:
     elif ( current_time.date() - end_date ).days < 0:
-        raise ValueError("Search end date is in the future.")
+        logger.critical("Search end date is in the future.\n")
+        raise
 
     # If the end date is equal to the start date, tell the user to wait
     elif prev_run.days == 0:
-        raise ValueError("Search start/end dates are equal."+next_post_string)
+        logger.critical("Search start/end dates are equal.{:}\n".format(next_post_string))
+        raise
 
     # If the end date is before the start date
     elif prev_run.days < 0:
-        raise ValueError(f"Search start date is after the end date. Check for timezone issues.")
+        logger.critical("Search start date is after the end date. Check for timezone issues.\n")
+        raise
 
     # If the search period doesn't cover any searching days, tell the user to wait
     # Typically one of the previous errors will occur before this one if the entire search period is invalid
     elif deltadays_now_to_search < 7 and valid_search_days == 0:
-        raise ValueError("No valid search dates are included."+next_post_string)
+        logger.critical("No valid search dates are included.{:}\n".format(next_post_string))
+        raise
 
     # If there are no issues, let the user know how many days we are searching over
     else:

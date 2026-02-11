@@ -1,6 +1,6 @@
 # Import libraries
 from scripts.string_handling import normalise_string
-from scripts.utils           import progress_bar
+from scripts.utils           import progress_bar, clear_progress_bar
 
 import xml.etree.ElementTree as ET
 import pandas                as pd
@@ -9,6 +9,9 @@ import numpy                 as np
 import urllib.request
 import time
 import sys
+
+# # Import libraries used to test API connections and errors
+from unittest.mock import patch
 
 def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
     """Runs some error checks on the results of the arXiv API pull.
@@ -26,13 +29,15 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
     # If no papers were found in the search, raise an error
     # This should catch deferred mailings
     if max_num == 0:
-        raise ValueError("There were no papers submitted to the arXiv.\n            Refine search dates and/or categories and check for deferred mailings:\n            https://info.arxiv.org/help/availability.html")
+        logger.critical("There were no papers submitted to the arXiv.\n          Refine search dates and/or categories and check for deferred mailings:\n          https://info.arxiv.org/help/availability.html\n")
+        raise
 
     # If there are too many papers then there can be issues with the arXiv API.
     # While the API will likely return an error, catch it here as well just in case
     if max_num >= 30000:
         
-        raise ValueError("Number of papers is too large. Refine search dates and/or categories.")
+        logger.critical("Number of papers is too large. Refine search dates and/or categories.\n")
+        raise
     
     # Compute the time it will take to download all papers
     time_to_search_minutes = max_num*sleep_timer/(blocksize*60)
@@ -55,8 +60,9 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
 
     return
 
-def arxiv_query(url, start_date, end_date, cats, start_num, end_num):
+def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
     """Queries the arXiv API.
+    Will catch errors and attempt retries.
 
     inputs
     ------
@@ -77,10 +83,22 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num):
     -------
     parsed_xml_data : Element
         XML data from the arXiv query.
-
-    TO-DO:
-    1) Catch some common HTTP errors and implement workarounds/retries
     """
+
+    # Define some values for retry attempts. These are magic values and kept from the users.
+    # Do not alter these
+    max_retries = 5  # Maximum number of retried connections
+    wait_time   = 6  # Seconds to wait. Double the courtesy value
+    backoff     = 2  # Factor to increase the wait_time after a failure
+    timeout     = 30 # Seconds to wait before a timeout
+    retry_codes = (
+                   408, # Request timeout
+                   429, # Too many requests
+                   500, # Internal server error
+                   502, # Bad gateway
+                   503, # Service unavailable (i.e. overloaded or down)
+                   504, # Gateway timeout
+                  )
 
     # Format the url
     formatted_url = url.format(start_year  = start_date.year,
@@ -94,13 +112,83 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num):
                                end_num     = end_num)
     
     # Query the server
-    with urllib.request.urlopen(formatted_url) as f:
-        xml_data = f.read()
+    for attempt in range(1, max_retries + 1): # 1 -> max_retries+1 so that we start counting attempts at 1 in the logger messages
 
-    # Parse the xml
-    parsed_xml_data = ET.fromstring(xml_data)
+        try:
 
-    return parsed_xml_data
+            # # Test error handling
+            # # Indent the "attempt to connect to arXiv" by one additional indentation
+            # err = urllib.error.HTTPError(url=None, code=504, msg="fake error that I made up", hdrs=None, fp=None)
+            # with patch("urllib.request.urlopen", side_effect=err):
+            # with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("DNS fail")):
+
+            # Attempt to connect to arXiv
+            with urllib.request.urlopen(formatted_url, timeout=timeout) as f:
+
+                # Read the data
+                xml_data = f.read()
+
+                # Parse the xml
+                parsed_xml_data = ET.fromstring(xml_data)
+
+                return parsed_xml_data
+                
+        # If there is a HTTP error:
+        except urllib.error.HTTPError as error:
+
+            # If the HTTP error is in our list of codes that tell us to retry
+            if error.code in retry_codes:
+
+                # Print a warning and retry
+                clear_progress_bar()
+                logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
+
+            # Otherwise, raise an error
+            else:
+
+                print("")
+                logger.critical("HTTP error code '{:}': {:}\n".format(error.code, error.reason))
+                raise
+
+        # If there is a URL error, raise an error
+        except urllib.error.URLError as error:
+
+            print("")
+            logger.critical("Connection error: {:}\n".format(error.reason))
+            raise
+
+        # If there is an error parsing the xml, raise an error
+        except ET.ParseError as error:
+
+            # # Print a warning and retry
+            # clear_progress_bar()
+            # logger.warning("XML parsing error on attempt {:} of {:}. Retrying in {:} seconds ...".format(attempt, max_retries, wait_time))
+            # # May need to add a way to warn and skip. This error shouldn't occur, but potenially could be due to malformed paper entries?
+            # # It is rare error and difficult to know the cause (has only ever occured in historical searches when testing)
+
+            print("")
+            logger.critical("XML parsing error.")
+            raise
+
+        # If there have been too many retries, raise an eerror
+        if attempt == max_retries:
+
+            print("")
+            logger.critical("Maximum retries attempted. arXiv query failed.\n")
+            raise
+
+        # Sleep before retrying
+        clear_progress_bar()
+        logger.debug("Sleeping for {:} seconds".format(wait_time))
+        time.sleep(wait_time)
+
+        # Increase the wait time for thee next atteept
+        wait_time *= backoff
+    
+    # Raise an error if the function reaches here somehow
+    print("")
+    logger.critical("Something went wrong...?")
+    raise
 
 def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize, logger):
     """Performs the initial query to obtain important run information.
@@ -137,7 +225,8 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
                            end_date,
                            cats,
                            0,
-                           1)
+                           1,
+                           logger)
     
     max_num = int(xml_data.find("opensearch:totalResults", ns).text)
     
@@ -240,7 +329,13 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
         time.sleep(sleeptimer)
 
         # Query the API
-        parsed_xml = arxiv_query(url, start_date, end_date, cats, ii, search_endnum)
+        parsed_xml = arxiv_query(url,
+                                 start_date,
+                                 end_date,
+                                 cats,
+                                 ii,
+                                 search_endnum,
+                                 logger)
         
         entries.extend(extract_paper(ns, parsed_xml))
 
