@@ -7,7 +7,9 @@ This script searches the [arXiv](https://arxiv.org/) (within the categories of i
 It then performs some basic keyword matching, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
 
 > [!NOTE]
-> Similar projects, such as [this one](https://github.com/TideDra/zotero-arxiv-daily), can send you an email every day. This method can become a chore if missing one or more weeks due to personal or professional circumstances.
+> This project exists to open all unread papers of interest in the browser with minimal user input.
+> This behaviour simplifies catching up on the literature after being unable to check the arXiv for one or more weeks due to personal or professional circumstances.
+> Similar projects, such as [this one](https://github.com/TideDra/zotero-arxiv-daily), can send you a daily email if you prefer.
 
 ## Usage
 
