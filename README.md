@@ -34,17 +34,18 @@ The search can then be performed in the CLI from any directory by running:
 ### CLI Arguments
 
 There are additional arguments that can be used:
+- `-h`, `--help` show the help message.
 - `-f`, `--force-open` skips all confirmation dialogues and opens all links.
 - `-w`, `--write-to-file` skips all confirmation dialogues and writes all links to a file.
 - `-n`, `--new-window` opens all links in a new window (does not work on mac).
-- `-s str`, `--start-date=str` manually set the start date for the search, rather than using the date of the previous search. Input in ISO format (YYYY-mm-dd).
-- `-e str`, `--end-date=str` manually set the end date for the search, rather than using the date of the last listing. Input in ISO format (YYYY-mm-dd).
-- `-v int`, `--verbosity=int` set the verbosity level. Default is 3.
+- `-s str`, `--start-date str` manually set the start date for the search.
+- `-e str`, `--end-date str` manually set the end date for the search.
+- `-v int`, `--verbosity int` set the verbosity level. Default is 3.
     - 0 => Show only show critical error meessages.
     - 1 => Show the above, and error messages.
     - 2 => Show all of the above, and warning messages.
     - 3 => Show all of the above, and info messages. Recommended.
-    - 0 => Show all of the above, and debug messages.
+    - 4 => Show all of the above, and debug messages.
 
 If both `-f` and `-w` are passed, then the scipt will do both. If neither are passed, then the script will prompt the user for their preference.
 These CLI arguments can be added to the bash alias.

@@ -18,20 +18,21 @@ def cli_args():
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(prog='arXiv Catchup',
-                                     description='Search arXiv for papers matching your criteria')
+                                     description='Searches arXiv for papers matching your criteria.',
+                                     formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-f', '--force-open', action='store_true',
-                        help='Skip the warning about how many papers will be opened.')
+                        help='Skip all user prompts and open links in the web browser.')
     parser.add_argument('-w', '--write-to-file', action='store_true',
-                        help='Skip opening links and user prompts, writing all links straight to a file.')
+                        help='Skip all user prompts and write all links to a file.')
     parser.add_argument('-n', '--new-window', action='store_true',
-                        help='Open all papers in a single new browser window as tabs.') # Doesn't work on mac with firefox
+                        help='Open all papers in a new browser window as tabs.') # Doesn't work on mac with firefox
     parser.add_argument('-s', '--start-date', type=str,
-                        help='Set the start time for the search, YYYY-MM-DD (19:00 UTC)\nIgnores the date in the `prev_search.txt`.')
+                        help='Set the start date for the search.\nInput in ISO format, i.e. "YYYY-mm-dd".\nIgnores the date in the `prev_search.txt`.')
     parser.add_argument('-e', '--end-date', type=str,
-                        help='Set the end time for the search, YYYY-MM-DD (19:00 UTC).')
+                        help='Set the end date for the search.\nInput in ISO format, i.e. "YYYY-mm-dd".')
     parser.add_argument('-v', '--verbosity', type=int, default=3,
-                        help='Verbosity level.\n0 => critical errors\n1 => and non-critical errors\n2 => and warnings\n3 => and info\n4 => and debug meessages')
+                        help='Set the verbosity level.\n0 => critical errors\n1 => ... and non-critical errors\n2 => ... and warnings\n3 => ... and info\n4 => ... and debug messages')
 
     args = parser.parse_args()
 
@@ -46,10 +47,10 @@ def logger_setup(args):
     verbosity : int
         Defines the level for the logger.
         0 => only critical errors
-        1 => errors                 and all of the above
-        2 => warnings               and all of the above
-        3 => info                   and all of the above
-        4 => debug                  and all of the above
+        1 => ... and errors
+        2 => ... and warnings
+        3 => ... and info
+        4 => ... and debug
     """
 
     # Initialise the logger
