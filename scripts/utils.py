@@ -18,7 +18,7 @@ def cli_args():
 
     # Parse command-line arguments
     parser = argparse.ArgumentParser(prog='arXiv Catchup',
-                                    description='Search arXiv for papers matching your criteria')
+                                     description='Search arXiv for papers matching your criteria')
 
     parser.add_argument('-f', '--force-open', action='store_true',
                         help='Skip the warning about how many papers will be opened.')
@@ -31,7 +31,7 @@ def cli_args():
     parser.add_argument('-e', '--end-date', type=str,
                         help='Set the end time for the search, YYYY-MM-DD (19:00 UTC).')
     parser.add_argument('-v', '--verbosity', type=int, default=3,
-                        help='Verbosity level.')
+                        help='Verbosity level.\n0 => critical errors\n1 => and non-critical errors\n2 => and warnings\n3 => and info\n4 => and debug meessages')
 
     args = parser.parse_args()
 
