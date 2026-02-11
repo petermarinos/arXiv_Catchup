@@ -43,13 +43,13 @@ There are additional arguments that can be used:
 - `-s str`, `--start-date str` manually set the start date for the search.
 - `-e str`, `--end-date str` manually set the end date for the search.
 - `-v int`, `--verbosity int` set the verbosity level. Default is 3.
-    - 0 => Show only show critical error meessages.
+    - 0 => Show only critical error messages.
     - 1 => Show the above, and error messages.
-    - 2 => Show all of the above, and warning messages.
-    - 3 => Show all of the above, and info messages. Recommended.
-    - 4 => Show all of the above, and debug messages.
+    - 2 => Show all the above, and warning messages.
+    - 3 => Show all the above, and info messages. Recommended.
+    - 4 => Show all the above, and debug messages.
 
-If both `-f` and `-w` are passed, then the scipt will do both. If neither are passed, then the script will prompt the user for their preference.
+If both `-f` and `-w` are passed, then the script will do both. If neither are passed, then the script will prompt the user for their preference.
 These CLI arguments can be added to the bash alias.
 
 ### Auxiliary Files
@@ -99,14 +99,14 @@ Weekends are handled by the script, which will raise an error if being executed 
 The papers posted on the weekend will be caught when run on Monday.
 
 There are also "deferred mailing" days.
-These days are chosen ad-hoc, and are days that are important to USAians.
+These days are ones that are important to USAians and are chosen ad-hoc.
 It includes Christmas, their Thanksgiving, and others.
 
 On these days, the search *should* return zero results, and raise an error.
 Hence, no papers *should* be missed from the deferred mailing days, as said papers would appear in the next search (not tested).
 The next deferred mailing where this can be tested will be on Friday 2026/06/19.
 
-## Acknowledgemeents
+## Acknowledgements
 
 Thank you to arXiv for use of its open access interoperability.
 
