@@ -1,5 +1,5 @@
 # Requirements:
-certifi==2026.1.4
+certifi==2026.01.04
 numpy==2.2.4
 pandas==2.2.3
 pylatexenc==2.10
@@ -7,11 +7,15 @@ PyYAML==6.0.2
 # # Other required packages that are included in the python standard library and so do not need to be installed:
 # argparse
 # datetime
+# logging
 # os
+# pathlib
 # re
+# ssl
 # sys
 # time
 # unicodedata
+# unittest # For testing
 # urllib
 # webbrowser
 # xml

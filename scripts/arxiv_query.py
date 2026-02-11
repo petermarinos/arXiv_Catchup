@@ -7,11 +7,13 @@ import pandas                as pd
 import numpy                 as np
 
 import urllib.request
+import certifi
 import time
+import ssl
 import sys
 
-# # Import libraries used to test API connections and errors
-from unittest.mock import patch
+# # # Import libraries used to test API connections and errors
+# from unittest.mock import patch
 
 def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
     """Runs some error checks on the results of the arXiv API pull.
@@ -104,6 +106,10 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
                    504, # Gateway timeout
                   )
 
+    # Set default ssl_context and define a flag to check if a certification error was raiseed previously
+    ssl_context     = None
+    cert_error_bool = False
+
     # Format the url
     formatted_url = url.format(start_year  = start_date.year,
                                start_month = start_date.month,
@@ -121,13 +127,18 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
         try:
 
             # # Test error handling
-            # # Indent the "attempt to connect to arXiv" by one additional indentation
+            # # Indent the "attempt to connect to arXiv" to "return parsed_xml_date" lines by one additional indentation
+            # # HTTP ERRORS
             # err = urllib.error.HTTPError(url=None, code=504, msg="fake error that I made up", hdrs=None, fp=None)
             # with patch("urllib.request.urlopen", side_effect=err):
+            # # non-Verification errors
             # with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("DNS fail")):
+            # # Verification errors
+            # err = urllib.error.URLError(ssl.SSLCertVerificationError("certificate verify failed: unable to get local issuer certificate"))
+            # with patch("urllib.request.urlopen", side_effect=err):
 
             # Attempt to connect to arXiv
-            with urllib.request.urlopen(formatted_url, timeout=timeout) as f:
+            with urllib.request.urlopen(formatted_url, timeout=timeout, context=ssl_context) as f:
 
                 # Read the data
                 xml_data = f.read()
@@ -154,12 +165,42 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
                 logger.critical("HTTP error code '{:}': {:}\n".format(error.code, error.reason))
                 raise
 
-        # If there is a URL error, raise an error
+        # If there is a URL error:
         except urllib.error.URLError as error:
 
-            print("")
-            logger.critical("Connection error: {:}\n".format(error.reason))
-            raise
+            # If it is a certificate verification error, and no certification error has occured before:
+            if isinstance(error.reason, ssl.SSLCertVerificationError) and not cert_error_bool:
+
+                # Warn the user that verification failed
+                clear_progress_bar()
+                logger.warning("Connection error: {:}. Updating certificate and retrying in {:} seconds ...".format(error.reason, wait_time))
+
+                # Try verifying
+                ssl_context = ssl.create_default_context(cafile=certifi.where())
+
+                # Set the certification error flag to True
+                cert_error_bool = True
+
+            # If it is a certificate verification error, and we have tried certifying earlier:
+            elif isinstance(error.reason, ssl.SSLCertVerificationError) and cert_error_bool:
+
+                # Warn the user that we are disabling verification
+                clear_progress_bar()
+                logger.warning("Verification still failed.")
+                logger.info("This could potentially be an issue with your OS and its trust store, or the certifi package version.")
+                logger.info("Current certifi version: {:}. Recommended: >2026.01.04.".format(certifi.__version__))
+                logger.info("This issue should be fixed before rerunning the script.")
+                logger.warning("Disabling verification and retrying in {:} seconds ...".format(wait_time))
+
+                # Disable verification
+                ssl._create_default_https_context = ssl._create_unverified_context
+
+            # Otherwise, if it is any other type of URL error, raise an error
+            else:
+
+                print("")
+                logger.critical("Connection error: {:}\n".format(error.reason))
+                raise
 
         # If there is an error parsing the xml, raise an error
         except ET.ParseError as error:
@@ -169,12 +210,13 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
             # logger.warning("XML parsing error on attempt {:} of {:}. Retrying in {:} seconds ...".format(attempt, max_retries, wait_time))
             # # May need to add a way to warn and skip. This error shouldn't occur, but potenially could be due to malformed paper entries?
             # # It is rare error and difficult to know the cause (has only ever occured in historical searches when testing)
-
+            
+            # # For now, raise an error
             print("")
             logger.critical("XML parsing error.\n")
             raise
 
-        # If there have been too many retries, raise an eerror
+        # If there have been too many retries, raise an error
         if attempt == max_retries:
 
             print("")
