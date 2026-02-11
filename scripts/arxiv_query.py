@@ -154,6 +154,14 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
             # If the HTTP error is in our list of codes that tell us to retry
             if error.code in retry_codes:
 
+                # Check if there is a 'retry after' demand
+                retry_after = error.headers.get("Retry-After")
+
+                # If there is a retry after demand
+                # not tested
+                if retry_after is not None:
+                    wait_time = retry_after
+
                 # Print a warning and retry
                 clear_progress_bar()
                 logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
@@ -227,8 +235,10 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
         logger.debug("Sleeping for {:} seconds".format(wait_time))
         time.sleep(wait_time)
 
-        # Increase the wait time for thee next atteept
-        wait_time *= backoff
+        # If there was no retry after demand, increase the wait time for the next attempt
+        if retry_after is None:
+            
+            wait_time *= backoff
     
     # Raise an error if the function reaches here somehow
     print("")
