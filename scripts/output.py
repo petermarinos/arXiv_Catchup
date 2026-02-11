@@ -5,7 +5,7 @@ from scripts.dates import write_date
 import webbrowser
 import time
 
-def read_catchup(filename, sleep_time):
+def read_catchup(filename, sleep_time, logger):
     """Read the `catchup.txt` file and open all links in the browser.
 
     inputs
@@ -28,6 +28,12 @@ def read_catchup(filename, sleep_time):
         for line in f:
 
             link = line.strip()
+
+            if link[:21] != "http://arxiv.org/abs/":
+
+                print("")
+                logger.critical("One or more links in the catchup file is malformed.\n          Found    {:}\n          Expected http://arxiv.org/abs/0123.45678v9 format\n".format(link))
+                raise
 
             links.append(link)
 

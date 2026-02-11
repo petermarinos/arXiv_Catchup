@@ -194,6 +194,15 @@ def progress_bar(ii, total, time_estimate=None):
 
     return
 
+def clear_progress_bar():
+    """Clears the progress bar.
+    """
+
+    sys.stdout.write("\r\033[K")
+    sys.stdout.flush()
+
+    return
+
 def clear_catchup(filename, links, logger):
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
 
@@ -211,15 +220,28 @@ def clear_catchup(filename, links, logger):
     # Ask the user if they would like to open the links in the browser. Default is no
     logger.warning("There are {:} links in {:}.".format(len(links), filename))
     user_prompt = input(
-                        "    Delete them all? This action cannot be reversed, only do so if the papers have been reviewed. [y/N]: "
+                        "         Delete all links? This action cannot be reversed. Only do so if the papers have been reviewed. [y/N]: "
                         ).strip().lower()
     
-    # If the user says yes, delete the file (it will be recreated later if writing links)
+    # If the user says yes, delete the file
     if user_prompt == "y":
 
-        logger.info("Deleting the file.")
+        # Check that the file is of the correct format to prevent deleting some other file
+        # Loop through all lines, ensuring they begin with the correct text
+        with open(filename, "r") as f:
 
-        # Delete the file
+            for line in f:
+
+                link = line.strip()
+
+                if link[:21] != "http://arxiv.org/abs/":
+
+                    print("")
+                    logger.critical("The catchup file is not formatted correctly. Double check its contents manually.\n")
+                    raise
+
+        # If the file is of the correct format, delete it
+        logger.info("Deleting the file.")
         file = pathlib.Path(filename)
         file.unlink()
 
@@ -227,14 +249,5 @@ def clear_catchup(filename, links, logger):
     else:
 
         logger.info("Doing nothing.")
-
-    return
-
-def clear_progress_bar():
-    """Clears the progress bar.
-    """
-
-    sys.stdout.write("\r\033[K")
-    sys.stdout.flush()
 
     return
