@@ -1,7 +1,6 @@
 # README
 
 Tired of reading all the Titles/Abstracts/Author Lists of every paper posted on the arXiv every single day?
-Here is the solution!
 
 This script searches the [arXiv](https://arxiv.org/) (within the categories of interest) for **all papers since the previous execution**.
 It then performs some basic keyword matching, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
@@ -10,6 +9,9 @@ It then performs some basic keyword matching, and opens all papers with matches 
 > This project exists to open all unread papers of interest in the browser with minimal user input.
 > This behaviour simplifies catching up on the literature after being unable to check the arXiv for one or more weeks due to personal or professional circumstances.
 > Similar projects, such as [this one](https://github.com/TideDra/zotero-arxiv-daily), can send you a daily email if you prefer.
+
+> [!IMPORTANT]
+> This project is still in development. If you encounter any issues or have ideas for improvements, please send me a message or post an issue.
 
 ## Usage
 
