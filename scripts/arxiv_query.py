@@ -477,6 +477,7 @@ def extract_papers(ns, xml, logger):
             "Author Match"    : False,
             "IncWord Match"   : False,
             "ExcWord Match"   : False,
+            "Score"           : 0,
         }
 
         logger.debug("Found: {:}, version {:}.".format(ID_number, version_number))
