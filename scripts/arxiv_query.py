@@ -230,7 +230,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, blocksize, logger):
     """
 
     # Define some values for retry attempts. These are magic values and kept from the users.
-    # Do not alter these
+    # These can be altered as arXiv does not specify values. However, these values are pretty typical so it is best to leave them.
     max_retries = 5  # Maximum number of retried connections
     wait_time   = 6  # Seconds to wait. Double the courtesy value
     backoff     = 2  # Factor to increase the wait_time after a failure

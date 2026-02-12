@@ -57,6 +57,7 @@ def arxiv_constants():
         }
 
     # Define arXiv API courtesy limits
+    # These are the values that arXiv asks we obey. Do not alter them.
     sleep_opening    = 0.25 # 0.25 seconds between opening links
     sleep_search     = 3    # 3 seconds per search
     search_blocksize = 10   # Each search downloads only ten papers (max=2000)
