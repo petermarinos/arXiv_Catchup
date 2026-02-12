@@ -1,7 +1,7 @@
 # Import libraries
 from scripts.string_handling import normalise_string
 from scripts.output          import write_xml
-from scripts.utils           import progress_bar, clear_progress_bar
+from scripts.utils           import progress_bar, clear_progress_bar, delete_file
 
 import xml.etree.ElementTree as ET
 import pandas                as pd
@@ -18,8 +18,8 @@ import os
 # from email.message import Message
 # from unittest.mock import patch
 
-def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
-    """Runs some error checks on the results of the arXiv API pull.
+def arxiv_errorcheck(max_num, sleep_timer, blocksize, filename, logger):
+    """Runs some error checks on the results of the initial arXiv API pull (i.e. the one that collects some basic information).
 
     inputs
     ------
@@ -63,6 +63,10 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
         # If they do not want to continue, end the search
         if user_prompt != "y":
 
+            # Delete the .xml file
+            delete_file(filename, logger)
+
+            # Exit
             sys.exit("Cancelling the search. Reduce search window to decrease the number of results.")
 
     return
@@ -403,7 +407,7 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
     # Otherwise, search the arXiv
     else:
 
-        logger.info("Obtaining arXiv info ...")
+        logger.info("Obtaining arXiv info from the servers.")
 
         # # Display a progress bar
         # progress_bar(0, 1, 3)
@@ -426,12 +430,12 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
     # Extract the total number of papers that were found
     max_num = int(xml_data.find("opensearch:totalResults", ns).text)
 
-    arxiv_errorcheck(max_num, sleeptimer, blocksize, logger)
+    arxiv_errorcheck(max_num, sleeptimer, blocksize, filename_xml, logger)
 
     return max_num
 
 def extract_papers(ns, xml, logger):
-    """
+    """Extracts the papers (and their information) from the API query.
 
     inputs
     ------
@@ -451,21 +455,23 @@ def extract_papers(ns, xml, logger):
     # Loop over the entries (papers) within the current search
     for entry in xml.findall("atom:entry", ns):
 
-        # Previously, when parsing the emails, there would be 'revised' versions. I would skip them, and they typically had no abstract.
-        # The search that is being used now specifically uses "submitted date" as the criteria for being included, so I think there will never be any revised papers or empty abstracts.
-        # However, I have kept the relevant columns and error checks just in case.
-
+        # Find the published and updated dates
         published_date = entry.find("atom:published", ns).text
         updated_date   = entry.find("atom:updated", ns).text
 
+        # Find the arXiv numbers
+        ID_number      = entry.find("atom:id", ns).text.split("/")[-1][:10]
+        version_number = int( entry.find("atom:id", ns).text.split("/")[-1][11:] )
+
+        # Extract the author list
         author_list = [author.find("atom:name", ns).text for author in entry.findall("atom:author", ns)]
 
         # Place information in a dictionary
         paper = {
-            "arXiv Number"    : entry.find("atom:id", ns).text.split("/")[-1],
+            "arXiv Number"    : ID_number,
             "Title"           : entry.find("atom:title", ns).text.strip(),
             "Authors"         : normalise_string( ", ".join(f"{author}" for author in author_list) ),
-            "Revised?"        : updated_date > published_date,
+            "Revised?"        : (updated_date > published_date) or (version_number > 1),
             "Abstract"        : entry.find("atom:summary", ns).text.strip(),
             "url"             : entry.find("atom:id", ns).text.strip(),
             "Author Match"    : False,
@@ -473,11 +479,13 @@ def extract_papers(ns, xml, logger):
             "ExcWord Match"   : False,
         }
 
-        logger.debug("Found: "+entry.find("atom:id", ns).text.split("/")[-1])
+        logger.debug("Found: {:}, version {:}.".format(ID_number, version_number))
+        logger.debug("       published on {:}, updated on {:}.".format(published_date, updated_date))
+        logger.debug("       Revised? {:}".format((updated_date > published_date) or (version_number > 1)))
 
         papers.append(paper)
 
-    logger.debug("Found {:} papers for this search".format(len(papers)))
+    logger.debug("Found {:} papers in this search block.".format(len(papers)))
 
     return papers
 
@@ -563,15 +571,18 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
                 search_interval = blocksize
                 search_endnum   = ii + blocksize
 
+            # Print the progress bar
+            progress_bar(ii, num_steps, remaining_steps * sleeptimer)
+
+            # Debug messages
+            clear_progress_bar(logger, 10)
             logger.debug("Remaining steps: {:}".format(remaining_steps))
             logger.debug("Starting number: {:}".format(ii))
             logger.debug("Ending number:   {:}".format(search_endnum))
 
-            # Print the progress bar
-            progress_bar(ii, num_steps, remaining_steps * sleeptimer)
             # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
-            clear_progress_bar(logger, 10)
             logger.debug("Sleeping for {:} seconds ...".format(sleeptimer))
+            progress_bar(ii, num_steps, remaining_steps * sleeptimer)
             time.sleep(sleeptimer)
 
             # Query the API
