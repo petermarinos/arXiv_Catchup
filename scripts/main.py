@@ -3,7 +3,7 @@ from scripts.arxiv_query import arxiv_initial_pull, arxiv_search
 from scripts.constants   import aux_filenames, arxiv_constants
 from scripts.filtering   import filter_papers
 from scripts.output      import display_results
-from scripts.utils       import load_searchterms, cli_args, logger_setup
+from scripts.utils       import load_searchterms, cli_args, logger_setup, delete_file
 from scripts.dates       import date_setup
 
 # The main script
@@ -17,7 +17,7 @@ def main(cdir):
     logger = logger_setup(args)
 
     # Define filenames of the auxiliary files
-    filename_prevsearch, filename_searchterms, filename_paperlinks = aux_filenames(cdir)
+    filename_prevsearch, filename_searchterms, filename_paperlinks, filename_searchxml, filename_papersxml = aux_filenames(cdir)
 
     # Return arXiv constants
     url, ns, sleep_opening, sleep_search, search_blocksize = arxiv_constants()
@@ -36,6 +36,7 @@ def main(cdir):
                                  cat_urlstring,
                                  sleep_search,
                                  search_blocksize,
+                                 filename_searchxml,
                                  logger
                                  )
 
@@ -48,6 +49,7 @@ def main(cdir):
                              max_num,
                              sleep_search,
                              search_blocksize,
+                             filename_papersxml,
                              logger
                              )
 
@@ -56,3 +58,7 @@ def main(cdir):
 
     # Display the results
     display_results(args, df_papers, papers_of_note, sleep_opening, filename_paperlinks, filename_prevsearch, end_date, max_num, logger)
+
+    # Delete xmls/other supplemental files if successfull
+    delete_file(filename_searchxml, logger)
+    delete_file(filename_papersxml, logger)

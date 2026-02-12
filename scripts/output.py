@@ -1,9 +1,12 @@
 # Import libraries
-from scripts.utils import progress_bar
+from scripts.utils import progress_bar, clear_progress_bar
 from scripts.dates import write_date
+
+import xml.etree.ElementTree as ET
 
 import webbrowser
 import time
+import os
 
 def read_catchup(filename, sleep_time, logger):
     """Read the `catchup.txt` file and open all links in the browser.
@@ -14,6 +17,8 @@ def read_catchup(filename, sleep_time, logger):
         Path_filename of the `catchup.txt` file.
     sleep_time : float
         Wait time between opening links in the browser.
+    logger     : RootLogger
+        The logger object
 
     outputs
     -------
@@ -74,6 +79,8 @@ def open_links(args, df, entries, sleep_time, logger):
         Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
     sleep_time : float
         Waiting time between opening links.
+    logger     : RootLogger
+        The logger object
     """
 
     # Calculate the number of links
@@ -131,6 +138,8 @@ def write_links(filename, df, entries, logger):
         Contains all papers and their information.
     entries  : list
         Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
+    logger   : RootLogger
+        The logger object
     """
 
     logger.info("Writing all links to the end of the file: {:}".format(filename))
@@ -142,6 +151,57 @@ def write_links(filename, df, entries, logger):
             link = df.loc[link_index, "url"]
             
             f.write(f"{link}\n")
+
+    return
+
+def write_xml(filename, ns, xml, logger, overwrite=False):
+    """
+
+    inputs
+    ------
+    filename : str
+        Path+filename of the `.xml` file.
+    xml      : 
+    logger   : RootLogger
+        The logger object
+    """
+
+    # Clear the progress bar in preparation for the info messages later
+    clear_progress_bar(logger, 10)
+
+    if overwrite:
+
+        logger.debug("Saving xml to file: {:}".format(filename))
+        tree = ET.ElementTree(xml)
+        tree.write(filename, encoding="utf-8")
+
+    else:
+
+        # check if the file exists
+        if not os.path.exists(filename):
+
+            # Write the xml
+            write_xml(filename, ns, xml, logger, overwrite=True)
+
+            return
+
+        else:
+
+            logger.debug("Appending xml to file {:}".format(filename))
+
+            # Load the file
+            master_tree = ET.parse(filename)
+            master_root = master_tree.getroot()
+
+            new_tree = ET.ElementTree(xml)
+            new_root = new_tree.getroot()
+
+            # Obtain each entry and append to the file
+            for entry in new_root.findall("atom:entry", ns):
+                master_root.append(entry)
+
+            # Write the new file
+            master_tree.write(filename, encoding="utf-8", )
 
     return
 
@@ -167,6 +227,8 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
         End date of the arXiv search period.
     max_num         : int
         Number of papers found in the categories of interest.
+    logger          : RootLogger
+        The logger object
     """
 
     # If there is at least one paper, open/prompt
@@ -235,6 +297,7 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
     print("")
     logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(max_num, fill=max_digits))
     logger.info("           of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note), fill=max_digits))
+    print("")
 
     # Check if any papers were found
     if len(df) == 0:

@@ -3,5 +3,6 @@
 *.txt
 .DS_Store
 *.yaml
+*.xml
 
 __pycache__

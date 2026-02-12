@@ -15,6 +15,8 @@ def filter_papers(df, search_terms, logger):
         Contains all papers and their information.
     search_terms : dict
         Contains all search terms used to filter papers.
+    logger       : RootLogger
+        The logger object
 
     outputs
     -------

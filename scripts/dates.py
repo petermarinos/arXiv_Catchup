@@ -163,6 +163,8 @@ def parse_date(date_str, name, search_time, list_post_time, logger):
         Time of the arXiv search start/end points
     list_post_time : datetime.time (timezone aware)
         Time of the arXiv daily postings
+    logger         : RootLogger
+        The logger object
 
     outputs
     -------
@@ -205,6 +207,8 @@ def date_error_check(current_time, start_date, end_date, list_post_time, logger)
         End date of the search.
     list_post_time : datetime.time (timezone aware)
         Time that the arXiv daily postings occur.
+    logger         : RootLogger
+        The logger object
     """
 
     # Compute how long the search is covering
@@ -275,6 +279,8 @@ def date_setup(args, filename_prevsearch, logger):
         CLI arguments.
     filename_prevsearch : str
         Path+filename of the `prev_search.txt` file that contains the date of the previous run.
+    logger              : RootLogger
+        The logger object
 
     outputs
     -------

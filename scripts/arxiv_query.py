@@ -1,10 +1,10 @@
 # Import libraries
 from scripts.string_handling import normalise_string
+from scripts.output          import write_xml
 from scripts.utils           import progress_bar, clear_progress_bar
 
 import xml.etree.ElementTree as ET
 import pandas                as pd
-import numpy                 as np
 
 import urllib.request
 import certifi
@@ -12,9 +12,9 @@ import time
 import ssl
 import sys
 
-# Import libraries used to test API connections and errors
-from email.message import Message
-from unittest.mock import patch
+# # Import libraries used to test API connections and errors
+# from email.message import Message
+# from unittest.mock import patch
 
 def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
     """Runs some error checks on the results of the arXiv API pull.
@@ -27,6 +27,8 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
         Time between searches.
     blocksize   : int
         Number of papers returned in each search.
+    logger      : RootLogger
+        The logger object
     """
 
     # If no papers were found in the search, raise an error
@@ -102,7 +104,7 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
         else:
 
             clear_progress_bar(logger, 10)
-            logger.debug("Header found")
+            logger.debug("Header found:", error.headers)
 
             # If there is a Retry-After header
             if error.headers["Retry-After"] is not None:
@@ -212,6 +214,8 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
         Starting paper number for the search query.
     end_num    : int
         Ending paper number for the search query.
+    logger     : RootLogger
+        The logger object
 
     outputs
     -------
@@ -354,7 +358,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
     logger.critical("Something went wrong...?\n")
     raise
 
-def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize, logger):
+def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize, filename_xml, logger):
     """Performs the initial query to obtain important run information.
 
     inputs
@@ -371,6 +375,10 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
         Time in seconds to wait between searches.
     blocksize  : int
         Number of papers to return from the search.
+    searchxml   : str
+        Path+filename of the `search.xml` file, that contains the xml of the initial search.
+    logger      : RootLogger
+        The logger object
 
     outputs
     -------
@@ -395,6 +403,8 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
     max_num = int(xml_data.find("opensearch:totalResults", ns).text)
     
     progress_bar(1, 1)
+    
+    write_xml(filename_xml, ns, xml_data, logger, overwrite=True)
 
     arxiv_errorcheck(max_num, sleeptimer, blocksize, logger)
 
@@ -447,7 +457,7 @@ def extract_paper(ns, xml):
 
     return papers
 
-def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, blocksize, logger):
+def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, blocksize, filename_xml, logger):
     """Performs the initial query to obtain important run information.
 
     inputs
@@ -468,6 +478,8 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
         Time in seconds to wait between searches.
     blocksize  : int
         Number of papers to return from the search.
+    logger     : RootLogger
+        The logger object
 
     outputs
     -------
@@ -500,6 +512,8 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
                                  ii,
                                  search_endnum,
                                  logger)
+        
+        write_xml(filename_xml, ns, parsed_xml, logger)
         
         entries.extend(extract_paper(ns, parsed_xml))
 

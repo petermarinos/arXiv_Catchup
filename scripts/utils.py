@@ -88,6 +88,8 @@ def load_searchterms(filename, logger):
     ------
     filename : str
         Path+filename of the `search_terms.yaml` file.
+    logger   : RootLogger
+        The logger object
 
     outputs
     -------
@@ -219,16 +221,16 @@ def clear_progress_bar(logger, message_level):
 
 def clear_catchup(filename, links, logger):
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
+    NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed ) links manually.
 
     inputs
     ------
     filename : str
         Path+filename of the `catchup.txt` file.
-    links : list
+    links    : list
         List containing all arXiv links in the file.
-
-    TO-DO:
-    1) This function will delete any file passed to it. Perform a check that the file is actually what we expect. While it is only called after opening all files, there should be a check here just in case.
+    logger   : RootLogger
+        The logger object
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no
@@ -255,13 +257,19 @@ def clear_catchup(filename, links, logger):
                     raise
 
         # If the file is of the correct format, delete it
-        logger.info("Deleting the file.")
-        file = pathlib.Path(filename)
-        file.unlink()
+        delete_file(filename, logger)
 
     # Else, do nothing
     else:
 
         logger.info("Doing nothing.")
+
+    return
+
+def delete_file(filename, logger):
+
+    logger.info("Deleting file: {:}".format(filename))
+    file = pathlib.Path(filename)
+    file.unlink()
 
     return

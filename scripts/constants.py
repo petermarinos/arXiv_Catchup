@@ -14,14 +14,20 @@ def aux_filenames(cdir):
         Path+filename of the `search_terms.yaml` file, that contains all terms that are used in the search.
     paperlinks  : str
         Path+filename of the `catchup.txt` file, that contains all links of found papers.
+    searchxml   : str
+        Path+filename of the `search.xml` file, that contains the xml of the initial search.
+    papersxml   : str
+        Path+filename of the `papers.xml` file, that contains the xml of all found papers.
     """
 
     # Define filenames
     prevsearch  = cdir+"/prev_search.txt" # File that stores the date of the previous run
     searchterms = cdir+"/search_terms.yaml" # File that stores the search terms
     paperlinks  = cdir+"/catchup.txt" # File that stores the links to the papers of interest (if writing to a file)
+    searchxml   = cdir+"/search.xml" # File that stores the links to the papers of interest (if writing to a file)
+    papersxml   = cdir+"/papers.xml" # File that stores the links to the papers of interest (if writing to a file)
     
-    return prevsearch, searchterms, paperlinks
+    return prevsearch, searchterms, paperlinks, searchxml, papersxml
 
 def arxiv_constants():
     """Define the constants that will be used when making API calls to arXiv.
