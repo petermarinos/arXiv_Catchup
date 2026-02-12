@@ -205,7 +205,7 @@ def clear_progress_bar(logger, message_level):
     logger        : RootLogger
         The logger object
     message_level : int
-        The logger level of the next message
+        The logger level of the next message. 10=debug, ..., 50=critical
     """
 
     logger_level = logger.level

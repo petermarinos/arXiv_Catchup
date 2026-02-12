@@ -5,12 +5,14 @@ from scripts.utils           import progress_bar, clear_progress_bar
 
 import xml.etree.ElementTree as ET
 import pandas                as pd
+import numpy                 as np
 
 import urllib.request
 import certifi
 import time
 import ssl
 import sys
+import os
 
 # # Import libraries used to test API connections and errors
 # from email.message import Message
@@ -93,6 +95,12 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
     # If the HTTP error is in our list of codes that tell us to retry
     if error.code in retry_codes:
 
+        # Print a warning
+        clear_progress_bar(logger, 30)
+        logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
+
+        # Obtain some additional information. This will increase the wait time, or is used for debug
+
         # If there are no headers
         if error.headers is None:
 
@@ -104,13 +112,15 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
         else:
 
             clear_progress_bar(logger, 10)
-            logger.debug("Header found:", error.headers)
+            # Print the headers if in debug mode
+            for key, value in error.headers.items():
+                logger.debug("HTTP header: {:}: {:}".format(key, value))
 
             # If there is a Retry-After header
             if error.headers["Retry-After"] is not None:
 
                 clear_progress_bar(logger, 10)
-                logger.debug("Found Retry-After header")
+                logger.debug("Found Retry-After header.")
                 retry_after = error.headers["Retry-After"]
                 wait_time = retry_after
 
@@ -118,12 +128,8 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
             else:
 
                 clear_progress_bar(logger, 10)
-                logger.debug("No Retry-After header")
+                logger.debug("Did not find a Retry-After header.")
                 retry_after = None
-
-        # Print a warning and retry
-        clear_progress_bar(logger, 30)
-        logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
 
     # Otherwise, raise an error
     else:
@@ -196,7 +202,7 @@ def url_errorcheck(error, cert_error_bool, wait_time, logger):
 
     return ssl_context, cert_error_bool
 
-def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
+def arxiv_query(url, start_date, end_date, cats, start_num, blocksize, logger):
     """Queries the arXiv API.
     Will catch errors and attempt retries.
 
@@ -212,8 +218,8 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
         Categories that will be searched over (must be formatted for the search).
     start_num  : int
         Starting paper number for the search query.
-    end_num    : int
-        Ending paper number for the search query.
+    blocksize  : int
+        Number of papers to download in the search query.
     logger     : RootLogger
         The logger object
 
@@ -221,10 +227,6 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
     -------
     parsed_xml_data : Element
         XML data from the arXiv query.
-
-    TO-DO:
-    1) If the xml was successfully downloaded and parsed, save it to a file. Also clear this file if the script finishes successfully.
-    2) If all of the retries fail, write a file that can be used to restart the search as if nothing occured by rerunning the script.
     """
 
     # Define some values for retry attempts. These are magic values and kept from the users.
@@ -236,7 +238,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
     retry_codes = (
                    408, # Request timeout
                    429, # Too many requests
-                   500, # Internal server error
+                   500, # Internal server error. Also caused by malformed urls in the request.
                    502, # Bad gateway
                    503, # Service unavailable (i.e. overloaded or down)
                    504, # Gateway timeout
@@ -259,7 +261,10 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
                                end_day     = end_date.day,
                                cats        = cats,
                                start_num   = start_num,
-                               end_num     = end_num)
+                               blocksize   = blocksize)
+    
+    clear_progress_bar(logger, 10)
+    logger.debug("Connecting to:\n       {:}".format(formatted_url))
     
     # Query the server
     for attempt in range(1, max_retries + 1): # 1 -> max_retries+1 so that we start counting attempts at 1 in the logger messages
@@ -340,12 +345,12 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
         if attempt == max_retries:
 
             clear_progress_bar(logger, 50)
-            logger.critical("Maximum retries attempted. arXiv query failed.\n")
+            logger.critical("Maximum retries attempted. arXiv query failed.\n          Review connection error codes before trying again.\n")
             raise
 
         # Sleep before retrying
         clear_progress_bar(logger, 10)
-        logger.debug("Sleeping for {:} seconds".format(wait_time))
+        logger.debug("Sleeping for {:} seconds ...".format(wait_time))
         time.sleep(wait_time)
 
         # If there was no retry after demand, increase the wait time for the next attempt
@@ -386,31 +391,46 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
         Number of papers that were found in the categories of interest.
     """
 
-    logger.info("Obtaining arXiv info. Estimated time: {:d} seconds".format(sleeptimer)) # Always a single sleep
+    # Search for xml file. If found, load it
+    if os.path.exists(filename_xml):
+        
+        logger.info("Found an xml file: {:}".format(filename_xml))
+        logger.info("Continuing from the previous failed run.")
 
-    # Display a progress bar
-    progress_bar(0, 1, 3)
+        # Load the file
+        xml_data = ET.parse(filename_xml)
 
-    # Perform the query
-    xml_data = arxiv_query(url,
-                           start_date,
-                           end_date,
-                           cats,
-                           0,
-                           1,
-                           logger)
+    # Otherwise, search the arXiv
+    else:
+
+        logger.info("Obtaining arXiv info ...")
+
+        # # Display a progress bar
+        # progress_bar(0, 1, 3)
+
+        # Perform the query
+        xml_data = arxiv_query(url,
+                               start_date,
+                               end_date,
+                               cats,
+                               0,
+                               1,
+                               logger)
+        
+        # Write the extracted xml to a file
+        write_xml(filename_xml, ns, xml_data, logger, overwrite=True)
+        
+        # # Close the progress bar
+        # progress_bar(1, 1)
     
+    # Extract the total number of papers that were found
     max_num = int(xml_data.find("opensearch:totalResults", ns).text)
-    
-    progress_bar(1, 1)
-    
-    write_xml(filename_xml, ns, xml_data, logger, overwrite=True)
 
     arxiv_errorcheck(max_num, sleeptimer, blocksize, logger)
 
     return max_num
 
-def extract_paper(ns, xml):
+def extract_papers(ns, xml, logger):
     """
 
     inputs
@@ -453,7 +473,11 @@ def extract_paper(ns, xml):
             "ExcWord Match"   : False,
         }
 
+        logger.debug("Found: "+entry.find("atom:id", ns).text.split("/")[-1])
+
         papers.append(paper)
+
+    logger.debug("Found {:} papers for this search".format(len(papers)))
 
     return papers
 
@@ -487,47 +511,111 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
         Contains all papers and their information.
     """
 
+    # Initialise the list of entries
     entries = []
-    logger.info("Searching for papers. Estimated time: {:d} seconds".format(-sleeptimer*(max_num//-blocksize)))
-    for ii in range(0, max_num, blocksize):
 
-        # Compute the progress of the loop
-        if ii+blocksize > max_num:
-            remaining_steps = 1
-            search_endnum   = max_num
-        else:
-            remaining_steps = -((max_num-ii)//-blocksize)
-            search_endnum   = ii + blocksize
-
-        # Print the progress bar
-        progress_bar(ii, max_num, remaining_steps * sleeptimer)
-        # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
-        time.sleep(sleeptimer)
-
-        # Query the API
-        parsed_xml = arxiv_query(url,
-                                 start_date,
-                                 end_date,
-                                 cats,
-                                 ii,
-                                 search_endnum,
-                                 logger)
+    # Search for xml file. If found, load it
+    if os.path.exists(filename_xml):
         
-        write_xml(filename_xml, ns, parsed_xml, logger)
-        
-        entries.extend(extract_paper(ns, parsed_xml))
+        logger.info("Found an .xml file: {:}".format(filename_xml))
+        logger.info("Continuing from the previous failed run.")
 
-    progress_bar(max_num, max_num)
+        # Load the file
+        xml_data = ET.parse(filename_xml)
 
-    # Place into a dataframe
+        # Extract the papers from the xml
+        entries.extend(extract_papers(ns, xml_data, logger))
+
+        # Print how many were found
+        logger.info("Found {:} of {:} papers in the .xml file.".format(len(entries), max_num))
+
+        # If less than the total, provide info that we are continuing the search
+        if len(entries) < max_num:
+
+            logger.info("Continuing the search.")
+
+    # If the number of papers is less that the total, connect to arXiv
+    if len(entries) < max_num:
+
+        # Set the starting number
+        start_num = len(entries)
+
+        logger.debug("The number of papers found so far is: {:}".format(start_num))
+
+        # Compute the estimated time
+        est_time = -sleeptimer * ( ( max_num - start_num ) // -blocksize )
+
+        # Compute the number of steps it will take
+        # The time to complete depends almost entirely on the number of connections to arXiv and the number of sleeps -- the amount of data that is downloaded is minimal.
+        num_steps = int( np.ceil(43/10) * 10 )
+
+        # Search the arXiv
+        logger.info("Searching for papers. Estimated time: {:d} seconds".format(est_time))
+        for ii in range(start_num, max_num, blocksize):
+
+            # Compute the progress of the loop
+            if ii+blocksize > max_num:
+                remaining_steps = 1
+                search_interval = max_num - ii
+                search_endnum   = max_num
+            else:
+                remaining_steps = -((max_num-ii)//-blocksize)
+                search_interval = blocksize
+                search_endnum   = ii + blocksize
+
+            logger.debug("Remaining steps: {:}".format(remaining_steps))
+            logger.debug("Starting number: {:}".format(ii))
+            logger.debug("Ending number:   {:}".format(search_endnum))
+
+            # Print the progress bar
+            progress_bar(ii, num_steps, remaining_steps * sleeptimer)
+            # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
+            clear_progress_bar(logger, 10)
+            logger.debug("Sleeping for {:} seconds ...".format(sleeptimer))
+            time.sleep(sleeptimer)
+
+            # Query the API
+            parsed_xml = arxiv_query(url,
+                                    start_date,
+                                    end_date,
+                                    cats,
+                                    ii,
+                                    search_interval,
+                                    logger)
+            
+            # Write the xml to a file
+            write_xml(filename_xml, ns, parsed_xml, logger)
+            
+            # Extract the paper from the xml
+            entries.extend(extract_papers(ns, parsed_xml, logger))
+
+        # Close the progress bar
+        progress_bar(max_num, max_num)
+
+    # Double check that we found the correct number of papers
+    if len(entries) != max_num:
+
+        logger.error("Found {:} papers (expected {:}).".format(len(entries), max_num))
+
+    else:
+
+        logger.debug("Found the expected number of papers.")
+
+    # Place all entries into a dataframe
     df = pd.DataFrame( entries )
+
+    logger.debug("Removing duplicates and revised papers.")
 
     # Drop duplicate papers, if they exist
     df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
+    num_dup = max_num - len(df)
+    logger.debug("Dropped {:} duplicate entries.".format(num_dup))
 
     # Remove revised papers
     df.drop(df[df["Revised?"]==True].index, inplace=True)
     df.reset_index(drop=True, inplace=True)
+    num_rev = ( max_num - num_dup ) - len(df)
+    logger.debug("Dropped {:} revised papers.".format(num_rev))
 
     return df
 

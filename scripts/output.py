@@ -169,9 +169,11 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
     # Clear the progress bar in preparation for the info messages later
     clear_progress_bar(logger, 20)
 
+    # As these files are not meant to be touched by the user, and are deleted at the end, logging messages are set to debug
+
     if overwrite:
 
-        logger.info("Saving xml to file: {:}".format(filename))
+        logger.debug("Saving xml to file: {:}".format(filename))
         tree = ET.ElementTree(xml)
         tree.write(filename, encoding="utf-8")
 
@@ -187,7 +189,7 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
 
         else:
 
-            logger.info("Appending xml to file {:}".format(filename))
+            logger.debug("Appending xml to file {:}".format(filename))
 
             # Load the file
             master_tree = ET.parse(filename)

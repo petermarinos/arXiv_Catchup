@@ -91,6 +91,11 @@ This file is ignored if manually setting the start-date of the search on the CLI
 All links are written to a file `catchup.txt` (if choosing to write to the file). Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
 All links in this file can be opened in a browser by running `python3 /path/to/arXiv_Catchup/open_catchup.py`.
 
+During the run there are two `.xml` files that will be created.
+These files contain the results of the queries to the arXiv servers.
+If some non-recoverable error occurs, these files can be used to restart the search, and no papers will be missed.
+After successfully presenting the results, both `.xml` files will be deleted.
+
 ### Daily Mailings
 
 There are no daily listings posted over the weekend or on some USA public holidays.
