@@ -6,6 +6,16 @@ from scripts.utils     import logger_setup, clear_catchup
 import argparse
 import os
 
+# The goal of this script is to save the link opening for later if the user chooses
+# However, it can also be used to automate the searches.
+
+# Set up a cron job to run `/path/tp/arXiv_Catchup/catchup.py -w` daily.
+# Then, when ready to open all the saved papers, run this script.
+
+# While functionally equivalent to just running `/path/tp/arXiv_Catchup/catchup.py` whenever you want to open the papers, this method can offload the search times (3s per ten papers) to the cron job where there is no impact to you.
+# The only impact to you would be the 0.25s per filtered paper opened in the browser.
+# If you rarely want to open all papers, this is the recommended method.
+
 # Find the directory of this file
 cdir = os.path.dirname(os.path.realpath(__file__))
 
