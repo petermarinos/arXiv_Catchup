@@ -547,7 +547,7 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
 
         # Compute the number of steps it will take
         # The time to complete depends almost entirely on the number of connections to arXiv and the number of sleeps -- the amount of data that is downloaded is minimal.
-        num_steps = int( np.ceil(43/10) * 10 )
+        num_steps = int( np.ceil(max_num/blocksize) * blocksize )
 
         # Search the arXiv
         logger.info("Searching for papers. Estimated time: {:d} seconds".format(est_time))
