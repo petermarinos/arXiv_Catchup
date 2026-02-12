@@ -194,12 +194,26 @@ def progress_bar(ii, total, time_estimate=None):
 
     return
 
-def clear_progress_bar():
-    """Clears the progress bar.
+def clear_progress_bar(logger, message_level):
+    """Clears the progress bar. Only does so if the logger level is equal to or greater than the next message.
+    NOTE: This function does nothing unless called somewhere that displays a progress bar. It should be called immediately before the logger message.
+
+    inputs
+    ------
+    logger        : RootLogger
+        The logger object
+    message_level : int
+        The logger level of the next message
     """
 
-    sys.stdout.write("\r\033[K")
-    sys.stdout.flush()
+    logger_level = logger.level
+
+    # If the message level is equal to or greater than the logger level (i.e. the message will be printed)
+    if message_level >= logger_level:
+
+        # Flush the line in the terminal
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
 
     return
 

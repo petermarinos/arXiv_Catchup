@@ -12,9 +12,9 @@ import time
 import ssl
 import sys
 
-# # Import libraries used to test API connections and errors
-# from email.message import Message
-# from unittest.mock import patch
+# Import libraries used to test API connections and errors
+from email.message import Message
+from unittest.mock import patch
 
 def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
     """Runs some error checks on the results of the arXiv API pull.
@@ -64,6 +64,29 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, logger):
     return
 
 def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger):
+    """Handles the HTTP errors that could arise.
+    NOTE: Only occurs within functions that include a progress bar.
+
+    inputs
+    ------
+    error       : urllib.error.HTTPError
+        Error returned from the connection attempt.
+    retry_codes : tuple
+        Codes that allow a re-attempt at connection.
+    attempt     : int
+        Attempt number.
+    max_retries : int
+        Maximum number of attempts allowed.
+    wait_time   : float
+        Time to wait between attempts.
+    logger      : RootLogger
+        The logger object
+
+    returns
+    -------
+    retry_after : None or float
+        Holds the time that the query attempts should be paused for, if there is a request to pause. Otherwise, it is None.
+    """
 
     # If the HTTP error is in our list of codes that tell us to retry
     if error.code in retry_codes:
@@ -71,17 +94,20 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
         # If there are no headers
         if error.headers is None:
 
+            clear_progress_bar(logger, 10)
             logger.debug("No header found")
             retry_after = None
 
         # Else, if there are headers
         else:
 
+            clear_progress_bar(logger, 10)
             logger.debug("Header found")
 
             # If there is a Retry-After header
             if error.headers["Retry-After"] is not None:
 
+                clear_progress_bar(logger, 10)
                 logger.debug("Found Retry-After header")
                 retry_after = error.headers["Retry-After"]
                 wait_time = retry_after
@@ -89,29 +115,52 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
             # Else, if there are headers but no retry-after header
             else:
 
+                clear_progress_bar(logger, 10)
                 logger.debug("No Retry-After header")
                 retry_after = None
 
         # Print a warning and retry
-        clear_progress_bar()
+        clear_progress_bar(logger, 30)
         logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
 
     # Otherwise, raise an error
     else:
 
-        print("")
+        # print("")
+        clear_progress_bar(logger, 50)
         logger.critical("HTTP error code '{:}': {:}\n".format(error.code, error.reason))
         raise
 
     return retry_after
 
 def url_errorcheck(error, cert_error_bool, wait_time, logger):
+    """Handles the URL errors that could arise.
+    NOTE: Only occurs within functions that include a progress bar.
+
+    inputs
+    ------
+    error           : urllib.error.URLError
+        Error returned from the connection attempt.
+    cert_error_bool : bool
+        True if the error was caused by a certification error, False otherwise.
+    wait_time       : float
+        Time to wait between attempts.
+    logger          : RootLogger
+        The logger object
+
+    returns
+    -------
+    ssl_context     : None or SSLContext
+        New SSLContext to use for the connection if the error is caused by a certification error, otherwise None.
+    cert_error_bool : bool
+        True if the error was a certification error, otherwise False.
+    """
 
     # If it is a certificate verification error, and no certification error has occured before:
     if isinstance(error.reason, ssl.SSLCertVerificationError) and not cert_error_bool:
 
         # Warn the user that verification failed
-        clear_progress_bar()
+        clear_progress_bar(logger, 30)
         logger.warning("Connection error: {:}. Updating certificate and retrying in {:} seconds ...".format(error.reason, wait_time))
 
         # Try verifying
@@ -124,8 +173,9 @@ def url_errorcheck(error, cert_error_bool, wait_time, logger):
     elif isinstance(error.reason, ssl.SSLCertVerificationError) and cert_error_bool:
 
         # Warn the user that we are disabling verification
-        clear_progress_bar()
+        clear_progress_bar(logger, 30)
         logger.warning("Verification still failed.")
+        clear_progress_bar(logger, 20)
         logger.info("This could potentially be an issue with your OS and its trust store, or the certifi package version.")
         logger.info("Current certifi version: {:}. Recommended: >2026.01.04.".format(certifi.__version__))
         logger.info("This issue should be fixed before rerunning the script.")
@@ -138,7 +188,7 @@ def url_errorcheck(error, cert_error_bool, wait_time, logger):
     # Otherwise, if it is any other type of URL error, raise an error
     else:
 
-        print("")
+        clear_progress_bar(logger, 50)
         logger.critical("Connection error: {:}\n".format(error.reason))
         raise
 
@@ -222,6 +272,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
             # with patch("urllib.request.urlopen", side_effect=err):
 
             # # http repeating error code with no header
+            # time.sleep(4)
             # err = urllib.error.HTTPError(url=None, code=408, msg="non-repeating code", hdrs=None, fp=None)
             # with patch("urllib.request.urlopen", side_effect=err):
 
@@ -277,18 +328,19 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
             # # It is rare error and difficult to know the cause (has only ever occured in historical searches when testing)
             
             # # For now, raise an error
-            print("")
+            clear_progress_bar(logger, 50)
             logger.critical("XML parsing error.\n")
             raise
 
         # If there have been too many retries, raise an error
         if attempt == max_retries:
 
-            print("")
+            clear_progress_bar(logger, 50)
             logger.critical("Maximum retries attempted. arXiv query failed.\n")
             raise
 
         # Sleep before retrying
+        clear_progress_bar(logger, 10)
         logger.debug("Sleeping for {:} seconds".format(wait_time))
         time.sleep(wait_time)
 
@@ -298,7 +350,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, end_num, logger):
             wait_time *= backoff
     
     # Raise an error if the function reaches here somehow
-    print("")
+    clear_progress_bar(logger, 50)
     logger.critical("Something went wrong...?\n")
     raise
 
