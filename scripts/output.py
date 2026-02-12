@@ -167,11 +167,11 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
     """
 
     # Clear the progress bar in preparation for the info messages later
-    clear_progress_bar(logger, 10)
+    clear_progress_bar(logger, 20)
 
     if overwrite:
 
-        logger.debug("Saving xml to file: {:}".format(filename))
+        logger.info("Saving xml to file: {:}".format(filename))
         tree = ET.ElementTree(xml)
         tree.write(filename, encoding="utf-8")
 
@@ -187,7 +187,7 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
 
         else:
 
-            logger.debug("Appending xml to file {:}".format(filename))
+            logger.info("Appending xml to file {:}".format(filename))
 
             # Load the file
             master_tree = ET.parse(filename)
@@ -269,7 +269,7 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
                 # If they want the output in the terminal
                 if user_prompt_output != "y":
 
-                    logger.info("Printing all links to the terminal")
+                    logger.info("Printing all links to the terminal:\n")
                     for link_index in entries_of_note:
 
                         print(df.loc[link_index, "url"])
