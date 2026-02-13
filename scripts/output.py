@@ -257,7 +257,7 @@ def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile
 
             # Ask the user if they would like to open the links in the browser. Default is no
             user_prompt_browser = input(
-                                    "There are {:} links. Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note), len(entries_of_note)/4)
+                                    "There are {:} link(s). Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note), len(entries_of_note)/4)
                                     ).strip().lower()
 
             # If they say no to opening in the browser
