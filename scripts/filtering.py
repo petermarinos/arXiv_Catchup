@@ -29,7 +29,7 @@ def author_search(df, entry_count, search_terms, logger):
         for author in search_terms["Authors"]:
 
             # Search the author field in the entry
-            author_match = re.search(r"\b"+author+r"\b", df["Authors"][entry_count])
+            author_match = re.search(r"\b"+author+r"\b", df.loc[entry_count, "Authors"])
 
             # If an author is found:
             if author_match:
@@ -40,22 +40,24 @@ def author_search(df, entry_count, search_terms, logger):
                 # If the paper has an author match, add it to a string
                 # If no match has been found yet:
                 if not df.loc[entry_count, "Authors Match"]:
-                    author_match_str = "\n    {: >{fill}}:  {url:}".format(author, fill=author_strfill, url=df["url"][entry_count])
+                    author_match_str = "\n    {: >{fill}}:  {url:}".format(author, fill=author_strfill, url=df.loc[entry_count, "url"])
                 # If the paper has already had a match, add et at.
                 else:
-                    author_match_str = "\n    {: >{fill}}:  {url:}".format(author+", et al.", fill=author_strfill, url=df["url"][entry_count])
+                    author_match_str = "\n    {: >{fill}}:  {url:}".format(author+", et al.", fill=author_strfill, url=df.loc[entry_count, "url"])
                 
                 # Set the entry in the dataframe for the author match key to True
+                # Used for the binary search
                 df.loc[entry_count, "Authors Match"] = True
 
-                # Increase the score by 10 points for each match
-                df.loc[entry_count, "Score"] += 10
+                # Set the score tp 10 points if a match is found
+                # Used for the score search
+                df.loc[entry_count, "Authors Score"] = 1
 
         author_str = author_match_str
 
     return df, author_str
 
-def word_search(df, entry_count, search_terms, key, multiplier, logger):
+def word_search(df, entry_count, search_terms, key, logger):
     """
     All search terms are surrounded by break identifiers (\b).
 
@@ -67,52 +69,75 @@ def word_search(df, entry_count, search_terms, key, multiplier, logger):
 
     logger.debug("Searching for {:}".format(key))
 
+    # # Compute the number of words we are searching for. Used to normalise the score?
+    # num_words = len(search_terms[key])
+
+    # Initialise the number of matches found
+    num_title_matches    = 0
+    num_abstract_matches = 0
+
     # Search all titles and abstracts for words in the supplied key
     for word in search_terms[key]:
 
+        # Compute the number of words in the title and user to compute a penalty
+        # Titles are boosted/penalised for being below/above a word count of 18
+        title_length  = len( re.findall(r'\w+', df.loc[entry_count, "Title"]) )
+        title_penalty = 18 / title_length
+
         # Search the author field in the entry
-        title_match = re.search(r"\b"+word+r"\b", df["Title"][entry_count], re.IGNORECASE)
+        title_match = re.search(r"\b"+word+r"\b", df.loc[entry_count, "Title"], re.IGNORECASE)
 
         # If a match is found in the title:
         if title_match:
 
             # Count the number of matches
-            number_title_matches = len( re.findall(r"\b"+word+r"\b", df["Title"][entry_count], re.IGNORECASE) )
+            current_num_title_matches = len( re.findall(r"\b"+word+r"\b", df.loc[entry_count, "Title"], re.IGNORECASE) )
 
             clear_progress_bar(logger, 10)
-            logger.debug("Found {:} {:} time(s) in the title.".format(word, number_title_matches))
+            logger.debug("Found {:} {:} time(s) in the title.".format(word, current_num_title_matches))
 
             # Add to score
-            df.loc[entry_count, "Score"] += multiplier * 10 * number_title_matches
+            num_title_matches += current_num_title_matches
 
         # If something exists in the abstract field, search it for matches
-        if df["Abstract"][entry_count] is not None:
+        if df.loc[entry_count, "Abstract"] is not None:
             
-            abstract_match = re.search(r"\b"+word+r"\b", df["Abstract"][entry_count], re.IGNORECASE)
+            abstract_match = re.search(r"\b"+word+r"\b", df.loc[entry_count, "Abstract"], re.IGNORECASE)
+
+            # Compute the number of words in the abstract user to compute a the penalty
+            # Abstracts are boosted/penalised for being below/above a word count of 250
+            abstract_length  = len( re.findall(r'\w+', df.loc[entry_count, "Abstract"]) )
+            abstract_penalty = 250 / abstract_length
 
             # If a match is found in the abstract:
             if abstract_match:
 
                 # Count the number of matches
-                number_abstract_matches = len( re.findall(r"\b"+word+r"\b", df["Abstract"][entry_count], re.IGNORECASE) )
+                current_num_abstract_matches = len( re.findall(r"\b"+word+r"\b", df.loc[entry_count, "Abstract"], re.IGNORECASE) )
 
-                logger.debug("Found {:} {:} time(s) in the abstract.".format(word, number_abstract_matches))
+                logger.debug("Found {:} {:} time(s) in the abstract.".format(word, current_num_abstract_matches))
 
-                # Add to score
-                df.loc[entry_count, "Score"] += multiplier * 5 * number_abstract_matches
+                num_abstract_matches += current_num_abstract_matches
             
-        # If a match is found anywhere, set the IncWord flag to True
+        # If a match is found anywhere, set the _ Word Match flag to True
         if title_match or abstract_match:
             
-            print(key+" Match")
+            # logger.debug(key+" Match")
             df.loc[entry_count, key+" Match"] = True
+
+    # Set scores, bound to 0->1.
+    # logger.debug("Title penalty: {:} | Title matches: {:}".format(title_penalty, num_title_matches))
+    # logger.debug("Abstract penalty: {:} | Abstract matches: {:}".format(abstract_penalty, num_abstract_matches))
+    title_score    = min( title_penalty * num_title_matches / 1.0, 1.0 ) # An interesting title has one or two matches
+    abstract_score = min( abstract_penalty * num_abstract_matches / 5.0, 1.0 ) # An interesting abstract has ~5 matches
+    df.loc[entry_count, key+" Score"] = ( title_score + abstract_score ) / 2.0
+    logger.debug("arXiv:{:} - {:} | title {:} | abstract {:} | total {:} |".format(df.loc[entry_count, "arXiv Number"], key, title_score, abstract_score, df.loc[entry_count, key+" Score"]))
 
     return df
 
 def score_papers(df, search_terms, logger):
 
     # Loop over all entries
-    entries_of_note = []
     author_str = "    Found Author(s)"
     for entry_count in range(0, len(df)):
 
@@ -126,12 +151,10 @@ def score_papers(df, search_terms, logger):
         author_str            += author_matches_str
 
         # Search for included words
-        df = word_search(df, entry_count, search_terms, "Included Words", +1, logger)
+        df = word_search(df, entry_count, search_terms, "Included Words", logger)
 
         # Search for excluded words
-        df = word_search(df, entry_count, search_terms, "Excluded Words", -1, logger)
-        
-        logger.debug("Paper {:} was scored {:}".format(df["arXiv Number"][entry_count], df["Score"][entry_count]))
+        df = word_search(df, entry_count, search_terms, "Excluded Words", logger)
 
     progress_bar(len(df), len(df))
 
@@ -158,34 +181,52 @@ def filter_papers_score(df, search_terms, logger):
     """
 
     # Define the threshold
-    # Should be calculated based on the number of included/excluded words?
-    # Or, show the top x% of papers?
-    threshold = 50
+    # 0.50 => quite generous with what papers are opened. 
+    # 0.65 => feels like a good limit to ensure the papers are interesting
+    # 0.85 => can potentially miss something
+    # 1.00 => too strict if there are any 'excluded words'
+    threshold = 0.65
 
-    logger.info("Finding papers of interest.")
+    logger.info("Calculating interest score for the papers.")
 
     # Score the papers
     df, author_str = score_papers(df, search_terms, logger)
 
     # Loop over all entries
     entries_of_note = []
+    scores          = []
     for entry_count in range(0, len(df)):
 
-        logger.debug("arXiv:{:} was scored {:}".format(df.loc[entry_count, "arXiv Number"], df.loc[entry_count, "Score"]))
-
         # If an Author was found, append it to the entries of note
-        if df["Score"][entry_count] >= threshold:
+        if df.loc[entry_count, "Authors Score"] == 1:
 
             entries_of_note.append(entry_count)
+
+        # Compute a score. If the score is negative, set it to zero
+        df.loc[entry_count, "Score"] = max(df.loc[entry_count, "Included Words Score"] - df.loc[entry_count, "Excluded Words Score"], 0)
+
+        logger.debug("arXiv:{:} final score: {:}".format(df.loc[entry_count, "arXiv Number"], df.loc[entry_count, "Score"]))
+
+        # If the score is above the threshold, append it to the entries of note
+        if df.loc[entry_count, "Score"] >= threshold:
+
+            entries_of_note.append(entry_count)
+            scores.append(df.loc[entry_count, "Score"])
 
     # Print the list of the found authors and their papers
     # Do not pass this through the logger -- it should always be shown (if at least one was found)
     if any(df["Authors Match"]):
         print(author_str)
 
-    entries_of_note_unique = np.unique(entries_of_note)
+    # # Ensure only unique entries
+    # # Not required for scores
+    # entries_of_note_unique = np.unique(entries_of_note)
 
-    return entries_of_note_unique
+    # Sort the entries of note by their score
+    logger.info("Sorting papers based on score (descending).")
+    entries_of_note_sorted = np.array(entries_of_note)[np.array(scores).argsort()[::-1]]
+
+    return entries_of_note_sorted
 
 def filter_papers_binary(df, search_terms, logger):
     """Filters the papers based on some criteria (currently the search terms).
@@ -207,7 +248,7 @@ def filter_papers_binary(df, search_terms, logger):
         Contains the indices of all papers that pass the filter.
     """
 
-    logger.info("Finding papers of interest.")
+    logger.info("Finding keyword matches in the titles/abstracts.")
 
     # Score the papers
     df, author_str = score_papers(df, search_terms, logger)
@@ -217,16 +258,16 @@ def filter_papers_binary(df, search_terms, logger):
     for entry_count in range(0, len(df)):
 
         # If an Author was found, append it to the entries of note
-        if df["Authors Match"][entry_count] == True:
+        if df.loc[entry_count, "Authors Match"] == True:
 
-            print("adding paper")
+            logger.debug("Adding paper: {:}".format(df.loc[entry_count, "arXiv Number"]))
 
             entries_of_note.append(entry_count)
 
         # If there were included word matches and *no* excluded word matches, append
-        elif ( df["Included Words Match"][entry_count] == True ) and ( df["Excluded Words Match"][entry_count] == False ):
+        elif ( df.loc[entry_count, "Included Words Match"] == True ) and ( df.loc[entry_count, "Excluded Words Match"] == False ):
 
-            print("adding paper")
+            logger.debug("Adding paper: {:}".format(df.loc[entry_count, "arXiv Number"]))
 
             entries_of_note.append(entry_count)
 
