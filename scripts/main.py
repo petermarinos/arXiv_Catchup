@@ -15,6 +15,12 @@ Add documentation for the following:
 5) filtering.filter_papers()
 6) output.write_xml()
 7) utils.delete_file()
+
+Add the ability to include given names. Update README
+
+Add a flag to write only the arXiv IDs to a file. Update README.
+
+Refactor to use classes...
 """
 
 # The main script
