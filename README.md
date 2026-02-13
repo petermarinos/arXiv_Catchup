@@ -61,11 +61,12 @@ These CLI arguments can be added to the bash alias.
 
 The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
+The `Included Words` and `Excluded Words` are used to compute a score on how interesting a paper is.
 Examples of the format required for each can be found in the provided file.
 - `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found on the [arXiv Category Taxonomy](https://arxiv.org/category_taxonomy) page.
 - `Authors` defines which authors to highlight. Use surnames. Every paper with a match will be opened. Do not include accents/special characters/etc..
-- `Included Words` defines which words include papers in the results. Every match will be included, unless a word from the exclusion list is also found. At least one must be included.
-- `Excluded Words` defines which words exclude papers from the results. Every match blocks a paper from being included, unless one of the authors of interest is found.
+- `Included Words` defines which words increase a paper's 'interest' score. At least one must be included.
+- `Excluded Words` defines which words decrease a paper's 'interest' score.
 
 > [!TIP]
 > Lines starting with `#` are ignored.
@@ -97,7 +98,7 @@ All links in this file can be opened in a browser by running `python3 /path/to/a
 
 During the run there are two `.xml` files that will be created.
 These files contain the results of the queries to the arXiv servers.
-If some non-recoverable error occurs, these files can be used to restart the search, and no papers will be missed.
+If some non-recoverable error occurs, these files can be used to restart the search.
 After successfully presenting the results, both `.xml` files will be deleted.
 
 ### Daily Mailings
@@ -127,20 +128,7 @@ In addition to the python standard library, we make use of the following package
 
 ## Future Improvements
 
-Using a list of words to exclude can result in some interesting papers not being opened if they include a sentence on their potential application to the wider literature.
-However, it reduces the list of papers that need to be checked manually by a significant margin.
-Additionally, using a list of key words where there needs to be one match can result in an interesting paper *not* being detected if the authors didn't include one.
-Finally, the number of papers that are genuinely interesting each week is very low, but the script still opens on the order of ~100 to be manually checked.
-
-There are two potential solutions.
-
-Ranking system:
-- Rate each paper based on what matches were found, the number of matches, etc
-- Open papers above some threshold
-    - Would need to find appropriate values. Would likely depend on the number of terms in the included/excluded word lists
-- Print titles just below the threshold to the terminal for manual checking?
-
-Machine learning module:
-- Look in a directory containing `.pdf` files of all the papers the user has found interesting in the past, and use these to train a model
-- Run the model on the titles/abstracts of each paper and rate them
-- Only open the papers if their rating is above some threshold
+Add a machine learning module:
+- Look in a directory containing `.pdf` files of all the papers the user has found interesting in the past, and use these to train a model.
+- Run the model on the titles/abstracts of each paper and rate them.
+- Only open the papers if their rating is above some threshold.
