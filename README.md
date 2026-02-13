@@ -3,7 +3,7 @@
 Tired of reading all the Titles/Abstracts/Author Lists of every paper posted on the arXiv every single day?
 
 This script searches the [arXiv](https://arxiv.org/) (within the categories of interest) for **all papers since the previous execution**.
-It then performs some basic keyword matching, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
+It then computes an 'interest' score for every paper based on the search terms you supply, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
 
 > [!NOTE]
 > This project exists to open all unread papers of interest in the browser with minimal user input.
@@ -61,11 +61,11 @@ These CLI arguments can be added to the bash alias.
 
 The file `search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
-The `Included Words` and `Excluded Words` are used to compute a score on how interesting a paper is.
+The `Included Words` and `Excluded Words` are used to compute a score measuring how interesting a paper is.
 Examples of the format required for each can be found in the provided file.
 - `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found on the [arXiv Category Taxonomy](https://arxiv.org/category_taxonomy) page.
-- `Authors` defines which authors to highlight. Use surnames. Every paper with a match will be opened. Do not include accents/special characters/etc..
-- `Included Words` defines which words increase a paper's 'interest' score. At least one must be included.
+- `Authors` defines which authors to highlight. _Use surnames_. Every paper with a match will be opened. Do not include accents/special characters/etc..
+- `Included Words` defines which words increase a paper's 'interest' score.
 - `Excluded Words` defines which words decrease a paper's 'interest' score.
 
 > [!TIP]

@@ -142,10 +142,11 @@ def load_searchterms(filename, logger):
     # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
     # No need to catch it here
 
-    # At least one search term is required in the "Words" key
+    # # At least one search term is required in the "Words" key
+    # # Depreciated. Now just a warning
     if search_terms["Included Words"] is None:
 
-        logger.critical("No search terms were found in the 'Included Words' entry in the configuration file.\n          Please check the file and add at least one item.\n")
+        logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
         raise
 
     # No search terms are required for the "Authors" or "Excluded Words" keys
