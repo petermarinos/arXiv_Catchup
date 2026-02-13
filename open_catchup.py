@@ -1,7 +1,7 @@
 # Import packages
 from scripts.constants import aux_filenames, arxiv_constants
-from scripts.output    import read_catchup
-from scripts.utils     import logger_setup, clear_catchup
+from scripts.file_io   import read_catchup
+from scripts.utils     import logger_setup, delete_catchup
 
 import argparse
 import os
@@ -36,5 +36,5 @@ logger = logger_setup(args)
 # Read the catchup file
 papers = read_catchup(paperlinks, sleep_opening, logger)
 
-# Ask the user if the file should be cleared
-clear_catchup(paperlinks, papers, logger)
+# Ask the user if the file should be deleted
+delete_catchup(paperlinks, papers, logger)

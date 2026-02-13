@@ -1,6 +1,6 @@
 # Import libraries
 from scripts.string_handling import normalise_string
-from scripts.output          import write_xml
+from scripts.file_io         import write_xml
 from scripts.utils           import progress_bar, clear_progress_bar, delete_file
 
 import xml.etree.ElementTree as ET

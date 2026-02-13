@@ -2,8 +2,8 @@
 from scripts.arxiv_query import arxiv_initial_pull, arxiv_search
 from scripts.constants   import aux_filenames, arxiv_constants
 from scripts.filtering   import filter_papers
-from scripts.output      import display_results
-from scripts.utils       import load_searchterms, cli_args, logger_setup, delete_file
+from scripts.file_io     import load_searchterms, display_results
+from scripts.utils       import cli_args, logger_setup, delete_file
 from scripts.dates       import date_setup
 
 """TO-DO:

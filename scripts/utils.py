@@ -4,7 +4,6 @@ import numpy as np
 import argparse
 import logging
 import pathlib
-import yaml
 import sys
 
 def cli_args():
@@ -86,81 +85,6 @@ def logger_setup(args):
 
     return logger
 
-def load_searchterms(filename, logger):
-    """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
-
-    inputs
-    ------
-    filename : str
-        Path+filename of the `search_terms.yaml` file.
-    logger   : RootLogger
-        The logger object
-
-    outputs
-    -------
-    search_terms  : dict
-        Dictionary of all loaded search terms.
-    cat_urlstring : str
-        String containing the url used in the arXiv API queries
-    """
-
-    # Load the .yaml into a dictionary
-    with open(filename, 'r') as f:
-
-        search_terms = yaml.safe_load(f)
-
-    # # Check the file
-
-    # At least one category is required
-    if search_terms["Categories"] is None:
-
-        logger.critical("No search terms were found in the 'Categories' entry in the configuration file.\n          Please check the file and add at least one item.\n")
-        raise
-    
-    else:
-
-        # Define category string for the urls/API calls
-        cat_urlstring = "+OR+".join(f"cat:{c}" for c in search_terms["Categories"])
-
-        # Define category string to make nice print statements
-        if len(search_terms["Categories"]) == 2:
-
-            cat_printstring = " and ".join(f"{c}" for c in search_terms["Categories"])
-
-        elif len(search_terms["Categories"]) > 2:
-
-            catstring_temp = ", ".join(f"{c}" for c in search_terms["Categories"][:-1])
-            cat_printstring = ", and ".join([catstring_temp, search_terms["Categories"][-1]])
-
-        else:
-
-            cat_printstring = ", ".join(f"{c}" for c in search_terms["Categories"])
-
-        # Print which categories are being searched over
-        logger.info("Searching the {:} categories".format(cat_printstring))
-
-    # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
-    # No need to catch it here
-
-    # # At least one search term is required in the "Words" key
-    # # Depreciated. Now just a warning
-    if search_terms["Included Words"] is None:
-
-        logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
-        raise
-
-    # No search terms are required for the "Authors" or "Excluded Words" keys
-    # Warn the user if no terms are found
-    if search_terms["Authors"] is None:
-
-        logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
-
-    if search_terms["Excluded Words"] is None:
-
-        logger.warning("No search terms were found in the 'Excluded Words' entry in the configuration file.")
-
-    return search_terms, cat_urlstring
-
 def progress_bar(ii, total, time_estimate=None):
     """Prints a progress bar that updates as the loop progresses.
 
@@ -226,7 +150,7 @@ def clear_progress_bar(logger, message_level):
 
     return
 
-def clear_catchup(filename, links, logger):
+def delete_catchup(filename, links, logger):
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
     NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed ) links manually.
 
