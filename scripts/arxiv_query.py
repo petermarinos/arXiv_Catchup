@@ -468,16 +468,16 @@ def extract_papers(ns, xml, logger):
 
         # Place information in a dictionary
         paper = {
-            "arXiv Number"    : ID_number,
-            "Title"           : entry.find("atom:title", ns).text.strip(),
-            "Authors"         : normalise_string( ", ".join(f"{author}" for author in author_list) ),
-            "Revised?"        : (updated_date > published_date) or (version_number > 1),
-            "Abstract"        : entry.find("atom:summary", ns).text.strip(),
-            "url"             : entry.find("atom:id", ns).text.strip(),
-            "Author Match"    : False,
-            "IncWord Match"   : False,
-            "ExcWord Match"   : False,
-            "Score"           : 0,
+            "arXiv Number"         : ID_number,
+            "Title"                : entry.find("atom:title", ns).text.strip(),
+            "Authors"              : normalise_string( ", ".join(f"{author}" for author in author_list) ),
+            "Revised?"             : (updated_date > published_date) or (version_number > 1),
+            "Abstract"             : entry.find("atom:summary", ns).text.strip(),
+            "url"                  : entry.find("atom:id", ns).text.strip(),
+            "Authors Match"        : False,
+            "Included Words Match" : False,
+            "Excluded Words Match" : False,
+            "Score"                : 0,
         }
 
         logger.debug("Found: {:}, version {:}.".format(ID_number, version_number))
