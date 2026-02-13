@@ -6,6 +6,17 @@ from scripts.output      import display_results
 from scripts.utils       import load_searchterms, cli_args, logger_setup, delete_file
 from scripts.dates       import date_setup
 
+"""TO-DO:
+Add documentation for the following:
+1) filtering.author_search()
+2) filtering.word_search()
+3) filtering.score_papers()
+4) filtering.filter_papers_score()
+5) filtering.filter_papers()
+6) output.write_xml()
+7) utils.delete_file()
+"""
+
 # The main script
 # Performs the entire pipeline
 def main(cdir):

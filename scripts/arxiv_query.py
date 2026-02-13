@@ -29,6 +29,8 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, filename, logger):
         Time between searches.
     blocksize   : int
         Number of papers returned in each search.
+    filenamexml : str
+        Path+filename of the `search.xml` file, that contains the xml of the initial search.
     logger      : RootLogger
         The logger object
     """
@@ -372,19 +374,21 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
 
     inputs
     ------
-    url        : str
+    ns          : dict
+        arXiv XML namespaces
+    url         : str
         URL for the arXiv API.
-    start_date : datetime.date
+    start_date  : datetime.date
         Start date for the search.
-    end_date   : datetime.date
+    end_date    : datetime.date
         End date for the search.
-    cats       : str
+    cats        : str
         Categories that will be searched over (must be formatted for the search).
-    sleeptimer : float
+    sleeptimer  : float
         Time in seconds to wait between searches.
-    blocksize  : int
+    blocksize   : int
         Number of papers to return from the search.
-    searchxml   : str
+    filenamexml : str
         Path+filename of the `search.xml` file, that contains the xml of the initial search.
     logger      : RootLogger
         The logger object
@@ -443,6 +447,8 @@ def extract_papers(ns, xml, logger):
         XML namespaces that arXiv uses.
     xml : Element
         XML data from the arXiv query.
+    logger      : RootLogger
+        The logger object
 
     outputs
     -------
@@ -516,6 +522,8 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
         Time in seconds to wait between searches.
     blocksize  : int
         Number of papers to return from the search.
+    filenamexml : str
+        Path+filename of the `search.xml` file, that contains the xml of the initial search.
     logger     : RootLogger
         The logger object
 

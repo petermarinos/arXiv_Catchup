@@ -90,10 +90,12 @@ def calc_search_endtime(now, post_time, search_time):
 
     inputs
     ------
-    now       : datetime.time (with timezone and date)
+    now         : datetime.time (with timezone and date)
         Either the current time, or the time input from the CLI.
-    post_time : datetime.time (with timezone)
+    post_time   : datetime.time (with timezone)
         Time that arXiv postings occur
+    search_time : datetime.time (with timezone)
+        Time that arXiv seaches use
 
     outputs
     -------

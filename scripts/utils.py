@@ -51,6 +51,11 @@ def logger_setup(args):
         2 => ... and warnings
         3 => ... and info
         4 => ... and debug
+
+    outputs
+    -------
+    logger : RootLogger
+        The logger object
     """
 
     # Initialise the logger
@@ -164,7 +169,7 @@ def progress_bar(ii, total, time_estimate=None):
         Current step in the loop.
     total         : int
         Final step in the loop.
-    time_estimate : float
+    time_estimate : float or None
         Estimate of the remaining time of the loop.
     """
 
@@ -198,6 +203,7 @@ def progress_bar(ii, total, time_estimate=None):
 
 def clear_progress_bar(logger, message_level):
     """Clears the progress bar. Only does so if the logger level is equal to or greater than the next message.
+    Calling when no progress bar is displayed does nothing.
     NOTE: This function does nothing unless called somewhere that displays a progress bar. It should be called immediately before the logger message.
 
     inputs

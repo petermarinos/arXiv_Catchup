@@ -155,7 +155,7 @@ def write_links(filename, df, entries, logger):
     return
 
 def write_xml(filename, ns, xml, logger, overwrite=False):
-    """
+    """Writes an XML to a .xml file.
 
     inputs
     ------

@@ -198,12 +198,16 @@ def filter_papers_score(df, search_terms, logger):
     for entry_count in range(0, len(df)):
 
         # If an Author was found, append it to the entries of note
+        # Note that the author score is not actually being utilised in the computation of the papers score. If one author was found, the paper is considered interesting.
         if df.loc[entry_count, "Authors Score"] == 1:
 
             entries_of_note.append(entry_count)
 
         # Compute a score. If the score is negative, set it to zero
-        df.loc[entry_count, "Score"] = max(df.loc[entry_count, "Included Words Score"] - df.loc[entry_count, "Excluded Words Score"], 0)
+        # Currently the included/excluded words are being weighted as equal. It may be good to cap the excluded word score?
+        df.loc[entry_count, "Score"] = max(df.loc[entry_count, "Included Words Score"] -
+                                           df.loc[entry_count, "Excluded Words Score"],
+                                           0)
 
         logger.debug("arXiv:{:} final score: {:}".format(df.loc[entry_count, "arXiv Number"], df.loc[entry_count, "Score"]))
 
