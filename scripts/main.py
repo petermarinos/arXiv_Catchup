@@ -18,6 +18,7 @@ Add a check to ensure the loaded xml is the same search as the current one
 
 Refactor to use classes... in progress
     Check that the results from this is the same as the previous before merging
+    Check that the two extra scripts still work
 """
 
 # The main script
