@@ -19,8 +19,9 @@ class Papers(object):
         self.logger = logger_setup(args)
         self.paths  = set_filenames(cdir)
 
-        url, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
+        url, apiquery, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
         self.arxivConst = arxivConst(url=url,
+                                     apiquery=apiquery,
                                      ns=ns,
                                      sleeptimer_opening=sleep_opening,
                                      sleeptimer_search=sleep_search,
@@ -41,6 +42,25 @@ class Papers(object):
     def getDates(self):
         self.start_date, self.end_date = date_setup(self)
         date_errorcheck(self)
+        # Format the url and apiquery
+        self.arxivConst.url = self.arxivConst.url.format(
+                                  start_year  = self.start_date.year,
+                                  start_month = self.start_date.month,
+                                  start_day   = self.start_date.day,
+                                  end_year    = self.end_date.year,
+                                  end_month   = self.end_date.month,
+                                  end_day     = self.end_date.day,
+                                  cats        = self.cat_urlstring,
+                                  )
+        self.arxivConst.apiquery = self.arxivConst.apiquery.format(
+                                  start_year  = self.start_date.year,
+                                  start_month = self.start_date.month,
+                                  start_day   = self.start_date.day,
+                                  end_year    = self.end_date.year,
+                                  end_month   = self.end_date.month,
+                                  end_day     = self.end_date.day,
+                                  cats        = self.cat_urlstring,
+                                  )
 
     # # Obtain basic search information
     def getSearchInfo(self):

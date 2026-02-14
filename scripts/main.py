@@ -14,10 +14,10 @@ Add the ability to include given names. Update README
 
 Add a flag to write only the arXiv IDs to a file. Update README.
 
-Add a check to ensure the loaded xml is the same search as the current one
+Place temp-file cleanup in a function
 
 Refactor to use classes... in progress
-    Check that the results from this is the same as the previous before merging
+    Check that the results from this is the same as the previous before merging -- DONE
     Check that the two extra scripts still work
 """
 
@@ -47,17 +47,18 @@ def main(cdir):
     papers.scorePapers()
 
     # # Filter the papers
-    # Filter based on matches
-    papers.filterPapersMatches()
+    # # Filter based on matches
+    # papers.filterPapersMatches()
     # Filter based on score
-    # papers.filterPapersScore()
+    papers.filterPapersScore()
 
     # # Display the results
     papers.display()
 
-    # # Delete xmls/other supplemental files if successfull
-    # delete_file(papers.logger, papers.paths["searchxml"])
-    # delete_file(papers.logger, papers.paths["papersxml"])
+    # Delete xmls/other supplemental files if successfull
+    # papers.clearTempFiles(self)
+    delete_file(papers.logger, papers.paths["searchxml"])
+    delete_file(papers.logger, papers.paths["papersxml"])
 
     # # Print a summary
     papers.summary()

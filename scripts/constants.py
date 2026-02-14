@@ -62,7 +62,10 @@ def set_arxiv_constants():
     """
 
     # Define the search url
-    url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={start_num:d}&max_results={blocksize:d}"
+    # Double braces, {{}}, used for fields that change on each search
+    url = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={{start_num:d}}&max_results={{blocksize:d}}"
+
+    apiquery = "https://arxiv.org/api/query?search_query=submittedDate:%22{start_year:d}{start_month:02d}{start_day:02d}1900+TO+{end_year:d}{end_month:02d}{end_day:02d}1900%22+AND+({cats:s})&start={{start_num:d}}&max_results={{blocksize:d}}&id_list="
 
     # XML namespaces used by arXiv
     ns = {
@@ -77,12 +80,13 @@ def set_arxiv_constants():
     sleep_search     = 3    # 3 seconds per search
     search_blocksize = 10   # Each search downloads only ten papers (max=2000)
 
-    return url, ns, sleep_opening, sleep_search, search_blocksize
+    return url, apiquery, ns, sleep_opening, sleep_search, search_blocksize
 
 
 @dataclass
 class arxivConst:
     url:                str
+    apiquery:           str
     ns:                 dict
     sleeptimer_opening: float
     sleeptimer_search:  float

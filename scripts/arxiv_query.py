@@ -218,7 +218,7 @@ def url_errorcheck(logger, error, cert_error_bool, wait_time):
 
     return ssl_context, cert_error_bool
 
-def arxiv_query(logger, url, start_date, end_date, cat_urlstring, start_num, blocksize):
+def arxiv_query(logger, url, start_num, blocksize):
     """Queries the arXiv API.
     Will catch errors and attempt retries.
 
@@ -260,16 +260,9 @@ def arxiv_query(logger, url, start_date, end_date, cat_urlstring, start_num, blo
     # Initialise to None
     retry_after = None
 
-    # Format the url
-    formatted_url = url.format(start_year  = start_date.year,
-                               start_month = start_date.month,
-                               start_day   = start_date.day,
-                               end_year    = end_date.year,
-                               end_month   = end_date.month,
-                               end_day     = end_date.day,
-                               cats        = cat_urlstring,
-                               start_num   = start_num,
-                               blocksize   = blocksize)
+    # Format the last two fields in the url
+    formatted_url = url.format(start_num = start_num,
+                               blocksize = blocksize)
     
     clear_progress_bar(logger, 10)
     logger.debug("Connecting to:\n       {:}".format(formatted_url))
@@ -401,20 +394,31 @@ def arxiv_initial_pull(self):
         Number of papers that were found in the categories of interest.
     """
 
+    url_missmatch = True
+
     # Search for xml file. If found, load it
     if os.path.exists(self.paths["searchxml"]):
         
-        self.logger.info("Found an xml file: {:}".format(self.paths["searchxml"]))
-        self.logger.info("Continuing from the previous failed run.")
+        self.logger.info("Found a .xml file: {:}".format(self.paths["searchxml"]))
+        self.logger.info("Attempting to continue from the previous failed run.")
 
         # Load the file
         xml_data = ET.parse(self.paths["searchxml"])
 
         # Check the url from the loaded xml matches the current search url
-        
+        expected_url = self.arxivConst.apiquery.format(start_num=0, blocksize=1)
+        returned_url = xml_data.find("atom:link", self.arxivConst.ns).attrib["href"]
 
-    # Otherwise, search the arXiv
-    else:
+        url_missmatch = ( expected_url != returned_url )
+        if url_missmatch:
+            self.logger.warning("The .xml file information does not match the current search. Discarding the file and re-connecting.")
+            self.logger.debug("Expected: {:}".format(expected_url))
+            self.logger.debug("Found:    {:}".format(returned_url))
+        else:
+            self.logger.debug("The .xml file information matches the current search. Continuing")
+
+    # If the urls don't match, or if the temp .xml doesn't exist, search the arXiv
+    elif url_missmatch or ( os.path.exists(self.paths["searchxml"]) ):
 
         self.logger.info("Obtaining arXiv info from the servers.")
 
@@ -422,7 +426,7 @@ def arxiv_initial_pull(self):
         # progress_bar(0, 1, 3)
 
         # Perform the query
-        xml_data = arxiv_query(self.logger, self.arxivConst.url, self.start_date, self.end_date, self.cat_urlstring, 0, 1)
+        xml_data = arxiv_query(self.logger, self.arxivConst.url, 0, 1)
         
         # Write the extracted xml to a file
         write_xml(self.logger, self.paths["searchxml"], xml_data, self.arxivConst.ns, overwrite=True)
@@ -548,10 +552,32 @@ def arxiv_search(self):
         # Print how many were found
         self.logger.info("Found {:} of {:} papers in the .xml file.".format(len(entries), self.total_papers))
 
-        # If less than the total, provide info that we are continuing the search
-        if len(entries) < self.total_papers:
+        # Check the url from the loaded xml matches the current search url
+        expected_url = self.arxivConst.apiquery.format(start_num=0, blocksize=self.arxivConst.search_blocksize)
+        returned_url = xml_data.find("atom:link", self.arxivConst.ns).attrib["href"]
 
-            self.logger.info("Continuing the search.")
+        url_missmatch = ( expected_url != returned_url )
+
+        # If the urls do not match, discard and restart the search
+        if url_missmatch:
+            self.logger.warning("The .xml file information does not match the current search. Discarding the file and re-connecting.")
+            self.logger.debug("Expected: {:}".format(expected_url))
+            self.logger.debug("Found:    {:}".format(returned_url))
+
+            # Clear the entries from the list.
+            entries = []
+
+            # Clear the .xml file
+            delete_file(self.logger, self.paths["papersxml"])
+
+        # If the urls match AND the number of papers was less than the total:
+        elif ( not url_missmatch ) and ( len(entries) < self.total_papers ):
+            self.logger.debug("The .xml file information matches the current search. Continuing")
+
+        # If less than the total, provide info that we are continuing the search
+        elif len(entries) >= self.total_papers:
+
+            self.logger.info("All information found in the .xml file. Skipping the saerch.")
 
     # If the number of papers is less that the total, connect to arXiv
     if len(entries) < self.total_papers:
@@ -597,7 +623,7 @@ def arxiv_search(self):
             time.sleep(self.arxivConst.sleeptimer_search)
 
             # Query the API
-            parsed_xml = arxiv_query(self.logger, self.arxivConst.url, self.start_date, self.end_date, self.cat_urlstring, ii, search_interval)
+            parsed_xml = arxiv_query(self.logger, self.arxivConst.url, ii, search_interval)
             
             # Write the xml to a file
             #logger, filename, xml_data, ns, overwrite=False
