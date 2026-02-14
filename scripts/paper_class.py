@@ -12,7 +12,7 @@ import datetime
 # Define the class
 class Papers(object):
 
-    # Initialise the class
+    # # Initialise the class
     def __init__(self, cdir, args):
 
         self.args   = args
@@ -42,6 +42,9 @@ class Papers(object):
     def getDates(self):
         self.start_date, self.end_date = date_setup(self)
         date_errorcheck(self)
+
+    # # Setup some of the API information
+    def setupAPI(self):
         # Format the url and apiquery
         self.arxivConst.url = self.arxivConst.url.format(
                                   start_year  = self.start_date.year,
@@ -71,7 +74,7 @@ class Papers(object):
     def getPapers(self):
         self.df_papers = arxiv_search(self)
 
-    # Score the papers
+    # # Score the papers
     def scorePapers(self):
         # Score based on matches
         self.author_str = score_papers_matches(self)
@@ -92,9 +95,11 @@ class Papers(object):
         if self.open_in_brower:
             open_links(self)        
 
+    # # Summarise the search results
     def summary(self):
         summarise_search(self)
 
+    # # Delete the temporarly files
     def clearTempFiles(self):
         delete_file(self.logger, self.paths["searchxml"])
         delete_file(self.logger, self.paths["papersxml"])

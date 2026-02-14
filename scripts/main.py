@@ -31,6 +31,9 @@ def main(cdir):
     # # Load and check dates
     papers.getDates()
 
+    # # Setup the API information
+    papers.setupAPI()
+
     # # Obtain basic search information
     papers.getSearchInfo()
 
