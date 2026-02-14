@@ -1,26 +1,23 @@
-# Import libraries
-from scripts.arxiv_query import arxiv_initial_pull, arxiv_search
-from scripts.constants   import aux_filenames, arxiv_constants
-from scripts.filtering   import filter_papers
-from scripts.output      import display_results
-from scripts.utils       import load_searchterms, cli_args, logger_setup, delete_file
-from scripts.dates       import date_setup
+# Import classes
+from scripts.paper_class import Papers
+
+# Import functions
+from scripts.utils import cli_args
 
 """TO-DO:
-Add documentation for the following:
-1) filtering.author_search()
-2) filtering.word_search()
-3) filtering.score_papers()
-4) filtering.filter_papers_score()
-5) filtering.filter_papers()
-6) output.write_xml()
-7) utils.delete_file()
+
+Put the clear_progress_bar() function inside of the logger
+    Will make it more automatic -- if the logger level is high enough to print a message, it will first clear the progress bar
+    otherwise, if the message will not be clearer, the progress bar is untouched.
 
 Add the ability to include given names. Update README
 
 Add a flag to write only the arXiv IDs to a file. Update README.
 
-Refactor to use classes...
+Currently, author_search() and word_search() actually compute the scores for the authors/words.
+    Change so that these functions place the information of the number of matches, the locations, etc. in an output? or the Papers object?
+    Then, score_papers_matches() should actually compute the scores
+    Note that this would lead to papers in the print string that may be excluded from their scores. Maybe compute the print string later?
 """
 
 # The main script
@@ -30,52 +27,38 @@ def main(cdir):
     # # Parse command-line arguments
     args = cli_args()
 
-    # Setup logging
-    logger = logger_setup(args)
+    # # Set up the papers class
+    papers = Papers(cdir, args)
 
-    # Define filenames of the auxiliary files
-    filename_prevsearch, filename_searchterms, filename_paperlinks, filename_searchxml, filename_papersxml = aux_filenames(cdir)
+    # # Load search terms from the auxiliary file
+    papers.getSearchterms()
 
-    # Return arXiv constants
-    url, ns, sleep_opening, sleep_search, search_blocksize = arxiv_constants()
-    
-    # Load search terms from the auxiliary file
-    search_terms, cat_urlstring = load_searchterms(filename_searchterms, logger)
+    # # Load and check dates
+    papers.getDates()
 
-    # Load and check dates
-    start_date, end_date = date_setup(args, filename_prevsearch, logger)
+    # # Setup the API information
+    papers.setupAPI()
 
-    # Obtain basic search information
-    max_num = arxiv_initial_pull(ns,
-                                 url,
-                                 start_date,
-                                 end_date,
-                                 cat_urlstring,
-                                 sleep_search,
-                                 search_blocksize,
-                                 filename_searchxml,
-                                 logger
-                                 )
+    # # Obtain basic search information
+    papers.getSearchInfo()
 
-    # Loop through the searches and obtain all papers
-    df_papers = arxiv_search(ns,
-                             url,
-                             start_date,
-                             end_date,
-                             cat_urlstring,
-                             max_num,
-                             sleep_search,
-                             search_blocksize,
-                             filename_papersxml,
-                             logger
-                             )
+    # # Loop through the searches and obtain all papers
+    papers.getPapers()
 
-    # Filter the papers
-    papers_of_note = filter_papers(df_papers, search_terms, logger)
+    # Score the paper
+    papers.scorePapers()
 
-    # Display the results
-    display_results(args, df_papers, papers_of_note, sleep_opening, filename_paperlinks, filename_prevsearch, end_date, max_num, logger)
+    # # Filter the papers
+    # # Filter based on matches
+    # papers.filterPapersMatches()
+    # Filter based on score
+    papers.filterPapersScore()
+
+    # # Display the results
+    papers.display()
 
     # Delete xmls/other supplemental files if successfull
-    delete_file(filename_searchxml, logger)
-    delete_file(filename_papersxml, logger)
+    papers.clearTempFiles()
+
+    # # Print a summary
+    papers.summary()

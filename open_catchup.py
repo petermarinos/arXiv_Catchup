@@ -1,7 +1,7 @@
 # Import packages
-from scripts.constants import aux_filenames, arxiv_constants
-from scripts.output    import read_catchup
-from scripts.utils     import logger_setup, clear_catchup
+from scripts.constants import set_filenames, set_arxiv_constants
+from scripts.file_io   import read_catchup
+from scripts.utils     import logger_setup, delete_catchup
 
 import argparse
 import os
@@ -27,14 +27,14 @@ parser.add_argument('-v', '--verbosity', type=int, default=3,
 args = parser.parse_args()
 
 # Extract some of the required constants
-prevsearch, searchterms, paperlinks = aux_filenames(cdir)
-url, ns, sleep_opening, sleep_search, search_blocksize = arxiv_constants()
+filenames = set_filenames(cdir)
+url, apiquery, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
 
 # Setup logging
 logger = logger_setup(args)
 
 # Read the catchup file
-papers = read_catchup(paperlinks, sleep_opening, logger)
+papers = read_catchup(logger, filenames["catchup"], sleep_opening)
 
-# Ask the user if the file should be cleared
-clear_catchup(paperlinks, papers, logger)
+# Ask the user if the file should be deleted
+delete_catchup(logger, filenames["catchup"], papers)

@@ -1,10 +1,10 @@
 # Import libraries
-import numpy as np
-
+import numpy      as np
+import webbrowser
 import argparse
 import logging
 import pathlib
-import yaml
+import time
 import sys
 
 def cli_args():
@@ -40,7 +40,6 @@ def cli_args():
 
 def logger_setup(args):
     """Set up the logger.
-    Note: There are currently no messages with levels set to CRITICAL. Verbosity must be set to 1 or higher to show any messages.
 
     inputs
     ------
@@ -84,82 +83,10 @@ def logger_setup(args):
     elif args.verbosity >= 4:
         logger.setLevel(logging.DEBUG)
 
+    # Add a custom handler
+    # This handler will clear the progress bar before printing the message (and only clear the progress bar if the message will be triggered).
+
     return logger
-
-def load_searchterms(filename, logger):
-    """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
-
-    inputs
-    ------
-    filename : str
-        Path+filename of the `search_terms.yaml` file.
-    logger   : RootLogger
-        The logger object
-
-    outputs
-    -------
-    search_terms  : dict
-        Dictionary of all loaded search terms.
-    cat_urlstring : str
-        String containing the url used in the arXiv API queries
-    """
-
-    # Load the .yaml into a dictionary
-    with open(filename, 'r') as f:
-
-        search_terms = yaml.safe_load(f)
-
-    # # Check the file
-
-    # At least one category is required
-    if search_terms["Categories"] is None:
-
-        logger.critical("No search terms were found in the 'Categories' entry in the configuration file.\n          Please check the file and add at least one item.\n")
-        raise
-    
-    else:
-
-        # Define category string for the urls/API calls
-        cat_urlstring = "+OR+".join(f"cat:{c}" for c in search_terms["Categories"])
-
-        # Define category string to make nice print statements
-        if len(search_terms["Categories"]) == 2:
-
-            cat_printstring = " and ".join(f"{c}" for c in search_terms["Categories"])
-
-        elif len(search_terms["Categories"]) > 2:
-
-            catstring_temp = ", ".join(f"{c}" for c in search_terms["Categories"][:-1])
-            cat_printstring = ", and ".join([catstring_temp, search_terms["Categories"][-1]])
-
-        else:
-
-            cat_printstring = ", ".join(f"{c}" for c in search_terms["Categories"])
-
-        # Print which categories are being searched over
-        logger.info("Searching the {:} categories".format(cat_printstring))
-
-    # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
-    # No need to catch it here
-
-    # # At least one search term is required in the "Words" key
-    # # Depreciated. Now just a warning
-    if search_terms["Included Words"] is None:
-
-        logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
-        raise
-
-    # No search terms are required for the "Authors" or "Excluded Words" keys
-    # Warn the user if no terms are found
-    if search_terms["Authors"] is None:
-
-        logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
-
-    if search_terms["Excluded Words"] is None:
-
-        logger.warning("No search terms were found in the 'Excluded Words' entry in the configuration file.")
-
-    return search_terms, cat_urlstring
 
 def progress_bar(ii, total, time_estimate=None):
     """Prints a progress bar that updates as the loop progresses.
@@ -203,7 +130,7 @@ def progress_bar(ii, total, time_estimate=None):
     return
 
 def clear_progress_bar(logger, message_level):
-    """Clears the progress bar. Only does so if the logger level is equal to or greater than the next message.
+    """If there is a progress bar, it will be cleared. Only does so if the logger level is equal to or greater than the next message.
     Calling when no progress bar is displayed does nothing.
     NOTE: This function does nothing unless called somewhere that displays a progress bar. It should be called immediately before the logger message.
 
@@ -215,10 +142,8 @@ def clear_progress_bar(logger, message_level):
         The logger level of the next message. 10=debug, ..., 50=critical
     """
 
-    logger_level = logger.level
-
     # If the message level is equal to or greater than the logger level (i.e. the message will be printed)
-    if message_level >= logger_level:
+    if message_level >= logger.level:
 
         # Flush the line in the terminal
         sys.stdout.write("\r\033[K")
@@ -226,18 +151,18 @@ def clear_progress_bar(logger, message_level):
 
     return
 
-def clear_catchup(filename, links, logger):
+def delete_catchup(logger, filename, links):
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
     NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed ) links manually.
 
     inputs
     ------
+    logger   : RootLogger
+        The logger object
     filename : str
         Path+filename of the `catchup.txt` file.
     links    : list
         List containing all arXiv links in the file.
-    logger   : RootLogger
-        The logger object
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no
@@ -264,7 +189,7 @@ def clear_catchup(filename, links, logger):
                     raise
 
         # If the file is of the correct format, delete it
-        delete_file(filename, logger)
+        delete_file(logger, filename)
 
     # Else, do nothing
     else:
@@ -273,7 +198,16 @@ def clear_catchup(filename, links, logger):
 
     return
 
-def delete_file(filename, logger):
+def delete_file(logger, filename):
+    """Deletes a file
+
+    inputs
+    ------
+    logger   : RootLogger
+        The logger object.
+    filename : str
+        Path+filename of the file being deleted.
+    """
 
     logger.info("Deleting file: {:}".format(filename))
     file = pathlib.Path(filename)
