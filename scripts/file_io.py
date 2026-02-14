@@ -85,7 +85,7 @@ def load_searchterms(self):
 
     return search_terms, cat_urlstring
 
-def read_catchup(filename, sleep_time, logger):
+def read_catchup(logger, filename, sleep_time):
     """Read the `catchup.txt` file and open all links in the browser.
 
     inputs

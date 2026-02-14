@@ -27,14 +27,14 @@ parser.add_argument('-v', '--verbosity', type=int, default=3,
 args = parser.parse_args()
 
 # Extract some of the required constants
-prevsearch, searchterms, paperlinks = set_filenames(cdir)
-url, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
+filenames = set_filenames(cdir)
+url, apiquery, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
 
 # Setup logging
 logger = logger_setup(args)
 
 # Read the catchup file
-papers = read_catchup(paperlinks, sleep_opening, logger)
+papers = read_catchup(logger, filenames["catchup"], sleep_opening)
 
 # Ask the user if the file should be deleted
-delete_catchup(paperlinks, papers, logger)
+delete_catchup(logger, filenames["catchup"], papers)
