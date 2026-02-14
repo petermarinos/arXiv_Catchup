@@ -1,12 +1,12 @@
-# Import libraries
+# Import functions
 from scripts.string_handling import normalise_string
 from scripts.file_io         import write_xml
 from scripts.utils           import progress_bar, clear_progress_bar, delete_file
 
+# Import libraries
 import xml.etree.ElementTree as ET
 import pandas                as pd
 import numpy                 as np
-
 import urllib.request
 import certifi
 import time
@@ -18,7 +18,7 @@ import os
 # from email.message import Message
 # from unittest.mock import patch
 
-def arxiv_errorcheck(max_num, sleep_timer, blocksize, filename, logger):
+def arxiv_errorcheck(self):
     """Runs some error checks on the results of the initial arXiv API pull (i.e. the one that collects some basic information).
 
     inputs
@@ -37,43 +37,43 @@ def arxiv_errorcheck(max_num, sleep_timer, blocksize, filename, logger):
 
     # If no papers were found in the search, raise an error
     # This should catch deferred mailings
-    if max_num == 0:
-        logger.critical("There were no papers submitted to the arXiv.\n          Refine search dates and/or categories and check for deferred mailings:\n          https://info.arxiv.org/help/availability.html\n")
+    if self.total_papers == 0:
+        self.logger.critical("There were no papers submitted to the arXiv.\n          Refine search dates and/or categories and check for deferred mailings:\n          https://info.arxiv.org/help/availability.html\n")
         raise
 
     # If there are too many papers then there can be issues with the arXiv API.
     # While the API will likely return an error, catch it here as well just in case
-    if max_num >= 30000:
+    if self.total_papers >= 30000:
         
-        logger.critical("Number of papers is too large. Refine search dates and/or categories.\n")
+        self.logger.critical("Number of papers is too large. Refine search dates and/or categories.\n")
         raise
     
     # Compute the time it will take to download all papers
-    time_to_search_minutes = max_num*sleep_timer/(blocksize*60)
+    time_to_search_minutes = self.total_papers * self.arxivConst.sleeptimer_search / ( self.arxivConst.search_blocksize * 60 )
     
     # Print a warning if it is going to take a long time
     if 1 <= time_to_search_minutes < 5:
 
-        logger.warning("There are {:d} papers. The search will take {:.1f} minutes.".format(max_num, time_to_search_minutes))
+        self.logger.warning("There are {:d} papers. The search will take {:.1f} minutes.".format(self.total_papers, time_to_search_minutes))
 
     # Prompt the user if it is going to take a really long time.
     elif time_to_search_minutes >= 5:
 
-        user_prompt = input("There are {:d} papers. The search will take {:.1f} minutes. Continue? [y/N]: ".format(max_num,time_to_search_minutes)).strip().lower()
+        user_prompt = input("There are {:d} papers. The search will take {:.1f} minutes. Continue? [y/N]: ".format(self.total_papers, time_to_search_minutes)).strip().lower()
 
         # If they want to continue, do nothing.
         # If they do not want to continue, end the search
         if user_prompt != "y":
 
             # Delete the .xml file
-            delete_file(filename, logger)
+            delete_file(self.paths["searchxml"], self.logger)
 
             # Exit
             sys.exit("Cancelling the search. Reduce search window to decrease the number of results.")
 
     return
 
-def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger):
+def http_errorcheck(logger, error, attempt, max_retries, wait_time):
     """Handles the HTTP errors that could arise.
     NOTE: Only occurs within functions that include a progress bar.
 
@@ -97,6 +97,16 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
     retry_after : None or float
         Holds the time that the query attempts should be paused for, if there is a request to pause. Otherwise, it is None.
     """
+
+    # Define some error codes. If one of these, we will retry
+    retry_codes = (
+                   408, # Request timeout
+                   429, # Too many requests
+                   500, # Internal server error. Also caused by malformed urls in the request.
+                   502, # Bad gateway
+                   503, # Service unavailable (i.e. overloaded or down)
+                   504, # Gateway timeout
+                  )
 
     # If the HTTP error is in our list of codes that tell us to retry
     if error.code in retry_codes:
@@ -147,7 +157,7 @@ def http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
 
     return retry_after
 
-def url_errorcheck(error, cert_error_bool, wait_time, logger):
+def url_errorcheck(logger, error, cert_error_bool, wait_time):
     """Handles the URL errors that could arise.
     NOTE: Only occurs within functions that include a progress bar.
 
@@ -208,7 +218,7 @@ def url_errorcheck(error, cert_error_bool, wait_time, logger):
 
     return ssl_context, cert_error_bool
 
-def arxiv_query(url, start_date, end_date, cats, start_num, blocksize, logger):
+def arxiv_query(logger, url, start_date, end_date, cat_urlstring, start_num, blocksize):
     """Queries the arXiv API.
     Will catch errors and attempt retries.
 
@@ -241,14 +251,6 @@ def arxiv_query(url, start_date, end_date, cats, start_num, blocksize, logger):
     wait_time   = 6  # Seconds to wait. Double the courtesy value
     backoff     = 2  # Factor to increase the wait_time after a failure
     timeout     = 30 # Seconds to wait before a timeout
-    retry_codes = (
-                   408, # Request timeout
-                   429, # Too many requests
-                   500, # Internal server error. Also caused by malformed urls in the request.
-                   502, # Bad gateway
-                   503, # Service unavailable (i.e. overloaded or down)
-                   504, # Gateway timeout
-                  )
 
     # Set default ssl_context and define a flag to check if a certification error was raised previously
     ssl_context     = None
@@ -265,7 +267,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, blocksize, logger):
                                end_year    = end_date.year,
                                end_month   = end_date.month,
                                end_day     = end_date.day,
-                               cats        = cats,
+                               cats        = cat_urlstring,
                                start_num   = start_num,
                                blocksize   = blocksize)
     
@@ -326,12 +328,12 @@ def arxiv_query(url, start_date, end_date, cats, start_num, blocksize, logger):
         # If there is a HTTP error:
         except urllib.error.HTTPError as error:
 
-            retry_after = http_errorcheck(error, retry_codes, attempt, max_retries, wait_time, logger)
+            retry_after = http_errorcheck(logger, error, attempt, max_retries, wait_time)
 
         # If there is a URL error:
         except urllib.error.URLError as error:
 
-            ssl_context, cert_error_bool = url_errorcheck(error, cert_error_bool, wait_time, logger)
+            ssl_context, cert_error_bool = url_errorcheck(logger, error, cert_error_bool, wait_time)
 
         # If there is an error parsing the xml, raise an error
         except ET.ParseError as error:
@@ -369,7 +371,7 @@ def arxiv_query(url, start_date, end_date, cats, start_num, blocksize, logger):
     logger.critical("Something went wrong...?\n")
     raise
 
-def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksize, filename_xml, logger):
+def arxiv_initial_pull(self):
     """Performs the initial query to obtain important run information.
 
     inputs
@@ -400,45 +402,40 @@ def arxiv_initial_pull(ns, url, start_date, end_date, cats, sleeptimer, blocksiz
     """
 
     # Search for xml file. If found, load it
-    if os.path.exists(filename_xml):
+    if os.path.exists(self.paths["searchxml"]):
         
-        logger.info("Found an xml file: {:}".format(filename_xml))
-        logger.info("Continuing from the previous failed run.")
+        self.logger.info("Found an xml file: {:}".format(self.paths["searchxml"]))
+        self.logger.info("Continuing from the previous failed run.")
 
         # Load the file
-        xml_data = ET.parse(filename_xml)
+        xml_data = ET.parse(self.paths["searchxml"])
+
+        # Check the url from the loaded xml matches the current search url
+        
 
     # Otherwise, search the arXiv
     else:
 
-        logger.info("Obtaining arXiv info from the servers.")
+        self.logger.info("Obtaining arXiv info from the servers.")
 
         # # Display a progress bar
         # progress_bar(0, 1, 3)
 
         # Perform the query
-        xml_data = arxiv_query(url,
-                               start_date,
-                               end_date,
-                               cats,
-                               0,
-                               1,
-                               logger)
+        xml_data = arxiv_query(self.logger, self.arxivConst.url, self.start_date, self.end_date, self.cat_urlstring, 0, 1)
         
         # Write the extracted xml to a file
-        write_xml(filename_xml, ns, xml_data, logger, overwrite=True)
+        write_xml(self.logger, self.paths["searchxml"], xml_data, self.arxivConst.ns, overwrite=True)
         
         # # Close the progress bar
         # progress_bar(1, 1)
     
     # Extract the total number of papers that were found
-    max_num = int(xml_data.find("opensearch:totalResults", ns).text)
-
-    arxiv_errorcheck(max_num, sleeptimer, blocksize, filename_xml, logger)
+    max_num = int(xml_data.find("opensearch:totalResults", self.arxivConst.ns).text)
 
     return max_num
 
-def extract_papers(ns, xml, logger):
+def extract_papers(logger, ns, xml_data):
     """Extracts the papers (and their information) from the API query.
 
     inputs
@@ -459,7 +456,7 @@ def extract_papers(ns, xml, logger):
     papers = []
 
     # Loop over the entries (papers) within the current search
-    for entry in xml.findall("atom:entry", ns):
+    for entry in xml_data.findall("atom:entry", ns):
 
         # Find the published and updated dates
         published_date = entry.find("atom:published", ns).text
@@ -501,7 +498,7 @@ def extract_papers(ns, xml, logger):
 
     return papers
 
-def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, blocksize, filename_xml, logger):
+def arxiv_search(self):
     """Performs the initial query to obtain important run information.
 
     inputs
@@ -537,110 +534,105 @@ def arxiv_search(ns, url, start_date, end_date, cats, max_num, sleeptimer, block
     entries = []
 
     # Search for xml file. If found, load it
-    if os.path.exists(filename_xml):
+    if os.path.exists(self.paths["papersxml"]):
         
-        logger.info("Found an .xml file: {:}".format(filename_xml))
-        logger.info("Continuing from the previous failed run.")
+        self.logger.info("Found an .xml file: {:}".format(self.paths["papersxml"]))
+        self.logger.info("Continuing from the previous failed run.")
 
         # Load the file
-        xml_data = ET.parse(filename_xml)
+        xml_data = ET.parse(self.paths["papersxml"])
 
         # Extract the papers from the xml
-        entries.extend(extract_papers(ns, xml_data, logger))
+        entries.extend(extract_papers(self.logger, self.arxivConst.ns, xml_data))
 
         # Print how many were found
-        logger.info("Found {:} of {:} papers in the .xml file.".format(len(entries), max_num))
+        self.logger.info("Found {:} of {:} papers in the .xml file.".format(len(entries), self.total_papers))
 
         # If less than the total, provide info that we are continuing the search
-        if len(entries) < max_num:
+        if len(entries) < self.total_papers:
 
-            logger.info("Continuing the search.")
+            self.logger.info("Continuing the search.")
 
     # If the number of papers is less that the total, connect to arXiv
-    if len(entries) < max_num:
+    if len(entries) < self.total_papers:
 
         # Set the starting number
         start_num = len(entries)
 
-        logger.debug("The number of papers found so far is: {:}".format(start_num))
+        self.logger.debug("The number of papers found so far is: {:}".format(start_num))
 
         # Compute the estimated time
-        est_time = -sleeptimer * ( ( max_num - start_num ) // -blocksize )
+        est_time = -self.arxivConst.sleeptimer_search * ( ( self.total_papers - start_num ) // -self.arxivConst.search_blocksize )
 
         # Compute the number of steps it will take
         # The time to complete depends almost entirely on the number of connections to arXiv and the number of sleeps -- the amount of data that is downloaded is minimal.
-        num_steps = int( np.ceil(max_num/blocksize) * blocksize )
+        num_steps = int( np.ceil(self.total_papers/self.arxivConst.search_blocksize) * self.arxivConst.search_blocksize )
 
         # Search the arXiv
-        logger.info("Searching for papers. Estimated time: {:d} seconds".format(est_time))
-        for ii in range(start_num, max_num, blocksize):
+        self.logger.info("Searching for papers. Estimated time: {:d} seconds".format(est_time))
+        for ii in range(start_num, self.total_papers, self.arxivConst.search_blocksize):
 
             # Compute the progress of the loop
-            if ii+blocksize > max_num:
+            if ii+self.arxivConst.search_blocksize > self.total_papers:
                 remaining_steps = 1
-                search_interval = max_num - ii
-                search_endnum   = max_num
+                search_interval = self.total_papers - ii
+                search_endnum   = self.total_papers
             else:
-                remaining_steps = -((max_num-ii)//-blocksize)
-                search_interval = blocksize
-                search_endnum   = ii + blocksize
+                remaining_steps = -((self.total_papers-ii)//-self.arxivConst.search_blocksize)
+                search_interval = self.arxivConst.search_blocksize
+                search_endnum   = ii + self.arxivConst.search_blocksize
 
             # Print the progress bar
-            progress_bar(ii, num_steps, remaining_steps * sleeptimer)
+            progress_bar(ii, num_steps, remaining_steps * self.arxivConst.sleeptimer_search)
 
             # Debug messages
-            clear_progress_bar(logger, 10)
-            logger.debug("Remaining steps: {:}".format(remaining_steps))
-            logger.debug("Starting number: {:}".format(ii))
-            logger.debug("Ending number:   {:}".format(search_endnum))
+            clear_progress_bar(self.logger, 10)
+            self.logger.debug("Remaining steps: {:}".format(remaining_steps))
+            self.logger.debug("Starting number: {:}".format(ii))
+            self.logger.debug("Ending number:   {:}".format(search_endnum))
 
             # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
-            logger.debug("Sleeping for {:} seconds ...".format(sleeptimer))
-            progress_bar(ii, num_steps, remaining_steps * sleeptimer)
-            time.sleep(sleeptimer)
+            self.logger.debug("Sleeping for {:} seconds ...".format(self.arxivConst.sleeptimer_search))
+            progress_bar(ii, num_steps, remaining_steps * self.arxivConst.sleeptimer_search)
+            time.sleep(self.arxivConst.sleeptimer_search)
 
             # Query the API
-            parsed_xml = arxiv_query(url,
-                                    start_date,
-                                    end_date,
-                                    cats,
-                                    ii,
-                                    search_interval,
-                                    logger)
+            parsed_xml = arxiv_query(self.logger, self.arxivConst.url, self.start_date, self.end_date, self.cat_urlstring, ii, search_interval)
             
             # Write the xml to a file
-            write_xml(filename_xml, ns, parsed_xml, logger)
+            #logger, filename, xml_data, ns, overwrite=False
+            write_xml(self.logger, self.paths["papersxml"], parsed_xml, self.arxivConst.ns)
             
             # Extract the paper from the xml
-            entries.extend(extract_papers(ns, parsed_xml, logger))
+            entries.extend(extract_papers(self.logger, self.arxivConst.ns, parsed_xml))
 
         # Close the progress bar
-        progress_bar(max_num, max_num)
+        progress_bar(self.total_papers, self.total_papers)
 
     # Double check that we found the correct number of papers
-    if len(entries) != max_num:
+    if len(entries) != self.total_papers:
 
-        logger.error("Found {:} papers (expected {:}).".format(len(entries), max_num))
+        self.logger.error("Found {:} papers (expected {:}).".format(len(entries), self.total_papers))
 
     else:
 
-        logger.debug("Found the expected number of papers.")
+        self.logger.debug("Found the expected number of papers.")
 
     # Place all entries into a dataframe
     df = pd.DataFrame( entries )
 
-    logger.debug("Removing duplicates and revised papers.")
+    self.logger.debug("Removing duplicates and revised papers.")
 
     # Drop duplicate papers, if they exist
     df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
-    num_dup = max_num - len(df)
-    logger.debug("Dropped {:} duplicate entries.".format(num_dup))
+    num_dup = self.total_papers - len(df)
+    self.logger.debug("Dropped {:} duplicate entries.".format(num_dup))
 
     # Remove revised papers
     df.drop(df[df["Revised?"]==True].index, inplace=True)
     df.reset_index(drop=True, inplace=True)
-    num_rev = ( max_num - num_dup ) - len(df)
-    logger.debug("Dropped {:} revised papers.".format(num_rev))
+    num_rev = ( self.total_papers - num_dup ) - len(df)
+    self.logger.debug("Dropped {:} revised papers.".format(num_rev))
 
     return df
 

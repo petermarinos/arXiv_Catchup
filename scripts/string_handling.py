@@ -1,7 +1,6 @@
 # Import libraries
-from unicodedata import normalize as normalise
-
 from pylatexenc.latex2text import LatexNodes2Text
+from unicodedata           import normalize       as normalise
 
 def LaTeX_to_unicode(s):
     """Stip LaTeX-style accents, special characters, and ligatures from the string and convert to unicode (e.g. {\'o} and \'o -> ó).

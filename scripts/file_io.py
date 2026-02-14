@@ -1,15 +1,14 @@
-# Import libraries
+# Import functions
 from scripts.utils import progress_bar, clear_progress_bar
-from scripts.dates import write_date
 
+# Import libraries
 import xml.etree.ElementTree as ET
-
 import webbrowser
 import time
 import yaml
 import os
 
-def load_searchterms(filename, logger):
+def load_searchterms(self):
     """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
 
     inputs
@@ -27,8 +26,10 @@ def load_searchterms(filename, logger):
         String containing the url used in the arXiv API queries
     """
 
+    self.logger.info("Loading search terms from {:}.".format(self.paths["searchterms"]))
+
     # Load the .yaml into a dictionary
-    with open(filename, 'r') as f:
+    with open(self.paths["searchterms"], 'r') as f:
 
         search_terms = yaml.safe_load(f)
 
@@ -37,7 +38,7 @@ def load_searchterms(filename, logger):
     # At least one category is required
     if search_terms["Categories"] is None:
 
-        logger.critical("No search terms were found in the 'Categories' entry in the configuration file.\n          Please check the file and add at least one item.\n")
+        self.logger.critical("No search terms were found in the 'Categories' entry in the configuration file.\n          Please check the file and add at least one item.\n")
         raise
     
     else:
@@ -60,7 +61,7 @@ def load_searchterms(filename, logger):
             cat_printstring = ", ".join(f"{c}" for c in search_terms["Categories"])
 
         # Print which categories are being searched over
-        logger.info("Searching the {:} categories".format(cat_printstring))
+        self.logger.info("Searching the {:} categories".format(cat_printstring))
 
     # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
     # No need to catch it here
@@ -69,18 +70,18 @@ def load_searchterms(filename, logger):
     # # Depreciated. Now just a warning
     if search_terms["Included Words"] is None:
 
-        logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
+        self.logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
         raise
 
     # No search terms are required for the "Authors" or "Excluded Words" keys
     # Warn the user if no terms are found
     if search_terms["Authors"] is None:
 
-        logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
+        self.logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
 
     if search_terms["Excluded Words"] is None:
 
-        logger.warning("No search terms were found in the 'Excluded Words' entry in the configuration file.")
+        self.logger.warning("No search terms were found in the 'Excluded Words' entry in the configuration file.")
 
     return search_terms, cat_urlstring
 
@@ -142,68 +143,7 @@ def read_catchup(filename, sleep_time, logger):
 
     return links
 
-def open_links(args, df, entries, sleep_time, logger):
-    """Opens all arXiv links in a webbrowser.
-
-    inputs
-    ------
-    args       : namespace
-        CLI arguments.
-    df         : pandas.DataFrame
-        Contains all papers and all their information.
-    entries    : list
-        Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
-    sleep_time : float
-        Waiting time between opening links.
-    logger     : RootLogger
-        The logger object
-    """
-
-    # Calculate the number of links
-    total = len(entries)
-
-    # Loop through the list and open all in the web browser
-    request_count = 0
-    # time_start = time.time()
-    logger.info("Opening the papers. Estimated time: {:.2f} seconds".format(total * sleep_time))
-    for link_index in entries:
-
-        progress_bar(request_count, total, ( total - request_count ) * sleep_time)
-
-        # # arXiv asks that you limit opening pages to four requests per second
-        # Sleep before the request to prevent an unnecessary sleep at the end
-        # # Sleep for 1s every four pages (recommended)
-        # if request_count % 4 == 0:
-        #     time.sleep(1)
-        # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
-        if request_count > 0:
-            time.sleep(sleep_time)
-
-        link = df.loc[link_index, "url"]
-
-        # Open in new window if flag is set
-        if args.new_window:
-
-            if request_count == 0:
-
-                webbrowser.open(link, new=1)  # new=1: open in a new browser window
-
-            else:
-
-                webbrowser.open(link, new=2)  # new=2: open in a new tab
-
-        # Otherwise, open in the current window
-        else:
-
-            webbrowser.open(link)  # Default behavior, just opens everything in the current window
-
-        request_count += 1
-
-    progress_bar(total, total)
-
-    return
-
-def write_links(filename, df, entries, logger):
+def write_links(logger, filename, df, papers_of_note):
     """Write all links to the `catchup.txt` file.
 
     inputs
@@ -222,7 +162,7 @@ def write_links(filename, df, entries, logger):
 
     with open(filename, "a+", encoding="utf-8") as f:
 
-        for link_index in entries:
+        for link_index in papers_of_note:
 
             link = df.loc[link_index, "url"]
             
@@ -230,7 +170,7 @@ def write_links(filename, df, entries, logger):
 
     return
 
-def write_xml(filename, ns, xml, logger, overwrite=False):
+def write_xml(logger, filename, xml_data, ns, overwrite=False):
     """Writes an XML to a .xml file.
 
     inputs
@@ -250,7 +190,7 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
     if overwrite:
 
         logger.debug("Saving xml to file: {:}".format(filename))
-        tree = ET.ElementTree(xml)
+        tree = ET.ElementTree(xml_data)
         tree.write(filename, encoding="utf-8")
 
     else:
@@ -259,7 +199,7 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
         if not os.path.exists(filename):
 
             # Write the xml
-            write_xml(filename, ns, xml, logger, overwrite=True)
+            write_xml(logger, filename, xml_data, ns, overwrite=True)
 
             return
 
@@ -271,7 +211,7 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
             master_tree = ET.parse(filename)
             master_root = master_tree.getroot()
 
-            new_tree = ET.ElementTree(xml)
+            new_tree = ET.ElementTree(xml_data)
             new_root = new_tree.getroot()
 
             # Obtain each entry and append to the file
@@ -283,109 +223,104 @@ def write_xml(filename, ns, xml, logger, overwrite=False):
 
     return
 
-def display_results(args, df, entries_of_note, sleep_time, outfile, prev_outfile, end_date, max_num, logger):
+def write_date(logger, filename, date):
+    """Write a datetime.date object to a file.
+    While the current implementation only uses this to write Papers.start_date to Papers.paths['prevsearch'], this function is left as-is.
+
+    inputs
+    ------
+    filename : str
+        Path+filename of the `prev_search.txt` file.
+    date     : datetime.date
+        Date that is being written
+    """
+
+    logger.info("Writing the date {:} to the file: {:}.".format(date, filename))
+
+    with open(filename, "w") as f:
+        f.write(date.isoformat())
+
+    return
+
+def display_results(self):
     """'Displays' all results, either by opening the links in the browser, outputting them to a file, or by writing them to a file.
     The given display method is chosen by the CLI arguments or user prompts.
 
     inputs
     ------
-    args            : namespace
-        CLI arguments
-    df              : pandas.DataFrame
-        Contains all papers and their information
-    entries_of_note : list
-        Contains the indices of all papers that were found to be interesting in the filtering.
-    sleep_time      : float
-        Wait time between opening links in the browser.
-    outfile         : str
-        Path+filename of the `catchup.txt` file.
-    prev_outfile    : str
-        Path+filename of the `prev_search.txt` file.
-    end_date        : datetime.date
-        End date of the arXiv search period.
-    max_num         : int
-        Number of papers found in the categories of interest.
-    logger          : RootLogger
-        The logger object
     """
 
+    browser_flag = False
+
     # If there is at least one paper, open/prompt
-    if len(entries_of_note) > 0:
+    if len(self.papers_of_note) > 0:
 
         # If both -f and -w are passed, both open and write the links
-        if args.force_open and args.write_to_file:
+        if self.args.force_open and self.args.write_to_file:
 
-            open_links(args, df, entries_of_note, sleep_time, logger)
-            write_links(outfile, df, entries_of_note, logger)
+            browser_flag = True
+            write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
 
         # If -f is passed and -w is not, only open the links
-        elif args.force_open and not args.write_to_file:
+        elif self.args.force_open and not self.args.write_to_file:
 
-            open_links(args, df, entries_of_note, sleep_time, logger)
+            browser_flag = True
 
         # If -f is not passed and -w is, only write the links
-        elif not args.force_open and args.write_to_file:
+        elif not self.args.force_open and self.args.write_to_file:
 
-            write_links(outfile, df, entries_of_note, logger)
+            write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
 
         # If neither -f nor -w were passed, prompt the user to ask for the behaviour they prefer
         else:
 
             # Ask the user if they would like to open the links in the browser. Default is no
             user_prompt_browser = input(
-                                    "There are {:} link(s). Open in the browser? It will take {:} seconds. [y/N]: ".format(len(entries_of_note), len(entries_of_note)/4)
-                                    ).strip().lower()
+                                        "There are {:} link(s). Open in the browser? It will take {:} seconds. [y/N]: ".format(len(self.papers_of_note), len(self.papers_of_note) * self.arxivConst.sleeptimer_opening)
+                                       ).strip().lower()
 
             # If they say no to opening in the browser
             if user_prompt_browser != "y":
 
                 # Ask if they would like to save the links to a file or print to the terminal. Default is no
-                user_prompt_output = input(
+                user_prompt_file = input(
                                         "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
                                         ).strip().lower()
                 
                 # If they want the output in the terminal
-                if user_prompt_output != "y":
+                if user_prompt_file != "y":
 
-                    logger.info("Printing all links to the terminal:\n")
-                    for link_index in entries_of_note:
+                    self.logger.info("Printing all links to the terminal:\n")
+                    for link_index in self.papers_of_note:
 
-                        print(df.loc[link_index, "url"])
+                        print(self.df_papers.loc[link_index, "url"])
+                    print("")
 
                 # If they want to save the output
                 else:
 
                     # If the file doesn't exist, create it. Otherwise, append the links to the end
-                    write_links(outfile, df, entries_of_note, logger)
+                    write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
 
             # If they say yes to opening in the browser
             else:
 
                 # Open all links
-                open_links(args, df, entries_of_note, sleep_time, logger)
+                browser_flag = True
 
     else:
 
-        logger.warning("No papers of interest were found.")
-
-    # Compute the number of digits. Assumes that the number of papers is positive :)
-    max_digits = len(str(max_num))
-
-    # Print a summary
-    print("")
-    logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(max_num, fill=max_digits))
-    logger.info("           of these, {: >{fill}} papers were opened/linked".format(len(entries_of_note), fill=max_digits))
-    print("")
+        self.logger.warning("No papers of interest were found.")
 
     # Check if any papers were found
-    if len(df) == 0:
+    if len(self.df_papers) == 0:
 
-        logger.warning("As no papers were found, the aux. date file was not updated")
+        self.logger.warning("As no papers were found, the aux. date file was not updated")
 
     # If papers were found, update the aux. file
     else:
 
         # Write the end date of the search to a file for the next run
-        write_date(prev_outfile, end_date)
+        write_date(self.logger, self.paths["prevsearch"], self.end_date)
 
-    return
+    return browser_flag

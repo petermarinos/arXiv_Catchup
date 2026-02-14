@@ -1,4 +1,7 @@
-def aux_filenames(cdir):
+# Import libraries
+from dataclasses import dataclass
+
+def set_filenames(cdir):
     """Compute the filenames of various auxiliary files that may or may not be used.
 
     inputs
@@ -20,16 +23,28 @@ def aux_filenames(cdir):
         Path+filename of the `papers.xml` file, that contains the xml of all found papers.
     """
 
-    # Define filenames
-    prevsearch  = cdir+"/prev_search.txt" # File that stores the date of the previous run
-    searchterms = cdir+"/search_terms.yaml" # File that stores the search terms
-    paperlinks  = cdir+"/catchup.txt" # File that stores the links to the papers of interest (if writing to a file)
-    searchxml   = cdir+"/search.xml" # File that stores the links to the papers of interest (if writing to a file)
-    papersxml   = cdir+"/papers.xml" # File that stores the links to the papers of interest (if writing to a file)
-    
-    return prevsearch, searchterms, paperlinks, searchxml, papersxml
+    # print("asdasdasda")
 
-def arxiv_constants():
+    # # Define filenames
+    # prevsearch  = cdir+"/prev_search.txt"   # File that stores the date of the previous run
+    # searchterms = cdir+"/search_terms.yaml" # File that stores the search terms
+    # paperlinks  = cdir+"/catchup.txt"       # File that stores the links to the papers of interest (if writing to a file)
+    # searchxml   = cdir+"/search.xml"        # File that stores the links to the papers of interest (if writing to a file)
+    # papersxml   = cdir+"/papers.xml"        # File that stores the links to the papers of interest (if writing to a file)
+
+    # Place filneames into a dictionary
+    filenames = {
+        "prevsearch"  : cdir+"/prev_search.txt",   # File that stores the date of the previous run
+        "searchterms" : cdir+"/search_terms.yaml", # File that stores the search terms
+        "catchup"     : cdir+"/catchup.txt",       # File that stores the links to the papers of interest (if writing to a file)
+        "searchxml"   : cdir+"/search.xml",        # File that stores the .xml data of the initial arXiv query, i.e. the information on the search
+        "papersxml"   : cdir+"/papers.xml",        # File that stores the .xml data for all downloaded papers
+    }
+    
+    # return prevsearch, searchterms, paperlinks, searchxml, papersxml
+    return filenames
+
+def set_arxiv_constants():
     """Define the constants that will be used when making API calls to arXiv.
 
     outputs
@@ -63,3 +78,12 @@ def arxiv_constants():
     search_blocksize = 10   # Each search downloads only ten papers (max=2000)
 
     return url, ns, sleep_opening, sleep_search, search_blocksize
+
+
+@dataclass
+class arxivConst:
+    url:                str
+    ns:                 dict
+    sleeptimer_opening: float
+    sleeptimer_search:  float
+    search_blocksize:   int

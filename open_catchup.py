@@ -1,5 +1,5 @@
 # Import packages
-from scripts.constants import aux_filenames, arxiv_constants
+from scripts.constants import set_filenames, set_arxiv_constants
 from scripts.file_io   import read_catchup
 from scripts.utils     import logger_setup, delete_catchup
 
@@ -27,8 +27,8 @@ parser.add_argument('-v', '--verbosity', type=int, default=3,
 args = parser.parse_args()
 
 # Extract some of the required constants
-prevsearch, searchterms, paperlinks = aux_filenames(cdir)
-url, ns, sleep_opening, sleep_search, search_blocksize = arxiv_constants()
+prevsearch, searchterms, paperlinks = set_filenames(cdir)
+url, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
 
 # Setup logging
 logger = logger_setup(args)

@@ -1,9 +1,10 @@
 # Import libraries
-import numpy as np
-
+import numpy      as np
+import webbrowser
 import argparse
 import logging
 import pathlib
+import time
 import sys
 
 def cli_args():
@@ -85,6 +86,80 @@ def logger_setup(args):
 
     return logger
 
+def open_links(self):
+    """Opens all arXiv links in a webbrowser.
+
+    inputs
+    ------
+    args       : namespace
+        CLI arguments.
+    df         : pandas.DataFrame
+        Contains all papers and all their information.
+    entries    : list
+        Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
+    sleep_time : float
+        Waiting time between opening links.
+    logger     : RootLogger
+        The logger object
+    """
+
+    # Calculate the number of links
+    total = len(self.papers_of_note)
+
+    # Loop through the list and open all in the web browser
+    request_count = 0
+    # time_start = time.time()
+    self.logger.info("Opening the papers. Estimated time: {:.2f} seconds".format(total * self.arxivConst.sleeptimer_opening))
+    for link_index in self.papers_of_note:
+
+        progress_bar(request_count, total, ( total - request_count ) * self.arxivConst.sleeptimer_opening)
+
+        # # arXiv asks that you limit opening pages to four requests per second
+        # Sleep before the request to prevent an unnecessary sleep at the end
+        # # Sleep for 1s every four pages (recommended)
+        # if request_count % 4 == 0:
+        #     time.sleep(1)
+        # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
+        if request_count > 0:
+            time.sleep(self.arxivConst.sleeptimer_opening)
+
+        link = self.df_papers.loc[link_index, "url"]
+
+        # Open in new window if flag is set
+        if self.args.new_window:
+
+            if request_count == 0:
+
+                webbrowser.open(link, new=1)  # new=1: open in a new browser window
+
+            else:
+
+                webbrowser.open(link, new=2)  # new=2: open in a new tab
+
+        # Otherwise, open in the current window
+        else:
+
+            webbrowser.open(link)  # Default behavior, just opens everything in the current window
+
+        request_count += 1
+
+    progress_bar(total, total)
+
+    return
+
+def summarise_search(self):
+
+    # Compute the number of digits. Assumes that the number of papers is positive :)
+    max_digits = len(str(self.total_papers))
+    
+    # Print a summary
+    print("")
+    self.logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(self.total_papers, fill=max_digits))
+    self.logger.info("           of these, {: >{fill}} papers were opened/linked".format(len(self.papers_of_note), fill=max_digits))
+    print("")
+
+    return
+
 def progress_bar(ii, total, time_estimate=None):
     """Prints a progress bar that updates as the loop progresses.
 
@@ -139,10 +214,8 @@ def clear_progress_bar(logger, message_level):
         The logger level of the next message. 10=debug, ..., 50=critical
     """
 
-    logger_level = logger.level
-
     # If the message level is equal to or greater than the logger level (i.e. the message will be printed)
-    if message_level >= logger_level:
+    if message_level >= logger.level:
 
         # Flush the line in the terminal
         sys.stdout.write("\r\033[K")
@@ -150,7 +223,7 @@ def clear_progress_bar(logger, message_level):
 
     return
 
-def delete_catchup(filename, links, logger):
+def delete_catchup(logger, filename, links):
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
     NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed ) links manually.
 
@@ -188,7 +261,7 @@ def delete_catchup(filename, links, logger):
                     raise
 
         # If the file is of the correct format, delete it
-        delete_file(filename, logger)
+        delete_file(logger, filename)
 
     # Else, do nothing
     else:
@@ -197,7 +270,7 @@ def delete_catchup(filename, links, logger):
 
     return
 
-def delete_file(filename, logger):
+def delete_file(logger, filename):
 
     logger.info("Deleting file: {:}".format(filename))
     file = pathlib.Path(filename)

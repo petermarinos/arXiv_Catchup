@@ -1,26 +1,23 @@
-# Import libraries
-from scripts.arxiv_query import arxiv_initial_pull, arxiv_search
-from scripts.constants   import aux_filenames, arxiv_constants
-from scripts.filtering   import filter_papers
-from scripts.file_io     import load_searchterms, display_results
-from scripts.utils       import cli_args, logger_setup, delete_file
-from scripts.dates       import date_setup
+# Import classes
+from scripts.paper_class import Papers
+
+# Import functions
+from scripts.utils import cli_args, delete_file
 
 """TO-DO:
-Add documentation for the following:
-1) filtering.author_search()
-2) filtering.word_search()
-3) filtering.score_papers()
-4) filtering.filter_papers_score()
-5) filtering.filter_papers()
-6) output.write_xml()
-7) utils.delete_file()
+Fix all documentation now that it has been refactored
+
+Add debug to the following:
+-basicaly everything before getPapers()
 
 Add the ability to include given names. Update README
 
 Add a flag to write only the arXiv IDs to a file. Update README.
 
-Refactor to use classes...
+Add a check to ensure the loaded xml is the same search as the current one
+
+Refactor to use classes... in progress
+    Check that the results from this is the same as the previous before merging
 """
 
 # The main script
@@ -30,52 +27,36 @@ def main(cdir):
     # # Parse command-line arguments
     args = cli_args()
 
-    # Setup logging
-    logger = logger_setup(args)
+    # # Set up the papers class
+    papers = Papers(cdir, args)
 
-    # Define filenames of the auxiliary files
-    filename_prevsearch, filename_searchterms, filename_paperlinks, filename_searchxml, filename_papersxml = aux_filenames(cdir)
+    # # Load search terms from the auxiliary file
+    papers.getSearchterms()
 
-    # Return arXiv constants
-    url, ns, sleep_opening, sleep_search, search_blocksize = arxiv_constants()
-    
-    # Load search terms from the auxiliary file
-    search_terms, cat_urlstring = load_searchterms(filename_searchterms, logger)
+    # # Load and check dates
+    papers.getDates()
 
-    # Load and check dates
-    start_date, end_date = date_setup(args, filename_prevsearch, logger)
+    # # Obtain basic search information
+    papers.getSearchInfo()
 
-    # Obtain basic search information
-    max_num = arxiv_initial_pull(ns,
-                                 url,
-                                 start_date,
-                                 end_date,
-                                 cat_urlstring,
-                                 sleep_search,
-                                 search_blocksize,
-                                 filename_searchxml,
-                                 logger
-                                 )
+    # # Loop through the searches and obtain all papers
+    papers.getPapers()
 
-    # Loop through the searches and obtain all papers
-    df_papers = arxiv_search(ns,
-                             url,
-                             start_date,
-                             end_date,
-                             cat_urlstring,
-                             max_num,
-                             sleep_search,
-                             search_blocksize,
-                             filename_papersxml,
-                             logger
-                             )
+    # Score the paper
+    papers.scorePapers()
 
-    # Filter the papers
-    papers_of_note = filter_papers(df_papers, search_terms, logger)
+    # # Filter the papers
+    # Filter based on matches
+    papers.filterPapersMatches()
+    # Filter based on score
+    # papers.filterPapersScore()
 
-    # Display the results
-    display_results(args, df_papers, papers_of_note, sleep_opening, filename_paperlinks, filename_prevsearch, end_date, max_num, logger)
+    # # Display the results
+    papers.display()
 
-    # Delete xmls/other supplemental files if successfull
-    delete_file(filename_searchxml, logger)
-    delete_file(filename_papersxml, logger)
+    # # Delete xmls/other supplemental files if successfull
+    # delete_file(papers.logger, papers.paths["searchxml"])
+    # delete_file(papers.logger, papers.paths["papersxml"])
+
+    # # Print a summary
+    papers.summary()
