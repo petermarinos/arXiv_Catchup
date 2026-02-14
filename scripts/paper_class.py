@@ -4,7 +4,7 @@ from scripts.filtering   import score_papers_matches, score_papers_ML, filter_pa
 from scripts.constants   import set_filenames, set_arxiv_constants, arxivConst
 from scripts.file_io     import load_searchterms, display_results
 from scripts.dates       import date_setup, date_errorcheck
-from scripts.utils       import logger_setup, open_links, summarise_search
+from scripts.utils       import logger_setup, open_links, summarise_search, delete_file
 
 # Import libraries
 import datetime
@@ -94,3 +94,7 @@ class Papers(object):
 
     def summary(self):
         summarise_search(self)
+
+    def clearTempFiles(self):
+        delete_file(self.logger, self.paths["searchxml"])
+        delete_file(self.logger, self.paths["papersxml"])

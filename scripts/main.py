@@ -2,7 +2,7 @@
 from scripts.paper_class import Papers
 
 # Import functions
-from scripts.utils import cli_args, delete_file
+from scripts.utils import cli_args
 
 """TO-DO:
 Fix all documentation now that it has been refactored
@@ -13,12 +13,6 @@ Add debug to the following:
 Add the ability to include given names. Update README
 
 Add a flag to write only the arXiv IDs to a file. Update README.
-
-Place temp-file cleanup in a function
-
-Refactor to use classes... in progress
-    Check that the results from this is the same as the previous before merging -- DONE
-    Check that the two extra scripts still work
 """
 
 # The main script
@@ -56,9 +50,7 @@ def main(cdir):
     papers.display()
 
     # Delete xmls/other supplemental files if successfull
-    # papers.clearTempFiles(self)
-    delete_file(papers.logger, papers.paths["searchxml"])
-    delete_file(papers.logger, papers.paths["papersxml"])
+    papers.clearTempFiles()
 
     # # Print a summary
     papers.summary()
