@@ -77,12 +77,12 @@ def calc_search_endtime(input_time, search_time, post_time):
 
     inputs
     ------
-    now         : datetime.time (with timezone and date)
+    input_time  : datetime.time (with timezone and date)
         Either the current time, or the time input from the CLI.
-    post_time   : datetime.time (with timezone)
-        Time that arXiv postings occur
     search_time : datetime.time (with timezone)
         Time that arXiv seaches use
+    post_time   : datetime.time (with timezone)
+        Time that arXiv postings occur
 
     outputs
     -------
@@ -111,9 +111,9 @@ def calc_next_posttime(input_time, post_time):
 
     inputs
     ------
-    now       : datetime.time (with timezone and date)
+    input_time : datetime.time (with timezone and date)
         Either the current time, or the time input from the CLI.
-    post_time : datetime.time (with timezone)
+    post_time  : datetime.time (with timezone)
         Time that arXiv postings occur
 
     outputs
@@ -144,16 +144,16 @@ def parse_date(logger, date_iso, date_name, search_time, post_time):
 
     inputs
     ------
-    date_iso       : str
-        ISO representation of the date
-    date_name      : str
-        Name of the date (e.g. start_time, end_time)
-    search_time    : datetime.time (timezone aware)
-        Time of the arXiv search start/end points
-    list_post_time : datetime.time (timezone aware)
-        Time of the arXiv daily postings
-    logger         : RootLogger
+    logger      : RootLogger
         The logger object
+    date_iso    : str
+        ISO representation of the date
+    date_name   : str
+        Name of the date (e.g. start_time, end_time)
+    search_time : datetime.time (timezone aware)
+        Time of the arXiv search start/end points
+    post_time   : datetime.time (timezone aware)
+        Time of the arXiv daily postings
 
     outputs
     -------
@@ -188,12 +188,7 @@ def date_setup(self):
 
     inputs
     ------
-    args                : namespace
-        CLI arguments.
-    filename_prevsearch : str
-        Path+filename of the `prev_search.txt` file that contains the date of the previous run.
-    logger              : RootLogger
-        The logger object
+    self : Papers object
 
     outputs
     -------
@@ -207,9 +202,13 @@ def date_setup(self):
     start_time, start_date = parse_date(self.logger, self.args.start_date, "start-date", self.search_time, self.post_time) if self.args.start_date else [None, None]
     end_time,   end_date   = parse_date(self.logger, self.args.end_date,   "end-date",   self.search_time, self.post_time) if self.args.end_date   else [None, None]
 
+    self.logger.debug("Input start_date: {:}".format(start_date))
+    self.logger.debug("Input end_date: {:}".format(end_date))
+
     # Compute the time at the end of the search
     # Only perform if the end_date was not passed in the command line
     if end_date is None:
+        self.logger.debug("No end date was input. Computing based on the current time.")
         end_time = calc_search_endtime(self.current_time, self.search_time, self.post_time)
         end_date = end_time.date()
 
@@ -217,7 +216,10 @@ def date_setup(self):
     # If the file does not exist, create it and set the date to the listing before the last posting
     # Only perform if the start_date was not passed in the command line
     if start_date is None:
+        self.logger.debug("No start date was input.")
         if not os.path.exists(self.paths["prevsearch"]):
+
+            self.logger.debug("No previous search file found. Setting to the day prior to the end_date.")
 
             # Compute the list time before the previous
             # This can be done by passing the end_time found above into the calc_search_endtime() function
@@ -240,16 +242,7 @@ def date_errorcheck(self):
 
     inputs
     ------
-    current_time   : datetime.time (timezone aware)
-        Time the script was executed.
-    start_date     : datetime.date (timezone aware)
-        Start date of the search.
-    end_date       : datetime.date (timezone aware)
-        End date of the search.
-    list_post_time : datetime.time (timezone aware)
-        Time that the arXiv daily postings occur.
-    logger         : RootLogger
-        The logger object
+    self : Papers object
     """
 
     # Compute how long the search is covering

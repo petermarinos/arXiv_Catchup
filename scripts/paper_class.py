@@ -2,9 +2,10 @@
 from scripts.arxiv_query import arxiv_initial_pull, arxiv_search, arxiv_errorcheck
 from scripts.filtering   import score_papers_matches, score_papers_ML, filter_papers_matches, filter_papers_score
 from scripts.constants   import set_filenames, set_arxiv_constants, arxivConst
-from scripts.file_io     import load_searchterms, display_results
+from scripts.display     import display_results, open_links, summarise_search
+from scripts.file_io     import load_searchterms, write_links
 from scripts.dates       import date_setup, date_errorcheck
-from scripts.utils       import logger_setup, open_links, summarise_search, delete_file
+from scripts.utils       import logger_setup, delete_file
 
 # Import libraries
 import datetime
@@ -20,7 +21,7 @@ class Papers(object):
         self.paths  = set_filenames(cdir)
 
         url, apiquery, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
-        self.arxivConst = arxivConst(url=url,
+        self.arxiv_const = arxivConst(url=url,
                                      apiquery=apiquery,
                                      ns=ns,
                                      sleeptimer_opening=sleep_opening,
@@ -46,7 +47,7 @@ class Papers(object):
     # # Setup some of the API information
     def setupAPI(self):
         # Format the url and apiquery
-        self.arxivConst.url = self.arxivConst.url.format(
+        self.arxiv_const.url = self.arxiv_const.url.format(
                                   start_year  = self.start_date.year,
                                   start_month = self.start_date.month,
                                   start_day   = self.start_date.day,
@@ -55,7 +56,7 @@ class Papers(object):
                                   end_day     = self.end_date.day,
                                   cats        = self.cat_urlstring,
                                   )
-        self.arxivConst.apiquery = self.arxivConst.apiquery.format(
+        self.arxiv_const.apiquery = self.arxiv_const.apiquery.format(
                                   start_year  = self.start_date.year,
                                   start_month = self.start_date.month,
                                   start_day   = self.start_date.day,
@@ -91,9 +92,13 @@ class Papers(object):
 
     # # Display the results
     def display(self):
-        self.open_in_brower = display_results(self)
+        self.open_in_brower, self.write_to_file = display_results(self)
+
         if self.open_in_brower:
-            open_links(self)        
+            open_links(self)
+            
+        if self.write_to_file:
+            write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
 
     # # Summarise the search results
     def summary(self):

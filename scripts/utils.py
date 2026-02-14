@@ -40,7 +40,6 @@ def cli_args():
 
 def logger_setup(args):
     """Set up the logger.
-    Note: There are currently no messages with levels set to CRITICAL. Verbosity must be set to 1 or higher to show any messages.
 
     inputs
     ------
@@ -84,81 +83,10 @@ def logger_setup(args):
     elif args.verbosity >= 4:
         logger.setLevel(logging.DEBUG)
 
+    # Add a custom handler
+    # This handler will clear the progress bar before printing the message (and only clear the progress bar if the message will be triggered).
+
     return logger
-
-def open_links(self):
-    """Opens all arXiv links in a webbrowser.
-
-    inputs
-    ------
-    args       : namespace
-        CLI arguments.
-    df         : pandas.DataFrame
-        Contains all papers and all their information.
-    entries    : list
-        Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
-    sleep_time : float
-        Waiting time between opening links.
-    logger     : RootLogger
-        The logger object
-    """
-
-    # Calculate the number of links
-    total = len(self.papers_of_note)
-
-    # Loop through the list and open all in the web browser
-    request_count = 0
-    # time_start = time.time()
-    self.logger.info("Opening the papers. Estimated time: {:.2f} seconds".format(total * self.arxivConst.sleeptimer_opening))
-    for link_index in self.papers_of_note:
-
-        progress_bar(request_count, total, ( total - request_count ) * self.arxivConst.sleeptimer_opening)
-
-        # # arXiv asks that you limit opening pages to four requests per second
-        # Sleep before the request to prevent an unnecessary sleep at the end
-        # # Sleep for 1s every four pages (recommended)
-        # if request_count % 4 == 0:
-        #     time.sleep(1)
-        # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
-        if request_count > 0:
-            time.sleep(self.arxivConst.sleeptimer_opening)
-
-        link = self.df_papers.loc[link_index, "url"]
-
-        # Open in new window if flag is set
-        if self.args.new_window:
-
-            if request_count == 0:
-
-                webbrowser.open(link, new=1)  # new=1: open in a new browser window
-
-            else:
-
-                webbrowser.open(link, new=2)  # new=2: open in a new tab
-
-        # Otherwise, open in the current window
-        else:
-
-            webbrowser.open(link)  # Default behavior, just opens everything in the current window
-
-        request_count += 1
-
-    progress_bar(total, total)
-
-    return
-
-def summarise_search(self):
-
-    # Compute the number of digits. Assumes that the number of papers is positive :)
-    max_digits = len(str(self.total_papers))
-    
-    # Print a summary
-    print("")
-    self.logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(self.total_papers, fill=max_digits))
-    self.logger.info("           of these, {: >{fill}} papers were opened/linked".format(len(self.papers_of_note), fill=max_digits))
-    print("")
-
-    return
 
 def progress_bar(ii, total, time_estimate=None):
     """Prints a progress bar that updates as the loop progresses.
@@ -202,7 +130,7 @@ def progress_bar(ii, total, time_estimate=None):
     return
 
 def clear_progress_bar(logger, message_level):
-    """Clears the progress bar. Only does so if the logger level is equal to or greater than the next message.
+    """If there is a progress bar, it will be cleared. Only does so if the logger level is equal to or greater than the next message.
     Calling when no progress bar is displayed does nothing.
     NOTE: This function does nothing unless called somewhere that displays a progress bar. It should be called immediately before the logger message.
 
@@ -229,12 +157,12 @@ def delete_catchup(logger, filename, links):
 
     inputs
     ------
+    logger   : RootLogger
+        The logger object
     filename : str
         Path+filename of the `catchup.txt` file.
     links    : list
         List containing all arXiv links in the file.
-    logger   : RootLogger
-        The logger object
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no
@@ -271,6 +199,15 @@ def delete_catchup(logger, filename, links):
     return
 
 def delete_file(logger, filename):
+    """Deletes a file
+
+    inputs
+    ------
+    logger   : RootLogger
+        The logger object.
+    filename : str
+        Path+filename of the file being deleted.
+    """
 
     logger.info("Deleting file: {:}".format(filename))
     file = pathlib.Path(filename)

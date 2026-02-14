@@ -13,10 +13,7 @@ def load_searchterms(self):
 
     inputs
     ------
-    filename : str
-        Path+filename of the `search_terms.yaml` file.
-    logger   : RootLogger
-        The logger object
+    self : Papers object
 
     outputs
     -------
@@ -66,22 +63,30 @@ def load_searchterms(self):
     # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
     # No need to catch it here
 
-    # # At least one search term is required in the "Words" key
-    # # Depreciated. Now just a warning
-    if search_terms["Included Words"] is None:
-
-        self.logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
-        raise
-
-    # No search terms are required for the "Authors" or "Excluded Words" keys
-    # Warn the user if no terms are found
+    # # Warn the user if no terms are found
+    # If no authors are found, warn the user
     if search_terms["Authors"] is None:
-
         self.logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
+    # Otherwise, log all found authors
+    else:
+        for author in search_terms["Authors"]:
+            self.logger.debug("Found author: {:}".format(author))
 
+    # If no included words are found, warn the user
+    if search_terms["Included Words"] is None:
+        self.logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
+    # Otherwise, log all found included words
+    else:
+        for included_word in search_terms["Included Words"]:
+            self.logger.debug("Found included word: {:}".format(included_word))
+
+    # If no excluded words are found, warn the user
     if search_terms["Excluded Words"] is None:
-
         self.logger.warning("No search terms were found in the 'Excluded Words' entry in the configuration file.")
+    # Otherwise, log all found excluded words
+    else:
+        for excluded_word in search_terms["Excluded Words"]:
+            self.logger.debug("Found excluded word: {:}".format(excluded_word))
 
     return search_terms, cat_urlstring
 
@@ -90,12 +95,12 @@ def read_catchup(logger, filename, sleep_time):
 
     inputs
     ------
+    logger     : RootLogger
+        The logger object
     filename   : str
         Path_filename of the `catchup.txt` file.
     sleep_time : float
         Wait time between opening links in the browser.
-    logger     : RootLogger
-        The logger object
 
     outputs
     -------
@@ -148,14 +153,14 @@ def write_links(logger, filename, df, papers_of_note):
 
     inputs
     ------
-    filename : str
-        Path+filename of the `catchup.txt` file.
-    df       : pandas.DataFrame
-        Contains all papers and their information.
-    entries  : list
-        Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
-    logger   : RootLogger
+    logger         : RootLogger
         The logger object
+    filename       : str
+        Path+filename of the `catchup.txt` file.
+    df             : pandas.DataFrame
+        Contains all papers and their information.
+    papers_of_note : list
+        Contains the indicies of all entries that will be opened. Should pass the post-filtering list.
     """
 
     logger.info("Writing all links to the end of the file: {:}".format(filename))
@@ -175,11 +180,16 @@ def write_xml(logger, filename, xml_data, ns, overwrite=False):
 
     inputs
     ------
-    filename : str
-        Path+filename of the `.xml` file.
-    xml      : 
-    logger   : RootLogger
+    logger    : RootLogger
         The logger object
+    filename  : str
+        Path+filename of the `.xml` file.
+    xml       : Element
+        XML data from the arXiv queries.
+    ns        : dict
+        XML namespaces that arXiv uses.
+    overwrite : bool
+        File will be overwritten if True
     """
 
     # Clear the progress bar in preparation for the info messages later
@@ -229,6 +239,8 @@ def write_date(logger, filename, date):
 
     inputs
     ------
+    logger         : RootLogger
+        The logger object
     filename : str
         Path+filename of the `prev_search.txt` file.
     date     : datetime.date
@@ -241,86 +253,3 @@ def write_date(logger, filename, date):
         f.write(date.isoformat())
 
     return
-
-def display_results(self):
-    """'Displays' all results, either by opening the links in the browser, outputting them to a file, or by writing them to a file.
-    The given display method is chosen by the CLI arguments or user prompts.
-
-    inputs
-    ------
-    """
-
-    browser_flag = False
-
-    # If there is at least one paper, open/prompt
-    if len(self.papers_of_note) > 0:
-
-        # If both -f and -w are passed, both open and write the links
-        if self.args.force_open and self.args.write_to_file:
-
-            browser_flag = True
-            write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
-
-        # If -f is passed and -w is not, only open the links
-        elif self.args.force_open and not self.args.write_to_file:
-
-            browser_flag = True
-
-        # If -f is not passed and -w is, only write the links
-        elif not self.args.force_open and self.args.write_to_file:
-
-            write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
-
-        # If neither -f nor -w were passed, prompt the user to ask for the behaviour they prefer
-        else:
-
-            # Ask the user if they would like to open the links in the browser. Default is no
-            user_prompt_browser = input(
-                                        "There are {:} link(s). Open in the browser? It will take {:} seconds. [y/N]: ".format(len(self.papers_of_note), len(self.papers_of_note) * self.arxivConst.sleeptimer_opening)
-                                       ).strip().lower()
-
-            # If they say no to opening in the browser
-            if user_prompt_browser != "y":
-
-                # Ask if they would like to save the links to a file or print to the terminal. Default is no
-                user_prompt_file = input(
-                                        "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
-                                        ).strip().lower()
-                
-                # If they want the output in the terminal
-                if user_prompt_file != "y":
-
-                    self.logger.info("Printing all links to the terminal:\n")
-                    for link_index in self.papers_of_note:
-
-                        print(self.df_papers.loc[link_index, "url"])
-                    print("")
-
-                # If they want to save the output
-                else:
-
-                    # If the file doesn't exist, create it. Otherwise, append the links to the end
-                    write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
-
-            # If they say yes to opening in the browser
-            else:
-
-                # Open all links
-                browser_flag = True
-
-    else:
-
-        self.logger.warning("No papers of interest were found.")
-
-    # Check if any papers were found
-    if len(self.df_papers) == 0:
-
-        self.logger.warning("As no papers were found, the aux. date file was not updated")
-
-    # If papers were found, update the aux. file
-    else:
-
-        # Write the end date of the search to a file for the next run
-        write_date(self.logger, self.paths["prevsearch"], self.end_date)
-
-    return browser_flag

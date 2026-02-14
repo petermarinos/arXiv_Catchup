@@ -5,14 +5,19 @@ from scripts.paper_class import Papers
 from scripts.utils import cli_args
 
 """TO-DO:
-Fix all documentation now that it has been refactored
 
-Add debug to the following:
--basicaly everything before getPapers()
+Put the clear_progress_bar() function inside of the logger
+    Will make it more automatic -- if the logger level is high enough to print a message, it will first clear the progress bar
+    otherwise, if the message will not be clearer, the progress bar is untouched.
 
 Add the ability to include given names. Update README
 
 Add a flag to write only the arXiv IDs to a file. Update README.
+
+Currently, author_search() and word_search() actually compute the scores for the authors/words.
+    Change so that these functions place the information of the number of matches, the locations, etc. in an output? or the Papers object?
+    Then, score_papers_matches() should actually compute the scores
+    Note that this would lead to papers in the print string that may be excluded from their scores. Maybe compute the print string later?
 """
 
 # The main script

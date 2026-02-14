@@ -5,9 +5,24 @@ from scripts.utils import progress_bar, clear_progress_bar
 import numpy as np
 import re
 
-def author_search(logger, df_papers, authors, entry_count):
-    """
-    All search terms are surrounded by break identifiers (\b).
+def author_search(logger, df_papers, entry_count, authors):
+    """Searches a paper for the authors of interest.
+
+    inputs
+    ------
+    logger      : RootLogger
+        The logger object.
+    df_papers   : pandas.DataFrame
+        Contains all papers.
+    entry_count : int
+        Index of the paper in the DataFrame.
+    authors     : list
+        All authors of interest that are being searched for.
+
+    outputs
+    -------
+    author_str : str
+        Contains information on which authors were found
     """
 
     author_str = ""
@@ -57,14 +72,21 @@ def author_search(logger, df_papers, authors, entry_count):
 
     return author_str
 
-def word_search(logger, df_papers, search_terms, entry_count, key):
-    """
-    All search terms are surrounded by break identifiers (\b).
+def word_search(logger, df_papers, entry_count, search_terms, key):
+    """Searches a paper for keyword matches.
 
     inputs
     ------
-    multiplier : float
-        Multiplies the score
+    logger      : RootLogger
+        The logger object.
+    df_papers   : pandas.DataFrame
+        Contains all papers.
+    entry_count : int
+        Index of the paper in the DataFrame.
+    search_terms : dict
+        Contains all of the search terms.
+    key         : str
+        The search_terms dictionary key for which types of words should be searched for.
     """
 
     logger.debug("Searching for {:}".format(key))
@@ -136,7 +158,17 @@ def word_search(logger, df_papers, search_terms, entry_count, key):
     return
 
 def score_papers_matches(self):
-    """Also marks if matches were found
+    """Scores the papers based on the number of matches found.
+    NOTE: This function also applies a simple binary True/False if matches are found.
+
+    inputs
+    ------
+    self : Papers object
+
+    outputs
+    -------
+    author_str : str
+        Information on all authors that were found, which will be printed later.
     """
 
     self.logger.info("Finding keyword matches")
@@ -148,28 +180,37 @@ def score_papers_matches(self):
         progress_bar(entry_count, len(self.df_papers)) # No time estimate as it should always be fast. ~1200 papers take less than a second on a 2023 macbook
 
         clear_progress_bar(self.logger, 10)
-        self.logger.debug("Seaching for matches in paper {:}.".format(self.df_papers.loc[entry_count, "arXiv Number"]))
+        self.logger.debug("Seaching for matches in arXiv:{:}.".format(self.df_papers.loc[entry_count, "arXiv Number"]))
         
         # Seach for Authors
         author_matches_str = author_search(self.logger,
                                            self.df_papers,
-                                           self.search_terms["Authors"],
-                                           entry_count)
+                                           entry_count,
+                                           self.search_terms["Authors"])
         author_str        += author_matches_str
 
         # Search for included words
         word_search(self.logger,
                     self.df_papers,
-                    self.search_terms,
                     entry_count,
+                    self.search_terms,
                     "Included Words")
 
         # Search for excluded words
         word_search(self.logger,
                     self.df_papers,
-                    self.search_terms,
                     entry_count,
+                    self.search_terms,
                     "Excluded Words")
+
+        self.logger.debug("Computing a score for arXiv:{:}.".format(self.df_papers.loc[entry_count, "arXiv Number"]))
+        # Compute a score. If the score is negative, set it to zero
+        # Currently the included/excluded words are being weighted as equal. It may be good to cap the excluded word score?
+        self.df_papers.loc[entry_count, "Score"] = max(self.df_papers.loc[entry_count, "Included Words Score"] -
+                                           self.df_papers.loc[entry_count, "Excluded Words Score"],
+                                           0)
+
+        self.logger.debug("arXiv:{:} final score: {:}".format(self.df_papers.loc[entry_count, "arXiv Number"], self.df_papers.loc[entry_count, "Score"]))
 
     progress_bar(len(self.df_papers), len(self.df_papers))
 
@@ -177,11 +218,11 @@ def score_papers_matches(self):
 
 def score_papers_ML(self):
     """Scores the papers based on a machine-learning algorithm.
-    NOTE: This method is not favoured. Papers that are not interesting to the user can be shown based on the inclusion of certain key words, leading to a large list that needs to be manually gone through. Meanwhile, papers that would be considered interesting can be excluded based on other key words, leading to interesting papers not being shown at all.
+    NOTE: This method is not implemented. Current plan is to create a model that can be traied by the user on a directory containing many .pdf files. This function would then use said model to score each paper in the arXiv search.
 
     inputs
     ------
-    self : Papers
+    self : Papers object
 
     outputs
     -------
@@ -193,23 +234,18 @@ def score_papers_ML(self):
     raise
 
 def filter_papers_score(self):
-    """Filters the papers based on some criteria (currently the search terms).
+    """Filters the papers based on the number and type of matches with the search terms.
     If a paper is scored above some threshold, it is shown.
-    NOTE: May need some more optimisation
+    NOTE: May need some more optimisation.
 
     inputs
     ------
-    df           : pandas.DataFrame
-        Contains all papers and their information.
-    search_terms : dict
-        Contains all search terms used to filter papers.
-    logger       : RootLogger
-        The logger object
+    self : Papers object
 
     outputs
     -------
-    entries_of_note_unique : list
-        Contains the indices of all papers that pass the filter.
+    entries_of_note_sorted : list
+        Contains the indices of all papers that pass the filter, in order of their score.
     """
 
     # Define the threshold
@@ -231,29 +267,13 @@ def filter_papers_score(self):
         if self.df_papers.loc[entry_count, "Authors Score"] == 1:
 
             entries_of_note.append(entry_count)
-
-        # Compute a score. If the score is negative, set it to zero
-        # Currently the included/excluded words are being weighted as equal. It may be good to cap the excluded word score?
-        self.df_papers.loc[entry_count, "Score"] = max(self.df_papers.loc[entry_count, "Included Words Score"] -
-                                           self.df_papers.loc[entry_count, "Excluded Words Score"],
-                                           0)
-
-        self.logger.debug("arXiv:{:} final score: {:}".format(self.df_papers.loc[entry_count, "arXiv Number"], self.df_papers.loc[entry_count, "Score"]))
+            scores.append(1.0)
 
         # If the score is above the threshold, append it to the entries of note
         if self.df_papers.loc[entry_count, "Score"] >= threshold:
 
             entries_of_note.append(entry_count)
             scores.append(self.df_papers.loc[entry_count, "Score"])
-
-    # Print the list of the found authors and their papers
-    # Do not pass this through the logger -- it should always be shown (if at least one was found)
-    if any(self.df_papers["Authors Match"]):
-        print(self.author_str)
-
-    # # Ensure only unique entries
-    # # Not required for scores
-    # entries_of_note_unique = np.unique(entries_of_note)
 
     # Sort the entries of note by their score
     self.logger.info("Sorting papers based on score (descending).")
@@ -263,16 +283,11 @@ def filter_papers_score(self):
 
 def filter_papers_matches(self):
     """Filters the papers based on matches with the search terms.
-    NOTE: This method is not favoured. Papers that are not interesting to the user can be shown based on the inclusion of certain key words, leading to a large list that needs to be manually gone through. Meanwhile, papers that would be considered interesting can be excluded based on other key words, leading to interesting papers not being shown at all.
+    NOTE: This method is not favoured. Papers that are not interesting to the user can be shown based on the inclusion of certain key words, leading to a large list that needs to be manually checked. Meanwhile, papers that would be considered interesting can be excluded based on other key words, leading to interesting papers not being shown at all.
 
     inputs
     ------
-    df           : pandas.DataFrame
-        Contains all papers and their information.
-    search_terms : dict
-        Contains all search terms used to filter papers.
-    logger       : RootLogger
-        The logger object
+    self : Papers object
 
     outputs
     -------
@@ -305,6 +320,4 @@ def filter_papers_matches(self):
     if any(self.df_papers["Authors Match"]):
         print(self.author_str)
 
-    entries_of_note_unique = np.unique(entries_of_note)
-
-    return entries_of_note_unique
+    return entries_of_note
