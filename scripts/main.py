@@ -6,6 +6,10 @@ from scripts.utils import cli_args
 
 """TO-DO:
 
+Find out if it is working on Windows 11.
+
+Fix incorrect author ordering for the list of papers with found authors.
+
 Add the ability to include given names. Update README.
 
 Add a flag to write only the arXiv IDs to a file. Update README.
