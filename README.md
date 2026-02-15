@@ -52,7 +52,8 @@ There are additional arguments that can be used:
     - 3 => Show all the above, and info messages. Recommended.
     - 4 => Show all the above, and debug messages. Not recommended.
 
-If both `-f` and `-w` are passed, then the script will do both. If neither are passed, then the script will prompt the user for their preference.
+If both `-f` and `-w` are passed, then the script will do both.
+If neither are passed, then the script will prompt the user for their preference.
 These CLI arguments can be added to the bash alias.
 
 ### Auxiliary Files
@@ -91,15 +92,18 @@ For these cases it is recommended to include both the normalised ASCII and the a
 #### Generated Files
 
 The script creates the file `prev_search.txt`, which contains the date of the previous run in ISO format.
-This file is ignored if manually setting the start-date of the search on the CLI.
+This file will be used as the starting point for the next search, and is ignored if manually setting the start-date of the search on the CLI.
 
-All links are written to a file `catchup.txt` (if choosing to write to the file). Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
+If choosing to write links/IDs to a file, they will be placed in `catchup.txt`.
+Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
 All links in this file can be opened in a browser by running `python3 /path/to/arXiv_Catchup/open_catchup.py`.
 
 During the run there are two `.xml` files that will be created.
 These files contain the results of the queries to the arXiv servers.
 If some non-recoverable error occurs, these files can be used to restart the search.
 After successfully presenting the results, both `.xml` files will be deleted.
+
+All logs will be written to `catchup.log`.
 
 ### Daily Mailings
 

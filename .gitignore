@@ -1,8 +1,17 @@
+# pycache
+__pycache__
+
+# mac indexing file
+.DS_Store
+
+# Temporary files
+*.xml
+*.log
+
+# Auxiliary files
+*.txt
+*.yaml
+
+# Testing files
 *.ipynb_checkpoints
 *.ipynb
-*.txt
-.DS_Store
-*.yaml
-*.xml
-
-__pycache__

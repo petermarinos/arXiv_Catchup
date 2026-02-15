@@ -44,7 +44,7 @@ def cli_args():
 
     return args
 
-def logger_setup(args):
+def logger_setup(args, cdir):
     """Set up the logger.
 
     inputs
@@ -66,25 +66,36 @@ def logger_setup(args):
     # Initialise the logger
     logger = logging.getLogger()
 
-    # Create a custom handler that will ensure the terminal line is cleared before writing messages
-    handler = FlushingStreamHandler(sys.stdout)
-    handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
-    logger.addHandler(handler)
+    # Set the global logging level
+    logger.setLevel(logging.DEBUG)
 
-    # Set the logging level
+    # Clear the logger handles. Not required, but is good practice
+    logger.handlers.clear()
+
+    # Create a handler that will output *all* messages to a file. Will overwrite the file on each execution.
+    handler_file = logging.FileHandler(cdir+"/catchup.log", mode="w")
+    handler_file.setLevel(logging.DEBUG)
+    handler_file.setFormatter(logging.Formatter("%(asctime)s.%(msecs)03d | %(levelname)s | %(message)s", "%Y-%m-%d %H:%M:%S"))
+
+    # Create a custom handler that will ensure the terminal line is cleared before writing messages
+    handler_cli = FlushingStreamHandler(sys.stdout)
+    handler_cli.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+
+    # Set the logging level for the CLI output
     if args.verbosity == 0:
-        logger.setLevel(logging.CRITICAL)
+        handler_cli.setLevel(logging.CRITICAL)
     elif args.verbosity == 1:
-        logger.setLevel(logging.ERROR)
+        handler_cli.setLevel(logging.ERROR)
     elif args.verbosity == 2:
-        logger.setLevel(logging.WARNING)
+        handler_cli.setLevel(logging.WARNING)
     elif args.verbosity == 3:
-        logger.setLevel(logging.INFO)
+        handler_cli.setLevel(logging.INFO)
     elif args.verbosity >= 4:
-        logger.setLevel(logging.DEBUG)
-    else:
-        logger.critical("Verbosity level must be positive.\n")
-        raise
+        handler_cli.setLevel(logging.DEBUG)
+
+    # Add both the CLI and file handlers to the logger
+    logger.addHandler(handler_cli)
+    logger.addHandler(handler_file)
 
     return logger
 

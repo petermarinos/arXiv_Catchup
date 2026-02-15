@@ -17,7 +17,7 @@ class Papers(object):
     def __init__(self, cdir, args):
 
         self.args   = args
-        self.logger = logger_setup(args)
+        self.logger = logger_setup(args, cdir)
         self.paths  = set_filenames(cdir)
 
         url, apiquery, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
