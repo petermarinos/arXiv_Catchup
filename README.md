@@ -50,7 +50,7 @@ There are additional arguments that can be used:
     - 1 => Show the above, and error messages.
     - 2 => Show all the above, and warning messages.
     - 3 => Show all the above, and info messages. Recommended.
-    - 4 => Show all the above, and debug messages.
+    - 4 => Show all the above, and debug messages. Not recommended.
 
 If both `-f` and `-w` are passed, then the script will do both. If neither are passed, then the script will prompt the user for their preference.
 These CLI arguments can be added to the bash alias.
@@ -64,7 +64,7 @@ There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded 
 The `Included Words` and `Excluded Words` are used to compute a score measuring how interesting a paper is.
 Examples of the format required for each can be found in the provided file.
 - `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found on the [arXiv Category Taxonomy](https://arxiv.org/category_taxonomy) page.
-- `Authors` defines which authors to highlight. _Use surnames_. Every paper with a match will be opened. Do not include accents/special characters/etc..
+- `Authors` defines which authors to highlight. __Use surnames__. Most papers with a match will be opened (large author lists slightly reduce the 'interest' score). Do not include accents/special characters/etc..
 - `Included Words` defines which words increase a paper's 'interest' score.
 - `Excluded Words` defines which words decrease a paper's 'interest' score.
 
