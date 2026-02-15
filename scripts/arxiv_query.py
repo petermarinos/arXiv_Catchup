@@ -548,7 +548,7 @@ def arxiv_search(self):
         num_steps = int( np.ceil(self.total_papers/self.arxiv_const.search_blocksize) * self.arxiv_const.search_blocksize )
 
         # Search the arXiv
-        self.logger.info("Searching for papers. Estimated time: {:d} seconds".format(est_time))
+        self.logger.info("Searching for papers. Estimated time: {:} seconds".format(est_time))
         for ii in range(start_num, self.total_papers, self.arxiv_const.search_blocksize):
 
             # Compute the progress of the loop
