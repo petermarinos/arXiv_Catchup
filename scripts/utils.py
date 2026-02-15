@@ -113,7 +113,8 @@ def logger_setup(args, cdir):
     return logger
 
 def log_environment(logger):
-    """Log some environment and system information
+    """Log some environment and system information.
+    NOTE: Only logging packages that are important and/or not part of the standard library.
 
     inputs
     ------

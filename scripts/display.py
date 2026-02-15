@@ -115,7 +115,7 @@ def display_results(self):
             # If only one author match
             if ( num_author_matches == 1) and ( author_score > 0.95 ):
 
-                print("{: >{fill}}:  {url:}".format(found_authors, fill=author_strfill, url=url))
+                print("{: >{fill}}:  {url:}".format(found_authors[0], fill=author_strfill, url=url))
 
             # If more than one author match:
             elif ( num_author_matches >= 2) and ( author_score > 0.95 ):
