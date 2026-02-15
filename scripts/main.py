@@ -10,6 +10,9 @@ Find out if it is working on Windows 11.
 
 Fix incorrect author ordering for the list of papers with found authors.
 
+Add an exception for "TimeoutError: The read operation timed out" in arxiv_query, with a large backoff.
+Add a check for the 429 error code -- if it is from arXiv, use the current backoff method. If it is from the infrastructure between the user and arXiv, use a much larger backoff.
+
 Add the ability to include given names. Update README.
 
 Add a flag to write only the arXiv IDs to a file. Update README.
