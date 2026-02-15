@@ -462,7 +462,7 @@ def extract_papers(logger, ns, xml_data):
 
         logger.debug("Found: {:}, version {:}.".format(ID_number, version_number))
         logger.debug("       published on {:}, updated on {:}.".format(published_date, updated_date))
-        logger.debug("       Revised? {:}".format((updated_date > published_date) or (version_number > 1)))
+        # logger.debug("       Revised? {:}".format((updated_date > published_date) or (version_number > 1)))
 
         papers.append(paper)
 
