@@ -1,5 +1,5 @@
 # Import functions
-from scripts.utils import progress_bar, clear_progress_bar
+from scripts.utils import progress_bar
 
 # Import libraries
 import xml.etree.ElementTree as ET
@@ -191,9 +191,6 @@ def write_xml(logger, filename, xml_data, ns, overwrite=False):
     overwrite : bool
         File will be overwritten if True
     """
-
-    # Clear the progress bar in preparation for the info messages later
-    clear_progress_bar(logger, 20)
 
     # As these files are not meant to be touched by the user, and are deleted at the end, logging messages are set to debug
 

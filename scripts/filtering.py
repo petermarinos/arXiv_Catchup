@@ -1,5 +1,5 @@
 # Import functions
-from scripts.utils import progress_bar, clear_progress_bar
+from scripts.utils import progress_bar
 
 # Import libraries
 import numpy as np
@@ -49,7 +49,6 @@ def author_search(logger, df_papers, entry_count, authors):
             # If an author is found:
             if author_match:
 
-                clear_progress_bar(logger, 10)
                 logger.debug("Found author: {:}".format(author))
                     
                 # If the paper has an author match, add it to a string
@@ -115,7 +114,6 @@ def word_search(logger, df_papers, entry_count, search_terms, key):
             # Count the number of matches
             current_num_title_matches = len( re.findall(r"\b"+word+r"\b", df_papers.loc[entry_count, "Title"], re.IGNORECASE) )
 
-            clear_progress_bar(logger, 10)
             logger.debug("Found {:} {:} time(s) in the title.".format(word, current_num_title_matches))
 
             # Add to score
@@ -179,7 +177,6 @@ def score_papers_matches(self):
 
         progress_bar(entry_count, len(self.df_papers)) # No time estimate as it should always be fast. ~1200 papers take less than a second on a 2023 macbook
 
-        clear_progress_bar(self.logger, 10)
         self.logger.debug("Seaching for matches in arXiv:{:}.".format(self.df_papers.loc[entry_count, "arXiv Number"]))
         
         # Seach for Authors

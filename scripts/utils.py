@@ -1,11 +1,17 @@
 # Import libraries
-import numpy      as np
-import webbrowser
+import numpy    as np
 import argparse
 import logging
 import pathlib
-import time
 import sys
+
+class FlushingStreamHandler(logging.StreamHandler):
+    def emit(self, record):
+        # Flush the current stream
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
+        # Print message
+        super().emit(record)
 
 def cli_args():
     """Defines and parses the CLI arguments passed when running the script.
@@ -60,16 +66,10 @@ def logger_setup(args):
     # Initialise the logger
     logger = logging.getLogger()
 
-    # Configure the logger
-    # # Brute force writing to stderr
-    # logging._handlers.clear()
-    # handler = logging.StreamHandler(sys.stderr)
-    # handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
-    # logger.addHandler(handler)
-    # # Default method to force writing to stderr
-    # logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s') # Show time
-    logging.basicConfig(format="%(levelname)s: %(message)s", # Don't show time
-                        stream=sys.stderr, force=True) # Print to stderr
+    # Create a custom handler that will ensure the terminal line is cleared before writing messages
+    handler = FlushingStreamHandler(sys.stdout)
+    handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+    logger.addHandler(handler)
 
     # Set the logging level
     if args.verbosity == 0:
@@ -82,9 +82,9 @@ def logger_setup(args):
         logger.setLevel(logging.INFO)
     elif args.verbosity >= 4:
         logger.setLevel(logging.DEBUG)
-
-    # Add a custom handler
-    # This handler will clear the progress bar before printing the message (and only clear the progress bar if the message will be triggered).
+    else:
+        logger.critical("Verbosity level must be positive.\n")
+        raise
 
     return logger
 
@@ -125,27 +125,6 @@ def progress_bar(ii, total, time_estimate=None):
 
     # If it is the final call, print a blank line
     if ii == total:
-        print("")
-
-    return
-
-def clear_progress_bar(logger, message_level):
-    """If there is a progress bar, it will be cleared. Only does so if the logger level is equal to or greater than the next message.
-    Calling when no progress bar is displayed does nothing.
-    NOTE: This function does nothing unless called somewhere that displays a progress bar. It should be called immediately before the logger message.
-
-    inputs
-    ------
-    logger        : RootLogger
-        The logger object
-    message_level : int
-        The logger level of the next message. 10=debug, ..., 50=critical
-    """
-
-    # If the message level is equal to or greater than the logger level (i.e. the message will be printed)
-    if message_level >= logger.level:
-
-        # Flush the line in the terminal
         sys.stdout.write("\r\033[K")
         sys.stdout.flush()
 

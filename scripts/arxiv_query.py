@@ -1,7 +1,7 @@
 # Import functions
 from scripts.string_handling import normalise_string
 from scripts.file_io         import write_xml
-from scripts.utils           import progress_bar, clear_progress_bar, delete_file
+from scripts.utils           import progress_bar, delete_file
 
 # Import libraries
 import xml.etree.ElementTree as ET
@@ -99,8 +99,6 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
     # If the HTTP error is in our list of codes that tell us to retry
     if error.code in retry_codes:
 
-        # Print a warning
-        clear_progress_bar(logger, 30)
         logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
 
         # Obtain some additional information. This will increase the wait time, or is used for debug
@@ -108,22 +106,18 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
         # If there are no headers
         if error.headers is None:
 
-            clear_progress_bar(logger, 10)
             logger.debug("No header found")
             retry_after = None
 
         # Else, if there are headers
         else:
 
-            clear_progress_bar(logger, 10)
-            # Print the headers if in debug mode
             for key, value in error.headers.items():
                 logger.debug("HTTP header: {:}: {:}".format(key, value))
 
             # If there is a Retry-After header
             if error.headers["Retry-After"] is not None:
 
-                clear_progress_bar(logger, 10)
                 logger.debug("Found Retry-After header.")
                 retry_after = error.headers["Retry-After"]
                 wait_time = retry_after
@@ -131,15 +125,12 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
             # Else, if there are headers but no retry-after header
             else:
 
-                clear_progress_bar(logger, 10)
                 logger.debug("Did not find a Retry-After header.")
                 retry_after = None
 
     # Otherwise, raise an error
     else:
 
-        # print("")
-        clear_progress_bar(logger, 50)
         logger.critical("HTTP error code '{:}': {:}\n".format(error.code, error.reason))
         raise
 
@@ -171,7 +162,6 @@ def url_errorcheck(logger, error, cert_error_bool, wait_time):
     if isinstance(error.reason, ssl.SSLCertVerificationError) and not cert_error_bool:
 
         # Warn the user that verification failed
-        clear_progress_bar(logger, 30)
         logger.warning("Connection error: {:}. Updating certificate and retrying in {:} seconds ...".format(error.reason, wait_time))
 
         # Try verifying
@@ -184,9 +174,7 @@ def url_errorcheck(logger, error, cert_error_bool, wait_time):
     elif isinstance(error.reason, ssl.SSLCertVerificationError) and cert_error_bool:
 
         # Warn the user that we are disabling verification
-        clear_progress_bar(logger, 30)
         logger.warning("Verification still failed.")
-        clear_progress_bar(logger, 20)
         logger.info("This could potentially be an issue with your OS and its trust store, or the certifi package version.")
         logger.info("Current certifi version: {:}. Recommended: >2026.01.04.".format(certifi.__version__))
         logger.info("This issue should be fixed before rerunning the script.")
@@ -199,7 +187,6 @@ def url_errorcheck(logger, error, cert_error_bool, wait_time):
     # Otherwise, if it is any other type of URL error, raise an error
     else:
 
-        clear_progress_bar(logger, 50)
         logger.critical("Connection error: {:}\n".format(error.reason))
         raise
 
@@ -245,7 +232,6 @@ def arxiv_query(logger, url, start_num, blocksize):
     formatted_url = url.format(start_num = start_num,
                                blocksize = blocksize)
     
-    clear_progress_bar(logger, 10)
     logger.debug("Connecting to:\n       {:}".format(formatted_url))
     
     # Query the server
@@ -313,25 +299,21 @@ def arxiv_query(logger, url, start_num, blocksize):
         except ET.ParseError as error:
 
             # # Print a warning and retry
-            # clear_progress_bar()
             # logger.warning("XML parsing error on attempt {:} of {:}. Retrying in {:} seconds ...".format(attempt, max_retries, wait_time))
             # # May need to add a way to warn and skip. This error shouldn't occur, but potenially could be due to malformed paper entries?
             # # It is rare error and difficult to know the cause (has only ever occured in historical searches when testing)
             
             # # For now, raise an error
-            clear_progress_bar(logger, 50)
             logger.critical("XML parsing error.\n")
             raise
 
         # If there have been too many retries, raise an error
         if attempt == max_retries:
 
-            clear_progress_bar(logger, 50)
             logger.critical("Maximum retries attempted. arXiv query failed.\n          Review connection error codes before trying again.\n")
             raise
 
         # Sleep before retrying
-        clear_progress_bar(logger, 10)
         logger.debug("Sleeping for {:} seconds ...".format(wait_time))
         time.sleep(wait_time)
 
@@ -341,7 +323,6 @@ def arxiv_query(logger, url, start_num, blocksize):
             wait_time *= backoff
     
     # Raise an error if the function reaches here somehow
-    clear_progress_bar(logger, 50)
     logger.critical("Something went wrong...?\n")
     raise
 
@@ -384,10 +365,7 @@ def arxiv_initial_pull(self):
     # If the urls don't match, or if the temp .xml doesn't exist, search the arXiv
     elif url_missmatch or ( os.path.exists(self.paths["searchxml"]) ):
 
-        self.logger.info("Obtaining arXiv info from the servers.")
-
-        # # Display a progress bar
-        # progress_bar(0, 1, 3)
+        self.logger.info("Obtaining search information from the servers.")
 
         # Perform the query
         xml_data = arxiv_query(self.logger, self.arxiv_const.url, 0, 1)
@@ -395,8 +373,7 @@ def arxiv_initial_pull(self):
         # Write the extracted xml to a file
         write_xml(self.logger, self.paths["searchxml"], xml_data, self.arxiv_const.ns, overwrite=True)
         
-        # # Close the progress bar
-        # progress_bar(1, 1)
+        self.logger.info("Search information successfully obtained from the arXiv servers!")
     
     # Extract the total number of papers that were found
     max_num = int(xml_data.find("opensearch:totalResults", self.arxiv_const.ns).text)
@@ -557,7 +534,6 @@ def arxiv_search(self):
             progress_bar(ii, num_steps, remaining_steps * self.arxiv_const.sleeptimer_search)
 
             # Debug messages
-            clear_progress_bar(self.logger, 10)
             self.logger.debug("Remaining steps: {:}".format(remaining_steps))
             self.logger.debug("Starting number: {:}".format(ii))
             self.logger.debug("Ending number:   {:}".format(search_endnum))
@@ -579,6 +555,8 @@ def arxiv_search(self):
 
         # Close the progress bar
         progress_bar(self.total_papers, self.total_papers)
+
+        self.logger.info("All paper information successfully downloaded from the arXiv servers!")
 
     # Double check that we found the correct number of papers
     if len(entries) != self.total_papers:
