@@ -185,9 +185,9 @@ def display_results(self):
     # Check if any papers were found
     if len(self.df_papers) == 0:
 
-        self.logger.warning("As no papers were found, the aux. date file was not updated")
+        self.logger.warning("As no papers were found, the date file was not updated")
 
-    # If papers were found, update the aux. file
+    # If papers were found, update the date file
     else:
 
         # Write the end date of the search to a file for the next run
