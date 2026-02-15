@@ -1,3 +1,6 @@
+# Import version number
+from scripts import __version__
+
 # Import libraries
 import importlib.metadata as metadata
 import numpy              as np
@@ -126,6 +129,9 @@ def log_environment(logger):
     logger.debug("=== Environment Information ===")
     logger.debug(f"Python: {sys.version}")
     logger.debug(f"Platform: {platform.platform()}")
+
+    # Print project info
+    logger.debug(f"arXiv_Catchup=={__version__}")
 
     # Print package info
     for pkg in ["certifi", "numpy", "pandas", "pylatexenc", "PyYAML"]:
