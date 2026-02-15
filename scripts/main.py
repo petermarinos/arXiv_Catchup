@@ -6,10 +6,6 @@ from scripts.utils import cli_args
 
 """TO-DO:
 
-Put the clear_progress_bar() function inside of the logger
-    Will make it more automatic -- if the logger level is high enough to print a message, it will first clear the progress bar
-    otherwise, if the message will not be clearer, the progress bar is untouched.
-
 Add the ability to include given names. Update README
 
 Add a flag to write only the arXiv IDs to a file. Update README.
