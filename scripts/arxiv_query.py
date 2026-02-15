@@ -278,6 +278,8 @@ def arxiv_query(logger, url, start_num, blocksize):
             # Attempt to connect to arXiv
             with urllib.request.urlopen(formatted_url, timeout=timeout, context=ssl_context) as f:
 
+                logger.debug("...Connection successful")
+
                 # Read the data
                 xml_data = f.read()
 
