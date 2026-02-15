@@ -58,7 +58,7 @@ def arxiv_errorcheck(self):
         if user_prompt != "y":
 
             # Delete the .xml file
-            delete_file(self.paths["searchxml"], self.logger)
+            delete_file(self.logger, self.paths["searchxml"])
 
             # Exit
             sys.exit("Cancelling the search. Reduce search window to decrease the number of results.")
@@ -537,11 +537,14 @@ def arxiv_search(self):
 
         self.logger.debug("The number of papers found so far is: {:}".format(start_num))
 
-        # Compute the estimated time
-        est_time = -self.arxiv_const.sleeptimer_search * ( ( self.total_papers - start_num ) // -self.arxiv_const.search_blocksize )
+        # # Compute the estimated time for the search
+        # The time to complete depends almost entirely on the number of connections to arXiv and the number of sleeps, though there is some slowdown due to connecting to the arXiv servers and waiting for a response
+        # It is typically 0.7s per connection, though it varies *wildly*
+        # Because of how wildly it varies, computing the remaining search time accurately during the loop is pointless. Just use the fudge_timer
+        fudge_timer = 0.7
+        est_time    = - ( self.arxiv_const.sleeptimer_search + fudge_timer ) * ( ( self.total_papers - start_num ) // -self.arxiv_const.search_blocksize )
 
         # Compute the number of steps it will take
-        # The time to complete depends almost entirely on the number of connections to arXiv and the number of sleeps -- the amount of data that is downloaded is minimal.
         num_steps = int( np.ceil(self.total_papers/self.arxiv_const.search_blocksize) * self.arxiv_const.search_blocksize )
 
         # Search the arXiv
@@ -559,7 +562,7 @@ def arxiv_search(self):
                 search_endnum   = ii + self.arxiv_const.search_blocksize
 
             # Print the progress bar
-            progress_bar(ii, num_steps, remaining_steps * self.arxiv_const.sleeptimer_search)
+            progress_bar(ii, num_steps, remaining_steps * ( self.arxiv_const.sleeptimer_search + fudge_timer ))
 
             # Debug messages
             self.logger.debug("Remaining steps: {:}".format(remaining_steps))
@@ -593,7 +596,7 @@ def arxiv_search(self):
 
     else:
 
-        self.logger.debug("Found the expected number of papers.")
+        self.logger.debug("Found the expected number of papers ({:}).".format(self.total_papers))
 
     # Place all entries into a dataframe
     df = pd.DataFrame( entries )

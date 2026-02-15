@@ -48,8 +48,8 @@ def main(cdir):
     # # Display the results
     papers.display()
 
-    # # Delete xmls/other supplemental files if successfull
-    # papers.clearTempFiles()
+    # Delete xmls/other supplemental files if successfull
+    papers.clearTempFiles()
 
     # # Print a summary
     papers.summary()

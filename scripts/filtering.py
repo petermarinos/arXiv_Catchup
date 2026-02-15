@@ -127,7 +127,7 @@ def score_papers_matches(self):
     # Loop over all entries
     for entry_count in range(0, len(self.df_papers)):
 
-        progress_bar(entry_count, len(self.df_papers)) # No time estimate as it should always be fast. ~1200 papers take less than a second on a 2023 macbook
+        progress_bar(entry_count, len(self.df_papers)) # No time estimate as it should always be fast. A mac laptop can filter 750 papers per second
 
         self.logger.debug("Seaching for matches in arXiv:{:}.".format(self.df_papers.loc[entry_count, "arXiv Number"]))
         

@@ -94,8 +94,12 @@ def logger_setup(args, cdir):
         handler_cli.setLevel(logging.DEBUG)
 
     # Add both the CLI and file handlers to the logger
-    logger.addHandler(handler_cli)
     logger.addHandler(handler_file)
+    logger.addHandler(handler_cli)
+
+    if args.verbosity < 0:
+        logger.warning("Input verbosity was negative. Defaulting to show debug.".format(logger.level))
+    logger.debug("Verbosity level set to: {:}".format(logger.level))
 
     return logger
 
