@@ -1,6 +1,8 @@
 # Import libraries
-import numpy    as np
+import importlib.metadata as metadata
+import numpy              as np
 import argparse
+import platform
 import logging
 import pathlib
 import sys
@@ -97,11 +99,41 @@ def logger_setup(args, cdir):
     logger.addHandler(handler_file)
     logger.addHandler(handler_cli)
 
+    # Warn if a negative verbosity was entered on the CLI
     if args.verbosity < 0:
         logger.warning("Input verbosity was negative. Defaulting to show debug.".format(logger.level))
-    logger.debug("Verbosity level set to: {:}".format(logger.level))
+
+    # State the verbosity level
+    logger.debug("CLI verbosity level set to: {:}".format(logging.getLevelName(handler_cli.level)))
+    logger.debug("Log file verbosity level set to: {:}".format(logging.getLevelName(logger.level)))
+
+    # Describe the environment
+    log_environment(logger)
 
     return logger
+
+def log_environment(logger):
+    """Log some environment and system information
+
+    inputs
+    ------
+    logger : RootLogger
+        The logger object
+    """
+
+    # Print system info
+    logger.debug("=== Environment Information ===")
+    logger.debug(f"Python: {sys.version}")
+    logger.debug(f"Platform: {platform.platform()}")
+
+    # Print package info
+    for pkg in ["certifi", "numpy", "pandas", "pylatexenc", "PyYAML"]:
+        version = metadata.version(pkg)
+        logger.debug(f"{pkg}=={version}")
+
+    logger.debug("===============================")
+
+    return
 
 def progress_bar(ii, total, time_estimate=None):
     """Prints a progress bar that updates as the loop progresses.
