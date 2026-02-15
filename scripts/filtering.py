@@ -26,6 +26,9 @@ def author_search(logger, df_papers, entry_count, authors):
     """
 
     author_str = ""
+
+    if authors is None:
+        logger.debug("No authors to search for...")
         
     # If there is at least one author of interest
     if authors is not None:
@@ -53,21 +56,20 @@ def author_search(logger, df_papers, entry_count, authors):
                     
                 # If the paper has an author match, add it to a string
                 # If no match has been found yet:
-                if not df_papers.loc[entry_count, "Authors Match"]:
+                if not df_papers.loc[entry_count, "Authors Matches"]:
                     author_match_str = "\n    {: >{fill}}:  {url:}".format(author, fill=author_strfill, url=df_papers.loc[entry_count, "url"])
                 # If the paper has already had a match, add et at.
                 else:
                     author_match_str = "\n    {: >{fill}}:  {url:}".format(author+", et al.", fill=author_strfill, url=df_papers.loc[entry_count, "url"])
                 
                 # Set the entry in the dataframe for the author match key to True
-                # Used for the binary search
-                df_papers.loc[entry_count, "Authors Match"] = True
+                df_papers.loc[entry_count, "Authors Matches"] += 1
 
-                # Set the score tp 10 points if a match is found
-                # Used for the score search
-                df_papers.loc[entry_count, "Authors Score"] = 1
 
         author_str += author_match_str
+
+        if df_papers.loc[entry_count, "Authors Matches"] == 0:
+            logger.debug(" ... none found")
 
     return author_str
 
@@ -93,17 +95,8 @@ def word_search(logger, df_papers, entry_count, search_terms, key):
     # # Compute the number of words we are searching for. Used to normalise the score?
     # num_words = len(search_terms[key])
 
-    # Initialise the number of matches found
-    num_title_matches    = 0
-    num_abstract_matches = 0
-
     # Search all titles and abstracts for words in the supplied key
     for word in search_terms[key]:
-
-        # Compute the number of words in the title and user to compute a penalty
-        # Titles are boosted/penalised for being below/above a word count of 18
-        title_length  = len( re.findall(r'\w+', df_papers.loc[entry_count, "Title"]) )
-        title_penalty = 18 / title_length
 
         # Search the author field in the entry
         title_match = re.search(r"\b"+word+r"\b", df_papers.loc[entry_count, "Title"], re.IGNORECASE)
@@ -112,52 +105,40 @@ def word_search(logger, df_papers, entry_count, search_terms, key):
         if title_match:
 
             # Count the number of matches
-            current_num_title_matches = len( re.findall(r"\b"+word+r"\b", df_papers.loc[entry_count, "Title"], re.IGNORECASE) )
+            num_title_matches = len( re.findall(r"\b"+word+r"\b", df_papers.loc[entry_count, "Title"], re.IGNORECASE) )
 
-            logger.debug("Found {:} {:} time(s) in the title.".format(word, current_num_title_matches))
+            logger.debug("Found {:} {:} time(s) in the title.".format(word, num_title_matches))
 
             # Add to score
-            num_title_matches += current_num_title_matches
+            df_papers.loc[entry_count, key+" Matches"]["Title"] += num_title_matches
 
         # If something exists in the abstract field, search it for matches
         if df_papers.loc[entry_count, "Abstract"] is not None:
             
             abstract_match = re.search(r"\b"+word+r"\b", df_papers.loc[entry_count, "Abstract"], re.IGNORECASE)
 
-            # Compute the number of words in the abstract user to compute a the penalty
-            # Abstracts are boosted/penalised for being below/above a word count of 250
-            abstract_length  = len( re.findall(r'\w+', df_papers.loc[entry_count, "Abstract"]) )
-            abstract_penalty = 250 / abstract_length
-
             # If a match is found in the abstract:
             if abstract_match:
 
                 # Count the number of matches
-                current_num_abstract_matches = len( re.findall(r"\b"+word+r"\b", df_papers.loc[entry_count, "Abstract"], re.IGNORECASE) )
+                num_abstract_matches = len( re.findall(r"\b"+word+r"\b", df_papers.loc[entry_count, "Abstract"], re.IGNORECASE) )
 
-                logger.debug("Found {:} {:} time(s) in the abstract.".format(word, current_num_abstract_matches))
+                logger.debug("Found {:} {:} time(s) in the abstract.".format(word, num_abstract_matches))
 
-                num_abstract_matches += current_num_abstract_matches
+                df_papers.loc[entry_count, key+" Matches"]["Abstract"] += num_abstract_matches
             
-        # If a match is found anywhere, set the _ Word Match flag to True
-        if title_match or abstract_match:
-            
-            # logger.debug(key+" Match")
-            df_papers.loc[entry_count, key+" Match"] = True
+    # Compute the total number of matches
+    df_papers.loc[entry_count, key+" Matches"]["Total"] = ( df_papers.loc[entry_count, key+" Matches"]["Title"]
+                                                          + df_papers.loc[entry_count, key+" Matches"]["Abstract"] )
 
-    # Set scores, bound to 0->1.
-    # logger.debug("Title penalty: {:} | Title matches: {:}".format(title_penalty, num_title_matches))
-    # logger.debug("Abstract penalty: {:} | Abstract matches: {:}".format(abstract_penalty, num_abstract_matches))
-    title_score    = min( title_penalty * num_title_matches / 1.0, 1.0 ) # An interesting title has one or two matches
-    abstract_score = min( abstract_penalty * num_abstract_matches / 5.0, 1.0 ) # An interesting abstract has ~5 matches
-    df_papers.loc[entry_count, key+" Score"] = ( title_score + abstract_score ) / 2.0
-    logger.debug("arXiv:{:} - {:} | title {:} | abstract {:} | total {:} |".format(df_papers.loc[entry_count, "arXiv Number"], key, title_score, abstract_score, df_papers.loc[entry_count, key+" Score"]))
+    if df_papers.loc[entry_count, key+" Matches"]["Total"] == 0:
+        logger.debug(" ... none found")
 
     return
 
 def score_papers_matches(self):
     """Scores the papers based on the number of matches found.
-    NOTE: This function also applies a simple binary True/False if matches are found.
+    NOTE: This function also counts the number of matches.
 
     inputs
     ------
@@ -201,13 +182,67 @@ def score_papers_matches(self):
                     "Excluded Words")
 
         self.logger.debug("Computing a score for arXiv:{:}.".format(self.df_papers.loc[entry_count, "arXiv Number"]))
-        # Compute a score. If the score is negative, set it to zero
-        # Currently the included/excluded words are being weighted as equal. It may be good to cap the excluded word score?
-        self.df_papers.loc[entry_count, "Score"] = max(self.df_papers.loc[entry_count, "Included Words Score"] -
-                                           self.df_papers.loc[entry_count, "Excluded Words Score"],
-                                           0)
 
-        self.logger.debug("arXiv:{:} final score: {:}".format(self.df_papers.loc[entry_count, "arXiv Number"], self.df_papers.loc[entry_count, "Score"]))
+        # # Compute penalties
+        # Author lists are penalised for being above a count of 25
+        # Titles are boosted/penalised for being below/above a word count of 18
+        # Abstracts are boosted/penalised for being below/above a word count of 250
+        authors_penalty  =  25 / self.df_papers.loc[entry_count, "Number of Authors"]
+        title_penalty    =  18 / self.df_papers.loc[entry_count, "Number of Words"]["Title"]
+        abstract_penalty = 250 / self.df_papers.loc[entry_count, "Number of Words"]["Abstract"]
+        self.logger.debug("Penalties | Authors = {:} | Title = {:} | Abstract = {:} |".format(authors_penalty, title_penalty, abstract_penalty))
+
+        # Compute the Author score:
+        authors_found   = self.df_papers.loc[entry_count, "Authors Matches"]
+        authors_score   = min(authors_found * authors_penalty, 1.)
+        self.df_papers.loc[entry_count, "Authors Score"] = max(authors_score, 0)
+
+        self.logger.debug("Author statistics:")
+        self.logger.debug("| Total authors = {:} | Found = {:} |".format(self.df_papers.loc[entry_count, "Number of Authors"], authors_found))
+        self.logger.debug("| Author score = {:} |".format(self.df_papers.loc[entry_count, "Authors Score"]))
+
+
+        # # Compute word scores
+        # They are bound to the interval [0, 1] via min/max functions
+        # An interesting title has one or two matches
+        # An interesting abstract has ~5 matches
+
+        # Compute the Included Word scores:
+        inc_title_count    = self.df_papers.loc[entry_count, "Included Words Matches"]["Title"]
+        inc_abstract_count = self.df_papers.loc[entry_count, "Included Words Matches"]["Abstract"]
+        inc_title_score    = min( title_penalty * inc_title_count / 1.0, 1.0 )
+        inc_abstract_score = min( abstract_penalty * inc_abstract_count / 5.0, 1.0 )
+        inc_total_score    = ( inc_title_score + inc_abstract_score ) / 2.0
+        # Place scores into the dataframe
+        self.df_papers.loc[entry_count, "Included Words Score"]["Title"]    = inc_title_score
+        self.df_papers.loc[entry_count, "Included Words Score"]["Abstract"] = inc_abstract_score
+        self.df_papers.loc[entry_count, "Included Words Score"]["Total"]    = inc_total_score
+
+        self.logger.debug("Included word statistics:")
+        self.logger.debug("| Title Matches = {:} | Title Score = {:} |".format(inc_title_count, inc_title_score))
+        self.logger.debug("| Abstract Matches = {:} | Abstract Score = {:} |".format(inc_abstract_count, inc_abstract_score))
+        self.logger.debug("| Total Score = {:} |".format(inc_total_score))
+
+        # Compute the Excluded words scores:
+        exc_title_count    = self.df_papers.loc[entry_count, "Excluded Words Matches"]["Title"]
+        exc_abstract_count = self.df_papers.loc[entry_count, "Excluded Words Matches"]["Abstract"]
+        exc_title_score    = min( title_penalty * exc_title_count / 1.0, 1.0 )
+        exc_abstract_score = min( abstract_penalty * exc_abstract_count / 5.0, 1.0 )
+        exc_total_score    = ( exc_title_score + exc_abstract_score ) / 2.0
+        # Place scores into the dataframe
+        self.df_papers.loc[entry_count, "Excluded Words Score"]["Title"]    = exc_title_score
+        self.df_papers.loc[entry_count, "Excluded Words Score"]["Abstract"] = exc_abstract_score
+        self.df_papers.loc[entry_count, "Excluded Words Score"]["Total"]    = exc_total_score
+
+        self.logger.debug("Excluded word statistics:")
+        self.logger.debug("| Title Matches = {:} | Title Score = {:} |".format(exc_title_count, exc_title_score))
+        self.logger.debug("| Abstract Matches = {:} | Abstract Score = {:} |".format(exc_abstract_count, exc_abstract_score))
+        self.logger.debug("| Total Score = {:} |".format(-exc_total_score))
+
+        # Compute the Final score:
+        self.df_papers.loc[entry_count, "Final Score"] = max(inc_total_score - exc_total_score, +0)
+
+        self.logger.debug("Final Score = {:}".format(self.df_papers.loc[entry_count, "Final Score"]))
 
     progress_bar(len(self.df_papers), len(self.df_papers))
 
@@ -245,12 +280,15 @@ def filter_papers_score(self):
         Contains the indices of all papers that pass the filter, in order of their score.
     """
 
-    # Define the threshold
+    # Define the thresholds
+    # Words
     # 0.50 => quite generous with what papers are opened. 
     # 0.65 => feels like a good limit to ensure the papers are interesting
     # 0.85 => can potentially miss something
     # 1.00 => too strict if there are any 'excluded words'
-    threshold = 0.65
+    word_threshold = 0.65
+    # Authors
+    author_threshold = 0.95 # At least one author in every 25
 
     self.logger.info("Filtering papers based on scores")
 
@@ -259,18 +297,28 @@ def filter_papers_score(self):
     scores          = []
     for entry_count in range(0, len(self.df_papers)):
 
+        # Extract arXiv ID
+        ID = self.df_papers.loc[entry_count, "arXiv Number"]
+
+        # Extract scores
+        author_score = self.df_papers.loc[entry_count, "Authors Score"]
+        word_score   = self.df_papers.loc[entry_count, "Final Score"]
+
         # If an Author was found, append it to the entries of note
-        # Note that the author score is not actually being utilised in the computation of the papers score. If one author was found, the paper is considered interesting.
-        if self.df_papers.loc[entry_count, "Authors Score"] == 1:
+        if author_score >= author_threshold:
+
+            self.logger.debug("Adding paper: {:} (Author score = {:})".format(ID, author_score))
 
             entries_of_note.append(entry_count)
-            scores.append(1.0)
+            scores.append(author_score)
 
-        # If the score is above the threshold, append it to the entries of note
-        if self.df_papers.loc[entry_count, "Score"] >= threshold:
+        # Otherwise, if the score is above the threshold, append it to the entries of note
+        elif word_score >= word_threshold:
+
+            self.logger.debug("Adding paper: {:} (Word score = {:})".format(ID, word_score))
 
             entries_of_note.append(entry_count)
-            scores.append(self.df_papers.loc[entry_count, "Score"])
+            scores.append(word_score)
 
     # Sort the entries of note by their score
     self.logger.info("Sorting papers based on score (descending).")
@@ -299,22 +347,22 @@ def filter_papers_matches(self):
     for entry_count in range(0, len(self.df_papers)):
 
         # If an Author was found, append it to the entries of note
-        if self.df_papers.loc[entry_count, "Authors Match"] == True:
+        if self.df_papers.loc[entry_count, "Authors Matches"] >= 1:
 
-            self.logger.debug("Adding paper: {:}".format(self.df_papers.loc[entry_count, "arXiv Number"]))
+            self.logger.debug("Adding paper: {:} (found author)".format(self.df_papers.loc[entry_count, "arXiv Number"]))
 
             entries_of_note.append(entry_count)
 
         # If there were included word matches and *no* excluded word matches, append
-        elif ( self.df_papers.loc[entry_count, "Included Words Match"] == True ) and ( self.df_papers.loc[entry_count, "Excluded Words Match"] == False ):
+        elif ( self.df_papers.loc[entry_count, "Included Words Matches"]["Total"] >= 1 ) and ( self.df_papers.loc[entry_count, "Excluded Words Matches"]["Total"] == 0 ):
 
-            self.logger.debug("Adding paper: {:}".format(self.df_papers.loc[entry_count, "arXiv Number"]))
+            self.logger.debug("Adding paper: {:} (found word)".format(self.df_papers.loc[entry_count, "arXiv Number"]))
 
             entries_of_note.append(entry_count)
 
     # Print the list of the found authors and their papers
     # Do not pass this through the logger -- it should always be shown (if at least one was found)
-    if any(self.df_papers["Authors Match"]):
+    if any(self.df_papers["Authors Matches"]):
         print(self.author_str)
 
     return entries_of_note

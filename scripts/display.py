@@ -95,7 +95,7 @@ def display_results(self):
 
     # Print the list of the found authors and their papers
     # Do not pass this through the logger -- it should always be shown (if at least one was found)
-    if any(self.df_papers["Authors Match"]):
+    if any(self.df_papers["Authors Matches"]):
         print("")
         print(self.author_str)
 
@@ -151,6 +151,7 @@ def display_results(self):
                 # If they want the output in the terminal
                 else:
 
+                    print("")
                     self.logger.info("Printing all links to the terminal:\n")
                     for link_index in self.papers_of_note:
 

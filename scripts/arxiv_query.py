@@ -13,6 +13,7 @@ import time
 import ssl
 import sys
 import os
+import re
 
 # # Import libraries used to test API connections and errors
 # from email.message import Message
@@ -339,8 +340,6 @@ def arxiv_initial_pull(self):
         Number of papers that were found in the categories of interest.
     """
 
-    url_missmatch = True
-
     # Search for xml file. If found, load it
     if os.path.exists(self.paths["searchxml"]):
         
@@ -359,11 +358,14 @@ def arxiv_initial_pull(self):
             self.logger.warning("The .xml file information does not match the current search. Discarding the file and re-connecting.")
             self.logger.debug("Expected: {:}".format(expected_url))
             self.logger.debug("Found:    {:}".format(returned_url))
+            # Clear the .xml file
+            delete_file(self.logger, self.paths["searchxml"])
         else:
             self.logger.debug("The .xml file information matches the current search. Continuing")
 
-    # If the urls don't match, or if the temp .xml doesn't exist, search the arXiv
-    elif url_missmatch or ( os.path.exists(self.paths["searchxml"]) ):
+    # If there is no file, perform the search
+    # NOTE: This is not an elif as the above if statement can delete the file. If the file is deleted, we want to be redownloaded. If the file never existed, we want to download. If the file existed and had the correct information, then this statement will not be activated anyway.
+    if not os.path.exists(self.paths["searchxml"]):
 
         self.logger.info("Obtaining search information from the servers.")
 
@@ -414,23 +416,47 @@ def extract_papers(logger, ns, xml_data):
         # Extract the author list
         author_list = [author.find("atom:name", ns).text for author in entry.findall("atom:author", ns)]
 
+        # Extract the title
+        title          = entry.find("atom:title", ns).text.strip()
+        title_numwords = len( re.findall(r'\w+', title) )
+
+        # Extract the abstract
+        abstract          = entry.find("atom:summary", ns).text.strip()
+        abstract_numwords = len( re.findall(r'\w+', abstract) )
+
         # Place information in a dictionary
         paper = {
             # Extract information
-            "arXiv Number"         : ID_number,
-            "Title"                : entry.find("atom:title", ns).text.strip(),
-            "Authors"              : normalise_string( ", ".join(f"{author}" for author in author_list) ),
-            "Revised?"             : (updated_date > published_date) or (version_number > 1),
-            "Abstract"             : entry.find("atom:summary", ns).text.strip(),
-            "url"                  : entry.find("atom:id", ns).text.strip(),
+            "arXiv Number"      : ID_number,
+            "Title"             : title,
+            "Authors"           : normalise_string( ", ".join(f"{author}" for author in author_list) ),
+            "Revised?"          : (updated_date > published_date) or (version_number > 1),
+            "Abstract"          : abstract,
+            "url"               : entry.find("atom:id", ns).text.strip(),
+            "Number of Authors" : len(author_list),
+            "Number of Words"   : {"Title"    : title_numwords,
+                                   "Abstract" : abstract_numwords},
             # Setup fields used for output
-            "Authors Match"        : False,
-            "Included Words Match" : False,
-            "Excluded Words Match" : False,
-            "Authors Score"        : 0.,
-            "Included Words Score" : 0.,
-            "Excluded Words Score" : 0.,
-            "Score"                : 0.,
+            # Authors
+            "Authors Matches" : 0,
+            "Authors Score"   : 0.,
+            # Number of words
+            # Included words
+            "Included Words Matches" : {"Title"    : 0,
+                                        "Abstract" : 0,
+                                        "Total"    : 0},
+            "Included Words Score"   : {"Title"    : 0.,
+                                        "Abstract" : 0.,
+                                        "Total"    : 0.},
+            # Excluded words
+            "Excluded Words Matches" : {"Title"    : 0,
+                                        "Abstract" : 0,
+                                        "Total"    : 0},
+            "Excluded Words Score"   : {"Title"    : 0.,
+                                        "Abstract" : 0.,
+                                        "Total"    : 0.},
+            # Final score
+            "Final Score"            : 0.,
         }
 
         logger.debug("Found: {:}, version {:}.".format(ID_number, version_number))
@@ -482,6 +508,7 @@ def arxiv_search(self):
 
         # If the urls do not match, discard and restart the search
         if url_missmatch:
+
             self.logger.warning("The .xml file information does not match the current search. Discarding the file and re-connecting.")
             self.logger.debug("Expected: {:}".format(expected_url))
             self.logger.debug("Found:    {:}".format(returned_url))
@@ -494,12 +521,12 @@ def arxiv_search(self):
 
         # If the urls match AND the number of papers was less than the total:
         elif ( not url_missmatch ) and ( len(entries) < self.total_papers ):
-            self.logger.debug("The .xml file information matches the current search. Continuing")
+            self.logger.debug("The .xml file information matches the current search. Continuing.")
 
         # If less than the total, provide info that we are continuing the search
         elif len(entries) >= self.total_papers:
 
-            self.logger.info("All information found in the .xml file. Skipping the saerch.")
+            self.logger.info("All information found in the .xml file. Skipping the search.")
 
     # If the number of papers is less that the total, connect to arXiv
     if len(entries) < self.total_papers:
