@@ -106,18 +106,21 @@ def display_results(self):
         # Loop through the papers that survived the filter and print the ones with author matches
         for entry_count in self.papers_of_note:
 
+            # Extract some information
             author_score       = self.df_papers.loc[entry_count, "Authors Score"]
             num_author_matches = self.df_papers.loc[entry_count, "Authors Matches"]
+            found_authors      = self.df_papers.loc[entry_count, "Found Authors"]
+            url                = self.df_papers.loc[entry_count, "url"]
 
             # If only one author match
             if ( num_author_matches == 1) and ( author_score > 0.95 ):
 
-                print("{: >{fill}}:  {url:}".format(self.df_papers.loc[entry_count, "Found Authors"][0], fill=author_strfill, url=self.df_papers.loc[entry_count, "url"]))
+                print("{: >{fill}}:  {url:}".format(found_authors, fill=author_strfill, url=url))
 
             # If more than one author match:
             elif ( num_author_matches >= 2) and ( author_score > 0.95 ):
 
-                print("{: >{fill}}:  {url:}".format(self.df_papers.loc[entry_count, "Found Authors"][0]+", et al.", fill=author_strfill, url=self.df_papers.loc[entry_count, "url"]))
+                print("{: >{fill}}:  {url:}".format(found_authors+", et al.", fill=author_strfill, url=url))
 
     browser_flag = False
     file_flag    = False
