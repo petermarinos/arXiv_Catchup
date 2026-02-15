@@ -71,8 +71,8 @@ def summarise_search(self):
     
     # Print a summary
     print("")
-    self.logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest since the previous search".format(self.total_papers, fill=max_digits))
-    self.logger.info("           of these, {: >{fill}} papers were opened/linked".format(len(self.papers_of_note), fill=max_digits))
+    self.logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest within the search window.".format(self.total_papers, fill=max_digits))
+    self.logger.info("           of these, {: >{fill}} papers were opened/linked.".format(len(self.papers_of_note), fill=max_digits))
     print("")
 
     return
@@ -96,8 +96,28 @@ def display_results(self):
     # Print the list of the found authors and their papers
     # Do not pass this through the logger -- it should always be shown (if at least one was found)
     if any(self.df_papers["Authors Matches"]):
-        print("")
-        print(self.author_str)
+
+        print("\n    Found Author(s):")
+
+        # Compute a fill amount, so that all author lists are right-justified.
+        # 8 characters more then the longest name, to account for ', et al.'
+        author_strfill = len(max(self.search_terms["Authors"], key=len)) + 8
+
+        # Loop through the papers that survived the filter and print the ones with author matches
+        for entry_count in self.papers_of_note:
+
+            author_score       = self.df_papers.loc[entry_count, "Authors Score"]
+            num_author_matches = self.df_papers.loc[entry_count, "Authors Matches"]
+
+            # If only one author match
+            if ( num_author_matches == 1) and ( author_score > 0.95 ):
+
+                print("{: >{fill}}:  {url:}".format(self.df_papers.loc[entry_count, "Found Authors"][0], fill=author_strfill, url=self.df_papers.loc[entry_count, "url"]))
+
+            # If more than one author match:
+            elif ( num_author_matches >= 2) and ( author_score > 0.95 ):
+
+                print("{: >{fill}}:  {url:}".format(self.df_papers.loc[entry_count, "Found Authors"][0]+", et al.", fill=author_strfill, url=self.df_papers.loc[entry_count, "url"]))
 
     browser_flag = False
     file_flag    = False

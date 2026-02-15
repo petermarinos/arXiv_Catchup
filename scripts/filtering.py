@@ -18,14 +18,7 @@ def author_search(logger, df_papers, entry_count, authors):
         Index of the paper in the DataFrame.
     authors     : list
         All authors of interest that are being searched for.
-
-    outputs
-    -------
-    author_str : str
-        Contains information on which authors were found
     """
-
-    author_str = ""
 
     if authors is None:
         logger.debug("No authors to search for...")
@@ -34,14 +27,6 @@ def author_search(logger, df_papers, entry_count, authors):
     if authors is not None:
 
         logger.debug("Searching for Authors")
-
-        author_match_str = ""
-
-        # Define a value used to print a string that shows if any authors of interest are found
-        if authors is not None:
-
-            # Length of the longest name, plus eight characters for ', et al.' incase there are multiple matches
-            author_strfill = len(max(authors, key=len)) + 8
 
         # Loop over the authors in the search terms
         for author in authors:
@@ -53,25 +38,17 @@ def author_search(logger, df_papers, entry_count, authors):
             if author_match:
 
                 logger.debug("Found author: {:}".format(author))
-                    
-                # If the paper has an author match, add it to a string
-                # If no match has been found yet:
-                if not df_papers.loc[entry_count, "Authors Matches"]:
-                    author_match_str = "\n    {: >{fill}}:  {url:}".format(author, fill=author_strfill, url=df_papers.loc[entry_count, "url"])
-                # If the paper has already had a match, add et at.
-                else:
-                    author_match_str = "\n    {: >{fill}}:  {url:}".format(author+", et al.", fill=author_strfill, url=df_papers.loc[entry_count, "url"])
                 
-                # Set the entry in the dataframe for the author match key to True
+                # Increase the number of author matches by 1
                 df_papers.loc[entry_count, "Authors Matches"] += 1
-
-
-        author_str += author_match_str
+                
+                # Add the author to the list of found authors
+                df_papers.loc[entry_count, "Found Authors"].append(author)
 
         if df_papers.loc[entry_count, "Authors Matches"] == 0:
             logger.debug(" ... none found")
 
-    return author_str
+    return
 
 def word_search(logger, df_papers, entry_count, search_terms, key):
     """Searches a paper for keyword matches.
@@ -143,17 +120,11 @@ def score_papers_matches(self):
     inputs
     ------
     self : Papers object
-
-    outputs
-    -------
-    author_str : str
-        Information on all authors that were found, which will be printed later.
     """
 
     self.logger.info("Finding keyword matches")
 
     # Loop over all entries
-    author_str = "    Found Author(s)"
     for entry_count in range(0, len(self.df_papers)):
 
         progress_bar(entry_count, len(self.df_papers)) # No time estimate as it should always be fast. ~1200 papers take less than a second on a 2023 macbook
@@ -161,11 +132,10 @@ def score_papers_matches(self):
         self.logger.debug("Seaching for matches in arXiv:{:}.".format(self.df_papers.loc[entry_count, "arXiv Number"]))
         
         # Seach for Authors
-        author_matches_str = author_search(self.logger,
+        author_search(self.logger,
                                            self.df_papers,
                                            entry_count,
                                            self.search_terms["Authors"])
-        author_str        += author_matches_str
 
         # Search for included words
         word_search(self.logger,
@@ -246,7 +216,7 @@ def score_papers_matches(self):
 
     progress_bar(len(self.df_papers), len(self.df_papers))
 
-    return author_str
+    return
 
 def score_papers_ML(self):
     """Scores the papers based on a machine-learning algorithm.
@@ -359,10 +329,5 @@ def filter_papers_matches(self):
             self.logger.debug("Adding paper: {:} (found word)".format(self.df_papers.loc[entry_count, "arXiv Number"]))
 
             entries_of_note.append(entry_count)
-
-    # Print the list of the found authors and their papers
-    # Do not pass this through the logger -- it should always be shown (if at least one was found)
-    if any(self.df_papers["Authors Matches"]):
-        print(self.author_str)
 
     return entries_of_note

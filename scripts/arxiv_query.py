@@ -438,6 +438,7 @@ def extract_papers(logger, ns, xml_data):
                                    "Abstract" : abstract_numwords},
             # Setup fields used for output
             # Authors
+            "Found Authors"   : [],
             "Authors Matches" : 0,
             "Authors Score"   : 0.,
             # Number of words

@@ -78,7 +78,7 @@ class Papers(object):
     # # Score the papers
     def scorePapers(self):
         # Score based on matches
-        self.author_str = score_papers_matches(self)
+        score_papers_matches(self)
         # # Score based on an ML algorithm (NOT YET IMPLEMENTED)
         # score_papers_ML(self)
 
