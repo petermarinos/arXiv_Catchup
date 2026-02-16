@@ -169,6 +169,8 @@ def parse_date(logger, date_iso, date_name, search_time, post_time):
         parsed_date  = raw_datetime.date()
         parsed_time  = raw_datetime.timetz()
 
+        logger.debug("The {:} input was {:}".format(date_name, date_iso))
+
         # If the date is not a valid search date, warn the user and roll the day back to the previous valid day
         if not is_searching_day_bool(parsed_date):
 
@@ -202,8 +204,8 @@ def date_setup(self):
     start_time, start_date = parse_date(self.logger, self.args.start_date, "start-date", self.search_time, self.post_time) if self.args.start_date else [None, None]
     end_time,   end_date   = parse_date(self.logger, self.args.end_date,   "end-date",   self.search_time, self.post_time) if self.args.end_date   else [None, None]
 
-    self.logger.debug("Input start_date: {:}".format(start_date))
-    self.logger.debug("Input end_date: {:}".format(end_date))
+    self.logger.debug("Attempting to use the start_date: {:}".format(start_date))
+    self.logger.debug("Attempting to use the end_date: {:}".format(end_date))
 
     # Compute the time at the end of the search
     # Only perform if the end_date was not passed in the command line
@@ -225,7 +227,7 @@ def date_setup(self):
             # This can be done by passing the end_time found above into the calc_search_endtime() function
             prev_end_time  = calc_search_endtime(self.end_time, self.search_time, self.post_time)
             
-            write_date(self.paths["prevsearch"], prev_end_time.date())
+            write_date(self.logger, self.paths["prevsearch"], prev_end_time.date())
 
         # Load it and extract the previous runtime
         with open(self.paths["prevsearch"], "r", encoding="utf-8") as f:
