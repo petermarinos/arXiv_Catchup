@@ -1,7 +1,7 @@
 # Import functions
 from scripts.string_handling import normalise_string
 from scripts.file_io         import write_xml
-from scripts.utils           import progress_bar, delete_file
+from scripts.utils           import pretty_sleep, progress_bar, delete_file
 
 # Import libraries
 import xml.etree.ElementTree as ET
@@ -9,8 +9,6 @@ import pandas                as pd
 import numpy                 as np
 import urllib.request
 import certifi
-import random
-import time
 import ssl
 import sys
 import os
@@ -111,7 +109,7 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
         # If there are no headers
         if error.headers is None:
 
-            logger.debug("No header found")
+            logger.debug("No header found.")
 
         # Else, if there are headers
         else:
@@ -119,7 +117,14 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
             for key, value in error.headers.items():
                 logger.debug("HTTP header: {:}: {:}".format(key, value))
 
+            # Catch CDN errors. They do not typically include a Retry-After command
+            if error.headers["server"] is not None:
+                if "Frontend" in error.headers["server"]:
+                    logger.debug("CDN connection error.")
+                    retry_after = 60
+
             # If there is a Retry-After header
+            # Not else-if incase the above error does happen to include a Retr-After command
             if error.headers["Retry-After"] is not None:
 
                 logger.debug("Found Retry-After header.")
@@ -325,10 +330,8 @@ def arxiv_query(logger, url, start_num, blocksize):
             logger.critical("Maximum retries attempted. arXiv query failed.\n          Review connection error codes before trying again.\n")
             raise
 
-        # Sleep before retrying. Add jitter to the sleep timer.
-        current_sleep_time = wait_time + random.uniform(0, 0.3)
-        logger.debug("Sleeping for {:.3f} seconds ...".format(current_sleep_time))
-        time.sleep(current_sleep_time)
+        # Sleep before retrying
+        pretty_sleep(logger, wait_time)
 
         # If there was no retry after demand, increase the wait time for the next attempt
         if retry_after is None:
@@ -589,10 +592,9 @@ def arxiv_search(self):
 
             # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
             # Add jitter to the sleep timer
-            current_sleep_time = self.arxiv_const.sleeptimer_search + random.uniform(0, 0.3)
-            self.logger.debug("Sleeping for {:.3f} seconds ...".format(current_sleep_time))
-            progress_bar(ii, num_steps, remaining_steps * self.arxiv_const.sleeptimer_search)
-            time.sleep(current_sleep_time)
+            current_sleep_time = self.arxiv_const.sleeptimer_search
+            progress_bar(ii, num_steps, remaining_steps * current_sleep_time)
+            pretty_sleep(self.logger, current_sleep_time)
 
             # Query the API
             parsed_xml = arxiv_query(self.logger, self.arxiv_const.url, ii, search_interval)

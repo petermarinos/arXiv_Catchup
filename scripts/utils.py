@@ -8,6 +8,8 @@ import argparse
 import platform
 import logging
 import pathlib
+import random
+import time
 import sys
 
 class FlushingStreamHandler(logging.StreamHandler):
@@ -181,6 +183,42 @@ def progress_bar(ii, total, time_estimate=None):
     if ii == total:
         sys.stdout.write("\r\033[K")
         sys.stdout.flush()
+
+    return
+
+def pretty_sleep(logger, sleep_time):
+    """Shows a progress bar if sleeping for a long time.
+    NOTE: Also adds jitter.
+
+    inputs
+    ------
+    time : float
+        Time to sleep for
+    """
+
+    # Add jitter
+    sleep_time = sleep_time + random.uniform(0, 0.3)
+    logger.debug("Sleeping for {:.3f} seconds ...".format(sleep_time))
+
+    # If sleeping for a short time (under 5s), do a normal sleep
+    if sleep_time <= 5:
+        time.sleep(sleep_time)
+
+    # If sleeping for a long time, show a progress bar
+    else:
+        # Flush any already-existing progress bar
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
+
+        # Update the bar every 0.1s
+        # n_msecs = sleep_time * 1000
+        n_steps = int( np.ceil( sleep_time * 10 ) )
+        for ii in range(0, n_steps):
+
+            progress_bar(ii, n_steps, 0.1 * ( n_steps - ii ))
+            time.sleep(0.1)
+
+        progress_bar(n_steps, n_steps)
 
     return
 
