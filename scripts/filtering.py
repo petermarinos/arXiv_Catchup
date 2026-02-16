@@ -5,7 +5,7 @@ from scripts.utils import progress_bar
 import numpy as np
 import re
 
-def author_search(logger, df_papers, entry_count, authors):
+def author_search(logger, df_papers, entry_count, key_authors):
     """Searches a paper for the authors of interest.
 
     inputs
@@ -20,30 +20,33 @@ def author_search(logger, df_papers, entry_count, authors):
         All authors of interest that are being searched for.
     """
 
-    if authors is None:
+    if key_authors is None:
         logger.debug("No authors to search for...")
         
     # If there is at least one author of interest
-    if authors is not None:
+    if key_authors is not None:
 
         logger.debug("Searching for Authors")
 
-        # Loop over the authors in the search terms
-        for author in authors:
+        # Loop over the authors of the paper
+        for author in df_papers.loc[entry_count, "Authors"]:
 
-            # Search the author field in the entry
-            author_match = re.search(r"\b"+author+r"\b", df_papers.loc[entry_count, "Authors"])
+            # Loop over the authors in the search terms
+            for key_author in key_authors:
 
-            # If an author is found:
-            if author_match:
+                # Search the author field of the paper for any key authors
+                key_author_match = re.search(r"\b"+key_author+r"\b", author)
 
-                logger.debug("Found author: {:}".format(author))
-                
-                # Increase the number of author matches by 1
-                df_papers.loc[entry_count, "Authors Matches"] += 1
-                
-                # Add the author to the list of found authors
-                df_papers.loc[entry_count, "Found Authors"].append(author)
+                # If an author is found:
+                if key_author_match:
+
+                    logger.debug("Found author: {:}".format(key_author))
+                    
+                    # Increase the number of author matches by 1
+                    df_papers.loc[entry_count, "Authors Matches"] += 1
+                    
+                    # Add the author to the list of found authors
+                    df_papers.loc[entry_count, "Found Authors"].append(key_author)
 
         if df_papers.loc[entry_count, "Authors Matches"] == 0:
             logger.debug(" ... none found")

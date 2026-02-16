@@ -437,7 +437,7 @@ def extract_papers(logger, ns, xml_data):
         version_number = int( entry.find("atom:id", ns).text.split("/")[-1][11:] )
 
         # Extract the author list
-        author_list = [author.find("atom:name", ns).text for author in entry.findall("atom:author", ns)]
+        author_list = [normalise_string(author.find("atom:name", ns).text) for author in entry.findall("atom:author", ns)]
 
         # Extract the title
         title          = entry.find("atom:title", ns).text.strip()
@@ -452,7 +452,7 @@ def extract_papers(logger, ns, xml_data):
             # Extract information
             "arXiv Number"      : ID_number,
             "Title"             : title,
-            "Authors"           : normalise_string( ", ".join(f"{author}" for author in author_list) ),
+            "Authors"           : author_list,
             "Revised?"          : (updated_date > published_date) or (version_number > 1),
             "Abstract"          : abstract,
             "url"               : entry.find("atom:id", ns).text.strip(),
