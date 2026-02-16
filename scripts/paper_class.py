@@ -14,7 +14,7 @@ import datetime
 class Papers(object):
 
     # # Initialise the class
-    def __init__(self, cdir, args):
+    def __init__(self, cdir, args) -> None:
 
         self.args   = args
         self.logger = logger_setup(args, cdir)
@@ -34,6 +34,10 @@ class Papers(object):
         self.search_time  = datetime.time(19, 0, tzinfo=datetime.timezone.utc) # 19:00 UTC
         # Obtain the current time, converted to the UTC timezone
         self.current_time = datetime.datetime.now(datetime.timezone.utc)
+
+        # Define the ssl_context and define a flag
+        self.ssl_dict = {"ssl_context" : None,
+                         "ssl_preverr" : False}
         
     # # Load search terms from the auxiliary file
     def getSearchterms(self):

@@ -202,7 +202,7 @@ def url_errorcheck(logger, error, cert_error_bool, wait_time):
 
     return ssl_context, cert_error_bool
 
-def arxiv_query(logger, url, start_num, blocksize):
+def arxiv_query(logger, ssl_dict, url, start_num, blocksize):
     """Queries the arXiv servers for the papers.
     Will catch errors and attempt retries (if the error allows retries).
 
@@ -230,9 +230,9 @@ def arxiv_query(logger, url, start_num, blocksize):
     backoff     = 2  # Factor to increase the wait_time after a failure
     timeout     = 30 # Seconds to wait before a timeout
 
-    # Set default ssl_context and define a flag to check if a certification error was raised previously
-    ssl_context     = None
-    cert_error_bool = False
+    # Extract info on certification errors
+    ssl_context     = ssl_dict["ssl_context"]
+    cert_error_bool = ssl_dict["ssl_preverr"]
 
     # If an error gives a "Retry-After" demand, we will wait for that time instead of the exponential backoff
     # Initialise to None
@@ -295,7 +295,7 @@ def arxiv_query(logger, url, start_num, blocksize):
                 # Parse the xml
                 parsed_xml_data = ET.fromstring(xml_data)
 
-                return parsed_xml_data
+                return parsed_xml_data, ssl_dict
                 
         # If there is a HTTP error:
         except urllib.error.HTTPError as error:
@@ -306,6 +306,8 @@ def arxiv_query(logger, url, start_num, blocksize):
         except urllib.error.URLError as error:
 
             ssl_context, cert_error_bool = url_errorcheck(logger, error, cert_error_bool, wait_time)
+            ssl_dict["ssl_context"] = ssl_context
+            ssl_dict["ssl_preverr"] = cert_error_bool
 
         # If there is a timeout error:
         except TimeoutError:
@@ -333,18 +335,18 @@ def arxiv_query(logger, url, start_num, blocksize):
             logger.critical("Maximum retries attempted. arXiv query failed.\n          Review connection error codes before trying again.\n")
             raise
 
-        # If there was no retry after demand, increase the wait time for the next attempt
-        if retry_after is None:
-            
-            wait_time *= backoff
-
         # If there was a Retry-After command, replace the wait time
-        else:
+        if retry_after is not None:
 
             wait_time = retry_after
 
         # Sleep before retrying
         pretty_sleep(logger, wait_time)
+
+        # If there was no retry after demand, increase the wait time for the next attempt
+        if retry_after is None:
+            
+            wait_time *= backoff
     
     # Raise an error if the function reaches here somehow
     logger.critical("Something went wrong...?\n")
@@ -374,7 +376,7 @@ def arxiv_initial_pull(self):
 
         # Check the url from the loaded xml matches the current search url
         expected_url = self.arxiv_const.apiquery.format(start_num=0, blocksize=1)
-        returned_url = xml_data.find("atom:link", self.arxiv_const.ns).attrib["href"]
+        returned_url = (xml_data.find("atom:link", self.arxiv_const.ns)).attrib["href"]
 
         url_missmatch = ( expected_url != returned_url )
         if url_missmatch:
@@ -393,7 +395,7 @@ def arxiv_initial_pull(self):
         self.logger.info("Obtaining search information from the servers.")
 
         # Perform the query
-        xml_data = arxiv_query(self.logger, self.arxiv_const.url, 0, 1)
+        xml_data, self.ssl_dict = arxiv_query(self.logger, self.ssl_dict, self.arxiv_const.url, 0, 1)
         
         # Write the extracted xml to a file
         write_xml(self.logger, self.paths["searchxml"], xml_data, self.arxiv_const.ns, overwrite=True)
@@ -600,7 +602,7 @@ def arxiv_search(self):
             pretty_sleep(self.logger, current_sleep_time)
 
             # Query the API
-            parsed_xml = arxiv_query(self.logger, self.arxiv_const.url, ii, search_interval)
+            parsed_xml, self.ssl_dict = arxiv_query(self.logger, self.ssl_dict, self.arxiv_const.url, ii, search_interval)
             
             # Write the xml to a file
             #logger, filename, xml_data, ns, overwrite=False
