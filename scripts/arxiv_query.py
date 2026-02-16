@@ -102,7 +102,7 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
     # If the HTTP error is in our list of codes that tell us to retry
     if error.code in retry_codes:
 
-        logger.warning("HTTP error code '{:}' on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
+        logger.warning("HTTP error code {:} on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
 
         # Obtain some additional information. This will increase the wait time, or is used for debug
 
@@ -117,18 +117,19 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
             for key, value in error.headers.items():
                 logger.debug("HTTP header: {:}: {:}".format(key, value))
 
-            # Catch CDN errors. They do not typically include a Retry-After command
-            if error.headers["server"] is not None:
-                if "Frontend" in error.headers["server"]:
-                    logger.debug("CDN connection error.")
-                    retry_after = 60
-
             # If there is a Retry-After header
-            # Not else-if incase the above error does happen to include a Retr-After command
             if error.headers["Retry-After"] is not None:
 
                 logger.debug("Found Retry-After header.")
                 retry_after = error.headers["Retry-After"]
+
+                logger.warning("---> Received a wait command from the server. Increasing wait time to the recommended {:} seconds ...".format(retry_after))
+
+            # Catch 429 error codes that do not have a Retry-after header
+            elif ( error.headers["Retry-After"] is None ) and ( error.code == 429 ):
+
+                retry_after = 60 * attempt
+                logger.warning("Did not find a Retry-After command despite being a 429 error. Increasing wait time to {:} seconds ...".format(retry_after))
 
             # Else, if there are headers but no retry-after header
             else:
@@ -138,7 +139,9 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
     # Otherwise, raise an error
     else:
 
-        logger.critical("HTTP error code '{:}': {:}\n".format(error.code, error.reason))
+        logger.critical("HTTP error code {:}: {:}\n".format(error.code, error.reason))
+        for key, value in error.headers.items():
+            logger.debug("HTTP header: {:}: {:}".format(key, value))
         raise
 
     return retry_after
@@ -239,10 +242,10 @@ def arxiv_query(logger, url, start_num, blocksize):
     formatted_url = url.format(start_num = start_num,
                                blocksize = blocksize)
     
-    logger.debug("Connecting to:\n       {:}".format(formatted_url))
-    
     # Query the server
     for attempt in range(1, max_retries + 1): # 1 -> max_retries+1 so that we start counting attempts at 1 in the logger messages
+    
+        logger.debug("Attempting connection to:\n       {:}".format(formatted_url))
 
         try:
 
@@ -307,9 +310,9 @@ def arxiv_query(logger, url, start_num, blocksize):
         # If there is a timeout error:
         except TimeoutError:
 
-            logger.warning("Timeout Error. Will wait a long time before continuing...")
-
             retry_after = 60
+
+            logger.warning("Timeout Error. Retrying in {:} seconds ...".format(retry_after))
 
         # If there is an error parsing the xml, raise an error
         except ET.ParseError as error:
@@ -330,9 +333,6 @@ def arxiv_query(logger, url, start_num, blocksize):
             logger.critical("Maximum retries attempted. arXiv query failed.\n          Review connection error codes before trying again.\n")
             raise
 
-        # Sleep before retrying
-        pretty_sleep(logger, wait_time)
-
         # If there was no retry after demand, increase the wait time for the next attempt
         if retry_after is None:
             
@@ -342,6 +342,9 @@ def arxiv_query(logger, url, start_num, blocksize):
         else:
 
             wait_time = retry_after
+
+        # Sleep before retrying
+        pretty_sleep(logger, wait_time)
     
     # Raise an error if the function reaches here somehow
     logger.critical("Something went wrong...?\n")
