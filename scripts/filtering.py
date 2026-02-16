@@ -1,5 +1,5 @@
 # Import functions
-from scripts.utils import progress_bar
+from .utils import progress_bar
 
 # Import libraries
 import numpy as np

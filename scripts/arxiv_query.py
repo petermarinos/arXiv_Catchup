@@ -1,13 +1,14 @@
 # Import functions
-from scripts.string_handling import normalise_string
-from scripts.file_io         import write_xml
-from scripts.utils           import pretty_sleep, progress_bar, delete_file
+from .string_handling import normalise_string
+from .file_io         import write_xml
+from .utils           import pretty_sleep, progress_bar, delete_file
 
 # Import libraries
 import xml.etree.ElementTree as ET
 import pandas                as pd
 import numpy                 as np
 import urllib.request
+import urllib.error
 import certifi
 import ssl
 import sys
@@ -376,7 +377,11 @@ def arxiv_initial_pull(self):
 
         # Check the url from the loaded xml matches the current search url
         expected_url = self.arxiv_const.apiquery.format(start_num=0, blocksize=1)
-        returned_url = (xml_data.find("atom:link", self.arxiv_const.ns)).attrib["href"]
+        returned_urlblock = xml_data.find("atom:link", self.arxiv_const.ns)
+        if returned_urlblock is None:
+            self.logger.critical("arXiv data did not include a link. It is corrupted (returned None).\n")
+            raise
+        returned_url = returned_urlblock.attrib["href"]
 
         url_missmatch = ( expected_url != returned_url )
         if url_missmatch:
@@ -403,7 +408,15 @@ def arxiv_initial_pull(self):
         self.logger.info("Search information successfully obtained from the arXiv servers!")
     
     # Extract the total number of papers that were found
-    max_num = int(xml_data.find("opensearch:totalResults", self.arxiv_const.ns).text)
+    max_num_temp = xml_data.find("opensearch:totalResults", self.arxiv_const.ns)
+    if max_num_temp is None:
+        self.logger.critical("arXiv data did not include a number of papers. It is corrupted (returned None).\n")
+        raise
+    max_num_str = max_num_temp.text
+    if max_num_str is None:
+        self.logger.critical("arXiv data for the number of papers is corrupted (returned None).\n")
+        raise
+    max_num = int(max_num_str)
 
     return max_num
 
@@ -528,7 +541,11 @@ def arxiv_search(self):
 
         # Check the url from the loaded xml matches the current search url
         expected_url = self.arxiv_const.apiquery.format(start_num=0, blocksize=self.arxiv_const.search_blocksize)
-        returned_url = xml_data.find("atom:link", self.arxiv_const.ns).attrib["href"]
+        returned_urlblock = xml_data.find("atom:link", self.arxiv_const.ns)
+        if returned_urlblock is None:
+            self.logger.critical("arXiv data did not include a link. It is corrupted (returned None).\n")
+            raise
+        returned_url = returned_urlblock.attrib["href"]
 
         url_missmatch = ( expected_url != returned_url )
 

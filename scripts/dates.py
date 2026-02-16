@@ -1,5 +1,5 @@
 # Import functions
-from scripts.file_io import write_date
+from .file_io import write_date
 
 # Import libraries
 import datetime

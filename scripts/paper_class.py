@@ -1,20 +1,21 @@
 # Import functions
-from scripts.arxiv_query import arxiv_initial_pull, arxiv_search, arxiv_errorcheck
-from scripts.filtering   import score_papers_matches, score_papers_ML, filter_papers_matches, filter_papers_score
-from scripts.constants   import set_filenames, set_arxiv_constants, arxivConst
-from scripts.display     import display_results, open_links, summarise_search
-from scripts.file_io     import load_searchterms, write_links
-from scripts.dates       import date_setup, date_errorcheck
-from scripts.utils       import logger_setup, delete_file
+from .arxiv_query import arxiv_initial_pull, arxiv_search, arxiv_errorcheck
+from .filtering   import score_papers_matches, score_papers_ML, filter_papers_matches, filter_papers_score
+from .constants   import set_filenames, set_arxiv_constants, arxivConst
+from .display     import display_results, open_links, summarise_search
+from .file_io     import load_searchterms, write_links
+from .dates       import date_setup, date_errorcheck
+from .utils       import logger_setup, delete_file
 
 # Import libraries
+import argparse
 import datetime
 
 # Define the class
 class Papers(object):
 
     # # Initialise the class
-    def __init__(self, cdir, args) -> None:
+    def __init__(self, cdir: str, args: argparse.Namespace) -> None:
 
         self.args   = args
         self.logger = logger_setup(args, cdir)

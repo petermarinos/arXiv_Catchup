@@ -1,6 +1,6 @@
 # Import functions
-from scripts.string_handling import normalise_string
-from scripts.utils           import progress_bar
+from .string_handling import normalise_string
+from .utils           import progress_bar
 
 # Import libraries
 import xml.etree.ElementTree as ET
@@ -206,7 +206,7 @@ def write_links(logger, filename, df, papers_of_note):
 
     return
 
-def write_xml(logger, filename, xml_data, ns, overwrite=False):
+def write_xml(logger, filename: str, xml_data, ns: dict[str, str], overwrite=False) -> None:
     """Writes an XML to a .xml file.
 
     inputs
@@ -253,6 +253,9 @@ def write_xml(logger, filename, xml_data, ns, overwrite=False):
             new_root = new_tree.getroot()
 
             # Obtain each entry and append to the file
+            if new_root is None:
+                logger.critical("Malformed or corrupted .xml from arXiv. It returned None.\n")
+                raise
             for entry in new_root.findall("atom:entry", ns):
                 master_root.append(entry)
 

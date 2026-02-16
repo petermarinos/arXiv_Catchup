@@ -1,8 +1,8 @@
 # Import classes
-from scripts.paper_class import Papers
+from .paper_class import Papers
 
 # Import functions
-from scripts.utils import cli_args
+from .utils import cli_args
 
 """TO-DO:
 

@@ -1,6 +1,6 @@
 # Import functions
-from scripts.file_io import write_date
-from scripts.utils   import progress_bar
+from .file_io import write_date
+from .utils   import progress_bar
 
 # Import libraries
 import webbrowser
