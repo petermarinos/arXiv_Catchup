@@ -48,7 +48,7 @@ def set_arxiv_constants() -> tuple[str, str, dict, float, float, int]:
     # Define the urls
     # Double braces, {{}}, used for fields that change on each search
     url      = "https://export.arxiv.org/api/query?search_query=submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+AND+{cats:s}&sortBy=submittedDate&start={{start_num:d}}&max_results={{blocksize:d}}"
-    apiquery = "https://arxiv.org/api/query?search_query=submittedDate:%22{start_year:d}{start_month:02d}{start_day:02d}1900+TO+{end_year:d}{end_month:02d}{end_day:02d}1900%22+AND+({cats:s})&start={{start_num:d}}&max_results={{blocksize:d}}&id_list="
+    apiquery = "https://arxiv.org/api/query?search_query=submittedDate:%22{start_year:d}{start_month:02d}{start_day:02d}1900+TO+{end_year:d}{end_month:02d}{end_day:02d}1900%22+AND+{cats:s}&start={{start_num:d}}&max_results={{blocksize:d}}&id_list="
 
     # XML namespaces used by arXiv
     ns = {

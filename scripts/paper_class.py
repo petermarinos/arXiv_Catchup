@@ -50,7 +50,7 @@ class Papers(object):
 
     # # Setup some of the API information
     def setupAPI(self):
-        # Format the url and apiquery
+        # Format the url
         self.arxiv_const.url = self.arxiv_const.url.format(
                                   start_year  = self.start_date.year,
                                   start_month = self.start_date.month,
@@ -60,6 +60,12 @@ class Papers(object):
                                   end_day     = self.end_date.day,
                                   cats        = self.cat_urlstring,
                                   )
+        
+        # Format the API url
+        if len(self.search_terms["Categories"]) == 1:
+            api_catstring = self.cat_urlstring
+        else:
+            api_catstring = "(" + self.cat_urlstring + ")"
         self.arxiv_const.apiquery = self.arxiv_const.apiquery.format(
                                   start_year  = self.start_date.year,
                                   start_month = self.start_date.month,
@@ -67,7 +73,7 @@ class Papers(object):
                                   end_year    = self.end_date.year,
                                   end_month   = self.end_date.month,
                                   end_day     = self.end_date.day,
-                                  cats        = self.cat_urlstring,
+                                  cats        = api_catstring,
                                   )
 
     # # Obtain basic search information
