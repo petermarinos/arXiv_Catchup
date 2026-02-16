@@ -299,6 +299,13 @@ def arxiv_query(logger, url, start_num, blocksize):
 
             ssl_context, cert_error_bool = url_errorcheck(logger, error, cert_error_bool, wait_time)
 
+        # If there is a timeout error:
+        except TimeoutError:
+
+            logger.warning("Timeout Error. Will wait a long time before continuing...")
+
+            retry_after = 60
+
         # If there is an error parsing the xml, raise an error
         except ET.ParseError as error:
 
@@ -320,7 +327,7 @@ def arxiv_query(logger, url, start_num, blocksize):
 
         # Sleep before retrying. Add jitter to the sleep timer.
         current_sleep_time = wait_time + random.uniform(0, 0.3)
-        logger.debug("Sleeping for {:} seconds ...".format(current_sleep_time))
+        logger.debug("Sleeping for {:.3f} seconds ...".format(current_sleep_time))
         time.sleep(current_sleep_time)
 
         # If there was no retry after demand, increase the wait time for the next attempt
@@ -583,7 +590,7 @@ def arxiv_search(self):
             # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
             # Add jitter to the sleep timer
             current_sleep_time = self.arxiv_const.sleeptimer_search + random.uniform(0, 0.3)
-            self.logger.debug("Sleeping for {:} seconds ...".format(current_sleep_time))
+            self.logger.debug("Sleeping for {:.3f} seconds ...".format(current_sleep_time))
             progress_bar(ii, num_steps, remaining_steps * self.arxiv_const.sleeptimer_search)
             time.sleep(current_sleep_time)
 
