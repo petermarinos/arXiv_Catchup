@@ -136,3 +136,4 @@ Add a machine learning module:
 - Look in a directory containing `.pdf` files of all the papers the user has found interesting in the past, and use these to train a model.
 - Run the model on the titles/abstracts of each paper and rate them.
 - Only open the papers if their rating is above some threshold.
+- Make it for everyone !!
