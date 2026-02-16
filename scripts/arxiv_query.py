@@ -9,6 +9,7 @@ import pandas                as pd
 import numpy                 as np
 import urllib.request
 import certifi
+import random
 import time
 import ssl
 import sys
@@ -96,6 +97,9 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
                    503, # Service unavailable (i.e. overloaded or down)
                    504, # Gateway timeout
                   )
+    
+    # Set retry_after to None. If a Retry-After command is given by the server, it will be updated
+    retry_after = None
 
     # If the HTTP error is in our list of codes that tell us to retry
     if error.code in retry_codes:
@@ -108,7 +112,6 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
         if error.headers is None:
 
             logger.debug("No header found")
-            retry_after = None
 
         # Else, if there are headers
         else:
@@ -121,13 +124,11 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
 
                 logger.debug("Found Retry-After header.")
                 retry_after = error.headers["Retry-After"]
-                wait_time = retry_after
 
             # Else, if there are headers but no retry-after header
             else:
 
                 logger.debug("Did not find a Retry-After header.")
-                retry_after = None
 
     # Otherwise, raise an error
     else:
@@ -307,7 +308,8 @@ def arxiv_query(logger, url, start_num, blocksize):
             # # It is rare error and difficult to know the cause (has only ever occured in historical searches when testing)
             
             # # For now, raise an error
-            logger.critical("XML parsing error.\n")
+            logger.critical("XML parsing error. Please upload log file to github.\n")
+            logger.debug(error)
             raise
 
         # If there have been too many retries, raise an error
@@ -316,14 +318,20 @@ def arxiv_query(logger, url, start_num, blocksize):
             logger.critical("Maximum retries attempted. arXiv query failed.\n          Review connection error codes before trying again.\n")
             raise
 
-        # Sleep before retrying
-        logger.debug("Sleeping for {:} seconds ...".format(wait_time))
-        time.sleep(wait_time)
+        # Sleep before retrying. Add jitter to the sleep timer.
+        current_sleep_time = wait_time + random.uniform(0, 0.3)
+        logger.debug("Sleeping for {:} seconds ...".format(current_sleep_time))
+        time.sleep(current_sleep_time)
 
         # If there was no retry after demand, increase the wait time for the next attempt
         if retry_after is None:
             
             wait_time *= backoff
+
+        # If there was a Retry-After command, replace the wait time
+        else:
+
+            wait_time = retry_after
     
     # Raise an error if the function reaches here somehow
     logger.critical("Something went wrong...?\n")
@@ -542,8 +550,9 @@ def arxiv_search(self):
         # # Compute the estimated time for the search
         # The time to complete depends almost entirely on the number of connections to arXiv and the number of sleeps, though there is some slowdown due to connecting to the arXiv servers and waiting for a response
         # It is typically 0.7s per connection, though it varies *wildly*
+        # We also add jitter to the timers with random.uniform(0, 0.3) (average slowdown of 0.15 seconds)
         # Because of how wildly it varies, computing the remaining search time accurately during the loop is pointless. Just use the fudge_timer
-        fudge_timer = 0.7
+        fudge_timer = 0.7 + 0.15
         est_time    = - ( self.arxiv_const.sleeptimer_search + fudge_timer ) * ( ( self.total_papers - start_num ) // -self.arxiv_const.search_blocksize )
 
         # Compute the number of steps it will take
@@ -572,9 +581,11 @@ def arxiv_search(self):
             self.logger.debug("Ending number:   {:}".format(search_endnum))
 
             # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
-            self.logger.debug("Sleeping for {:} seconds ...".format(self.arxiv_const.sleeptimer_search))
+            # Add jitter to the sleep timer
+            current_sleep_time = self.arxiv_const.sleeptimer_search + random.uniform(0, 0.3)
+            self.logger.debug("Sleeping for {:} seconds ...".format(current_sleep_time))
             progress_bar(ii, num_steps, remaining_steps * self.arxiv_const.sleeptimer_search)
-            time.sleep(self.arxiv_const.sleeptimer_search)
+            time.sleep(current_sleep_time)
 
             # Query the API
             parsed_xml = arxiv_query(self.logger, self.arxiv_const.url, ii, search_interval)
