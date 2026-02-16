@@ -80,14 +80,14 @@ Examples of the format required for each can be found in the provided file.
 
 ##### Notes on Author Names
 
-Accented/special characters and ligatures for author names are handled by the script.
-Only include plain ASCII in the `search_terms.yaml` file.
+**Currently only surnames are supported**
 
-For example, papers with 'López' or 'L{\\'o}pez' written in the author field will have the author name normalised to 'Lopez' by the script, so only the latter should be included in the file.
-If unsure on how a special character/LaTeX command is presented in ASCII, run `python3 /path/to/arXiv_Catchup/test_string_norm.py -s "{test}"`, where `{test}` is the author's name with the LaTeX encoding/commands.
+Accented/special characters, ligatures, and LaTeX commands for author names are handled by the script.
+Feel free to enter any representation you prefer, e.g. 'López', 'L{\\'o}pez', or 'L\'opez', in the `search_terms.yaml` file.
 
-For submissions to journals that are more restrictive on special characters, some authors may use a spelling that is different to the ASCII encoding -- for example, an author may choose to write 'ö' as 'oe'.
-For these cases it is recommended to include both the normalised ASCII and the alternative spellings in the `search_terms.yaml` file to capture all possibilities.
+Some authors may use a spelling that is different to their preference for submissions to journals that are more restrictive on special characters.
+For example, an author may write 'ö' as 'oe'.
+For these cases it is recommended to include both representations in the `search_terms.yaml` file.
 
 #### Generated Files
 

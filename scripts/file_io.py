@@ -1,8 +1,10 @@
 # Import functions
-from scripts.utils import progress_bar
+from scripts.string_handling import normalise_string
+from scripts.utils           import progress_bar
 
 # Import libraries
 import xml.etree.ElementTree as ET
+import numpy                 as np
 import webbrowser
 import time
 import yaml
@@ -30,6 +32,10 @@ def load_searchterms(self):
 
         search_terms = yaml.safe_load(f)
 
+    # Normalise author strings and remove duplicates
+    if search_terms["Authors"] is not None:
+        search_terms["Authors"] = np.unique([normalise_string(_) for _ in search_terms["Authors"]])
+
     # # Check the file
 
     # At least one category is required
@@ -39,6 +45,8 @@ def load_searchterms(self):
         raise
     
     else:
+
+        search_terms["Categories"] = np.unique(search_terms["Categories"])
 
         # Define category string for the urls/API calls
         cat_urlstring = "+OR+".join(f"cat:{c}" for c in search_terms["Categories"])
@@ -50,7 +58,7 @@ def load_searchterms(self):
 
         elif len(search_terms["Categories"]) > 2:
 
-            catstring_temp = ", ".join(f"{c}" for c in search_terms["Categories"][:-1])
+            catstring_temp  = ", ".join(f"{c}" for c in search_terms["Categories"][:-1])
             cat_printstring = ", and ".join([catstring_temp, search_terms["Categories"][-1]])
 
         else:
@@ -66,26 +74,42 @@ def load_searchterms(self):
     # # Warn the user if no terms are found
     # If no authors are found, warn the user
     if search_terms["Authors"] is None:
+
         self.logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
+
     # Otherwise, log all found authors
     else:
+
         for author in search_terms["Authors"]:
+
             self.logger.debug("Found author: {:}".format(author))
 
     # If no included words are found, warn the user
     if search_terms["Included Words"] is None:
+
         self.logger.warning("No search terms were found in the 'Included Words' entry in the configuration file.")
-    # Otherwise, log all found included words
+
+    # Otherwise, remove duplicates and log all found included words
     else:
+        
+        search_terms["Included Words"] = np.unique(search_terms["Included Words"])
+        
         for included_word in search_terms["Included Words"]:
+
             self.logger.debug("Found included word: {:}".format(included_word))
 
     # If no excluded words are found, warn the user
     if search_terms["Excluded Words"] is None:
+
         self.logger.warning("No search terms were found in the 'Excluded Words' entry in the configuration file.")
-    # Otherwise, log all found excluded words
+
+    # Otherwise, remove duplicates and log all found excluded words
     else:
+
+        search_terms["Excluded Words"] = np.unique(search_terms["Excluded Words"])
+        
         for excluded_word in search_terms["Excluded Words"]:
+
             self.logger.debug("Found excluded word: {:}".format(excluded_word))
 
     return search_terms, cat_urlstring
