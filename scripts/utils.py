@@ -144,17 +144,16 @@ def log_environment(logger):
 
     return
 
-def progress_bar(ii, total, time_estimate=None):
+def progress_bar(ii: int,
+                 total: int,
+                 time_estimate: float | None = None) -> None:
     """Prints a progress bar that updates as the loop progresses.
 
     inputs
     ------
-    ii            : int
-        Current step in the loop.
-    total         : int
-        Final step in the loop.
-    time_estimate : float or None
-        Estimate of the remaining time of the loop.
+    ii            : Current step in the loop.
+    total         : Final step in the loop.
+    time_estimate : Estimate of the remaining time of the loop.
     """
 
     percent_progress = 100 * ii / total
