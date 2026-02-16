@@ -8,9 +8,11 @@ from scripts.utils import cli_args
 
 Find out if it is working on Windows 11.
 
-Fix incorrect author ordering for the list of papers with found authors.
+Normalise author strings when loading from the .yaml. Update advice in the README, as any accents or LaTeX commands could be added.
 
-Add the ability to include given names. Update README.
+Add the ability to include given names.
+    Escape text on regex searches.
+    Update README.
 
 Add a flag to write only the arXiv IDs to a file. Update README.
 """
