@@ -120,7 +120,7 @@ def display_results(self):
             # If more than one author match:
             elif ( num_author_matches >= 2) and ( author_score > 0.95 ):
 
-                print("{: >{fill}}:  {url:}".format(found_authors+", et al.", fill=author_strfill, url=url))
+                print("{: >{fill}}:  {url:}".format(found_authors[0]+", et al.", fill=author_strfill, url=url))
 
     browser_flag = False
     file_flag    = False
