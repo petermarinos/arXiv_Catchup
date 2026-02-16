@@ -91,7 +91,7 @@ def load_searchterms(self):
 
     # Otherwise, remove duplicates and log all found included words
     else:
-        
+
         search_terms["Included Words"] = np.unique(search_terms["Included Words"])
         
         for included_word in search_terms["Included Words"]:
@@ -111,6 +111,13 @@ def load_searchterms(self):
         for excluded_word in search_terms["Excluded Words"]:
 
             self.logger.debug("Found excluded word: {:}".format(excluded_word))
+
+    # Check to see if any word is in both the 'included' and 'excluded fields
+    for inc_word in search_terms["Included Words"]:
+
+        if inc_word in search_terms["Excluded Words"]:
+
+            self.logger.warning("The term '{:}' appears in both the Included and Excluded word fields.".format(inc_word))
 
     return search_terms, cat_urlstring
 
