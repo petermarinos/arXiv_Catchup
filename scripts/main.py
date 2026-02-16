@@ -8,10 +8,6 @@ from scripts.utils import cli_args
 
 Add type hints to functions
 
-Find out if it is working on Windows 11.
-
-Normalise author strings when loading from the .yaml. Update advice in the README, as any accents or LaTeX commands could be added.
-
 Add the ability to include given names.
     Escape text on regex searches.
     Update README.
