@@ -6,6 +6,8 @@ from scripts.utils import cli_args
 
 """TO-DO:
 
+Add type hints to functions
+
 Find out if it is working on Windows 11.
 
 Normalise author strings when loading from the .yaml. Update advice in the README, as any accents or LaTeX commands could be added.
