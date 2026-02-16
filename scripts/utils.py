@@ -112,8 +112,13 @@ def logger_setup(args, cdir):
     logger.debug("CLI verbosity level set to: {:}".format(logging.getLevelName(handler_cli.level)))
     logger.debug("Log file verbosity level set to: {:}".format(logging.getLevelName(logger.level)))
 
-    # Describe the environment
+    logger.debug("===============================")
+
+    # Log the environment
     log_environment(logger)
+
+    # Log the passed arguments
+    log_args(logger, args)
 
     return logger
 
@@ -139,6 +144,18 @@ def log_environment(logger):
     for pkg in ["certifi", "numpy", "pandas", "pylatexenc", "PyYAML"]:
         version = metadata.version(pkg)
         logger.debug(f"{pkg}=={version}")
+
+    logger.debug("===============================")
+
+    return
+
+def log_args(logger, args):
+
+    logger.debug("===== CLI Arg Definitions =====")
+
+    for key,val in vars(args).items():
+
+        logger.debug("Argument '{:}' was set to: {:}".format(key, val))
 
     logger.debug("===============================")
 
