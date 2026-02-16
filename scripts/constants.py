@@ -26,7 +26,7 @@ def set_filenames(cdir):
     
     return filenames
 
-def set_arxiv_constants():
+def set_arxiv_constants() -> tuple[str, str, dict, float, float, int]:
     """Define the constants that will be used when making API calls to arXiv.
 
     outputs
@@ -70,7 +70,7 @@ def set_arxiv_constants():
 class arxivConst:
     url:                str
     apiquery:           str
-    ns:                 dict
+    ns:                 dict[str, str]
     sleeptimer_opening: float
     sleeptimer_search:  float
     search_blocksize:   int
