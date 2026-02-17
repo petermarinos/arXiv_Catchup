@@ -20,13 +20,12 @@ class FlushingStreamHandler(logging.StreamHandler):
         # Print message
         super().emit(record)
 
-def cli_args():
+def cli_args() -> argparse.Namespace:
     """Defines and parses the CLI arguments passed when running the script.
 
     outputs
     -------
-    args : namespace
-        Contains all parsed arguments and their values.
+    args : Contains all parsed arguments and their values.
     """
 
     # Parse command-line arguments
@@ -51,23 +50,17 @@ def cli_args():
 
     return args
 
-def logger_setup(args, cdir):
-    """Set up the logger.
+def logger_setup(args: argparse.Namespace, cdir: str) -> logging.Logger:
+    """Set up the logger. Writes all messages to a log file, and takes the CLI argument for the terminal logs.
 
     inputs
     ------
-    verbosity : int
-        Defines the level for the logger.
-        0 => only critical errors
-        1 => ... and errors
-        2 => ... and warnings
-        3 => ... and info
-        4 => ... and debug
+    args : command-line arguments
+    cdir : Path to the project
 
     outputs
     -------
-    logger : RootLogger
-        The logger object
+    logger : Logger object
     """
 
     # Initialise the logger
@@ -122,14 +115,13 @@ def logger_setup(args, cdir):
 
     return logger
 
-def log_environment(logger):
+def log_environment(logger: logging.Logger) -> None:
     """Log some environment and system information.
-    NOTE: Only logging packages that are important and/or not part of the standard library.
+    NOTE: Only logging package versions that are important and/or not part of the standard library.
 
     inputs
     ------
-    logger : RootLogger
-        The logger object
+    logger : The logger object
     """
 
     # Print system info
@@ -149,7 +141,14 @@ def log_environment(logger):
 
     return
 
-def log_args(logger, args):
+def log_args(logger: logging.Logger, args: argparse.Namespace) -> None:
+    """Log the CLI arguments.
+
+    inputs
+    ------
+    logger : The logger object
+    args   : Command-line arguments
+    """
 
     logger.debug("===== CLI Arg Definitions =====")
 
@@ -161,9 +160,7 @@ def log_args(logger, args):
 
     return
 
-def progress_bar(ii: int,
-                 total: int,
-                 time_estimate: float | None = None) -> None:
+def progress_bar(ii: int, total: int, time_estimate: float | None = None) -> None:
     """Prints a progress bar that updates as the loop progresses.
 
     inputs
@@ -202,14 +199,14 @@ def progress_bar(ii: int,
 
     return
 
-def pretty_sleep(logger, sleep_time):
+def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
     """Shows a progress bar if sleeping for a long time.
     NOTE: Also adds jitter.
 
     inputs
     ------
-    time : float
-        Time to sleep for
+    logger     : The logger object
+    sleep_time : Time to sleep for
     """
 
     # Add jitter
@@ -238,18 +235,15 @@ def pretty_sleep(logger, sleep_time):
 
     return
 
-def delete_catchup(logger, filename, links):
+def delete_catchup(logger: logging.Logger, filename: str, links: list[str]) -> None:
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
-    NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed ) links manually.
+    NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed) links manually.
 
     inputs
     ------
-    logger   : RootLogger
-        The logger object
-    filename : str
-        Path+filename of the `catchup.txt` file.
-    links    : list
-        List containing all arXiv links in the file.
+    logger   :  The logger object
+    filename : Path+filename of the `catchup.txt` file.
+    links    :  List containing all arXiv links in the file.
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no
@@ -285,15 +279,13 @@ def delete_catchup(logger, filename, links):
 
     return
 
-def delete_file(logger, filename):
-    """Deletes a file
+def delete_file(logger: logging.Logger, filename: str) -> None:
+    """Deletes a file.
 
     inputs
     ------
-    logger   : RootLogger
-        The logger object.
-    filename : str
-        Path+filename of the file being deleted.
+    logger   : The logger object.
+    filename : Path+filename of the file being deleted.
     """
 
     logger.info("Deleting file: {:}".format(filename))

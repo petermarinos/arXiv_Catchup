@@ -479,7 +479,6 @@ def extract_papers(logger, ns, xml_data):
             "Found Authors"   : [],
             "Authors Matches" : 0,
             "Authors Score"   : 0.,
-            # Number of words
             # Included words
             "Included Words Matches" : {"Title"    : 0,
                                         "Abstract" : 0,

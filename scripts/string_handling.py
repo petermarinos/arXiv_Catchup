@@ -3,41 +3,33 @@ from pylatexenc.latex2text import LatexNodes2Text
 from unicodedata           import normalize       as normalise
 import re
 
-def LaTeX_to_unicode(s):
-    """Stip LaTeX-style accents, special characters, and ligatures from the string and convert to unicode (e.g. {\'o} and \'o -> ó).
-    This function covers all commands built into LaTeX.
+def LaTeX_to_unicode(s: str) -> str:
+    """Stip LaTeX-style accents, special characters, and ligatures from the string and convert to unicode (e.g. {\'o} and \'o -> ó). This function covers all commands built into LaTeX.
 
     inputs
     ------
-    s : str
-        Any string that may (or may not) contain LaTeX commands.
+    s : Any string that may (or may not) contain LaTeX commands.
 
     outputs
     -------
-    s_unicode : str
-        The input string, stripped of all LaTeX commands.
+    s_unicode : The input string, stripped of all LaTeX commands.
     """
-
-    # if s is None:
-    #     return ""
 
     # Convert LaTeX accents/ligatures/special characters to unicode
     s_unicode = LatexNodes2Text().latex_to_text(s)
 
     return s_unicode
 
-def normalise_string(s):
+def normalise_string(s: str) -> str:
     """First removes LaTeX commands/etc., then normalises the string (i.e. ensures a consisted unicode encoding), then converts to ASCII.
 
     inputs
     ------
-    s : str
-        Any string that may (or may not) contain LaTeX commands, accented characters, etc..
+    s : Any string that may (or may not) contain LaTeX commands, accented characters, etc..
 
     outputs
     -------
-    s_asci : str
-        The input string in basic ASCII encoding. No accents or LaTeX commands, etc..
+    s_asci : The input string in basic ASCII encoding. No accents or LaTeX commands, etc..
     """
 
     # If s is None then return an empty string
@@ -59,12 +51,21 @@ def normalise_string(s):
     return s_ascii
 
 def split_initials(name: list[str]) -> list[str]:
-    """Splits initials that are not separated by whitespace
+    """Splits initials that are not separated by whitespace. Does nothing if there are no initials or the initials were already split.
 
-    example
+    inputs
+    ------
+    name : List containing the author name that has been split on all whitespace
+
+    outputs
     -------
-    ['A.S.W']          -> ['A.', 'S.', 'W.']
-    ['A.', 'S.', 'W.'] -> ['A.', 'S.', 'W.']
+    name : List containing the author name that has been split on all whitespace and initials
+
+    examples
+    --------
+    ['A.S.W,', 'Thomas']        -> ['A.', 'S.', 'W.', 'Thomas']
+    ['A.', 'S.', 'W.', 'Thomas] -> ['A.', 'S.', 'W.', 'Thomas']
+    ['Andrew', 'Thomas']        -> ['Andrew', 'Thomas']
     """
 
     # If the name is empty, return it back
@@ -86,3 +87,34 @@ def split_initials(name: list[str]) -> list[str]:
         name = [_ for _ in initial_list]
 
     return name
+
+def find_token(name: str) -> tuple[str, str]:
+    """Determine if the supplied string is a 'full' name or an initial.
+
+    inputs
+    ------
+    name : The author's name
+
+    outputs
+    -------
+    : Tuple describing the name as an initial or full name.
+
+    examples
+    --------
+    'Name' -> full
+    'G.'   -> initial
+    """
+
+    # Define the regex for an initial
+    initial_regex = re.compile(r"^[A-Z]\.?$")
+
+    # Strip the name into a list
+    name = name.strip()
+
+    # If it is an initial:
+    if initial_regex.match(name):
+        return ("initial", name[0])
+    
+    # Else it is a full name
+    else:
+        return ("full", name)

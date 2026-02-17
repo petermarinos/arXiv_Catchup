@@ -1,31 +1,23 @@
 # Import functions
-from .string_handling import split_initials
+from .string_handling import split_initials, find_token
 from .utils           import progress_bar
 
 # Import libraries
-import numpy as np
+import pandas  as pd
+import numpy   as np
+import logging
 import re
-
-def find_token(name: str) -> tuple[str, str]:
-    """Determine if the supplied name is a full name or an initial.
-    """
-
-    # Define the regex for an initial
-    initial_regex = re.compile(r"^[A-Z]\.?$")
-
-    # Strip the name into a list
-    name = name.strip()
-
-    # If it is an initial:
-    if initial_regex.match(name):
-        return( "initial", name[0])
-    
-    # Else it is a full name
-    else:
-        return ("full", name)
 
 def authors_match(a: str, b: str) -> bool:
     """Check if two author strings match.
+
+    inputs
+    ------
+    a, b : The two authors that are being tested against one another.
+
+    outputs
+    -------
+    : True if a matches b, False otherwise.
     """
 
     # Strip the two names
@@ -124,21 +116,16 @@ def author_search(logger, df_papers, entry_count, key_authors):
 
     return
 
-def word_search(logger, df_papers, entry_count, search_terms, key):
+def word_search(logger: logging.Logger, df_papers: pd.DataFrame, entry_count: int, search_terms: dict[str, str], key: str) -> None:
     """Searches a paper for keyword matches.
 
     inputs
     ------
-    logger      : RootLogger
-        The logger object.
-    df_papers   : pandas.DataFrame
-        Contains all papers.
-    entry_count : int
-        Index of the paper in the DataFrame.
-    search_terms : dict
-        Contains all of the search terms.
-    key         : str
-        The search_terms dictionary key for which types of words should be searched for.
+    logger       : The logger object.
+    df_papers    : Contains all papers and their information.
+    entry_count  : Index of the paper in the DataFrame.
+    search_terms : Contains all of the search terms.
+    key          : The search_terms dictionary key for which types of words should be searched for.
     """
 
     logger.debug("Searching for {:}".format(key))
