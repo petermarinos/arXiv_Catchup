@@ -14,16 +14,16 @@ Categories :
   # - astro-ph.SR # Solar and Stellar Astrophysics
 
 # Authors of interest
-# Use surnames, only use plain ASCII
+# More information => better matching
+# For example, inputting `Andrew Sydney Withiel Thomas` will match with paper authors including `Andrew Sydney Withiel Thomas`, and lower-information representations such as `Andrew S. W. Thomas`, `A. Thomas`, `Thomas`, etc., while excluding `A. S. Z. Thomas`, etc.
+# Do not include particles or suffixes, e.g. write `Ludwig Beethoven` instead of `Ludwig van Beethoven`
 Authors :
   # - examplename
 
 # Key words to search for
-# At least one is required
 Included Words :
   # - exampleword
 
 # Words that exclude papers being shown
 Excluded Words :
   # - exampleword
-  
