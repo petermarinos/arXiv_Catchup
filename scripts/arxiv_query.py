@@ -103,7 +103,7 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
     # If the HTTP error is in our list of codes that tell us to retry
     if error.code in retry_codes:
 
-        logger.warning("HTTP error code {:} on attempt {:} of {:}. Retrying in {:} seconds ...".format(error.code, attempt, max_retries, wait_time))
+        logger.warning("HTTP error code {:} on attempt {:} of {:}.".format(error.code, attempt, max_retries))
 
         # Obtain some additional information. This will increase the wait time, or is used for debug
 
@@ -129,7 +129,7 @@ def http_errorcheck(logger, error, attempt, max_retries, wait_time):
             # Catch 429 error codes that do not have a Retry-after header
             elif ( error.headers["Retry-After"] is None ) and ( error.code == 429 ):
 
-                retry_after = 60 * attempt
+                retry_after = 90 * attempt
                 logger.warning("Did not find a Retry-After command despite being a 429 error. Increasing wait time to {:} seconds ...".format(retry_after))
 
             # Else, if there are headers but no retry-after header

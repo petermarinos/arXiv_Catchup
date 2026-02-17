@@ -110,7 +110,7 @@ def author_search(logger, df_papers, entry_count, key_authors):
                 # If an author is found:
                 if key_author_match:
 
-                    logger.debug("Found author: {:}".format(key_author))
+                    logger.debug("Found author: {:} | Matched with: {:}".format(key_author, paper_author))
                     
                     # Increase the number of author matches by 1
                     df_papers.loc[entry_count, "Authors Matches"] += 1
