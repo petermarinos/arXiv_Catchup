@@ -65,7 +65,7 @@ There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded 
 The `Included Words` and `Excluded Words` are used to compute a score measuring how interesting a paper is.
 Examples of the format required for each can be found in the provided file.
 - `Categories` defines which arXiv categories are searched over. At least one must be included. The list of possible categories can be found on the [arXiv Category Taxonomy](https://arxiv.org/category_taxonomy) page.
-- `Authors` defines which authors to highlight. __Use surnames__. Most papers with a match will be opened (large author lists slightly reduce the 'interest' score). Do not include accents/special characters/etc..
+- `Authors` defines which authors to highlight. Most papers with a match will be opened (large author lists slightly reduce the 'interest' score).
 - `Included Words` defines which words increase a paper's 'interest' score.
 - `Excluded Words` defines which words decrease a paper's 'interest' score.
 
@@ -80,14 +80,23 @@ Examples of the format required for each can be found in the provided file.
 
 ##### Notes on Author Names
 
-**Currently only surnames are supported**
+The script will search for all matches between the names found in the `search_terms.yaml` file and the author list for all found papers.
+Include as much information as possible for each author, including the surname at a minimum.
+Papers with author lists that contain more/less information than the input will still be found.
+For example, `Andrew Sydney Withiel Thomas` will work to find papers with exact matches, as well as lower-information representations such as: `Andrew S. W. Thomas`, `A. Thomas`, `Thomas`, etc., while excluding authors such as `A. S. Z. Thomas`, etc..
+However, if you include only `A. Thomas` in the `search_terms.yaml` file, you will get true positive matches for `Andrew Thomas`, as well as false positives for `Alexander Thomas`, etc..
+Note that periods are not rquired after initials in either the `search_terms.yaml` or the authors field of the papers, and initials with no whitespace will automatically be expanded.
 
 Accented/special characters, ligatures, and LaTeX commands for author names are handled by the script.
-Feel free to enter any representation you prefer, e.g. 'López', 'L{\\'o}pez', or 'L\'opez', in the `search_terms.yaml` file.
+Feel free to enter any representation you prefer, e.g. 'Lopez', 'López', 'L{\\'o}pez', or 'L\'opez', in the `search_terms.yaml` file.
 
 Some authors may use a spelling that is different to their preference for submissions to journals that are more restrictive on special characters.
 For example, an author may write 'ö' as 'oe'.
 For these cases it is recommended to include both representations in the `search_terms.yaml` file.
+
+There is currently no support for name particles or prefixes/suffixes.
+Do not include them in the `search_terms.yaml` file.
+For example, only include `Ludwig Beethoven` if you want matches for `Ludwig van Beethoven`.
 
 #### Generated Files
 

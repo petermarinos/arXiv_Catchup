@@ -100,8 +100,21 @@ def display_results(self):
         print("\n    Found Author(s):")
 
         # Compute a fill amount, so that all author lists are right-justified.
-        # 8 characters more then the longest name, to account for ', et al.'
-        author_strfill = len(max(self.search_terms["Authors"], key=len)) + 8
+        # Loop through the papers that survived the filter
+        author_strfill = 0
+        for entry_count in self.papers_of_note:
+            # Extract some information
+            author_score       = self.df_papers.loc[entry_count, "Authors Score"]
+            num_author_matches = self.df_papers.loc[entry_count, "Authors Matches"]
+            found_authors      = self.df_papers.loc[entry_count, "Found Authors"]
+
+            # If only one author match
+            if ( num_author_matches == 1) and ( author_score > 0.95 ):
+                author_strfill = max(author_strfill, len(found_authors[0]))
+
+            # If more than one author match:
+            elif ( num_author_matches >= 2) and ( author_score > 0.95 ):
+                author_strfill = max(author_strfill, len(found_authors[0])+8) # +8 for ", et al."
 
         # Loop through the papers that survived the filter and print the ones with author matches
         for entry_count in self.papers_of_note:

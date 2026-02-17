@@ -1,9 +1,79 @@
 # Import functions
-from .utils import progress_bar
+from .string_handling import split_initials
+from .utils           import progress_bar
 
 # Import libraries
 import numpy as np
 import re
+
+def find_token(name: str) -> tuple[str, str]:
+    """Determine if the supplied name is a full name or an initial.
+    """
+
+    # Define the regex for an initial
+    initial_regex = re.compile(r"^[A-Z]\.?$")
+
+    # Strip the name into a list
+    name = name.strip()
+
+    # If it is an initial:
+    if initial_regex.match(name):
+        return( "initial", name[0])
+    
+    # Else it is a full name
+    else:
+        return ("full", name)
+
+def authors_match(a: str, b: str) -> bool:
+    """Check if two author strings match.
+    """
+
+    # Strip the two names
+    A = a.strip().split()
+    B = b.strip().split()
+
+    # Ensure both stripped strings have an entry
+    if not A or not B:
+        return False
+    
+    # If the surnames are not exact matches
+    if A[-1] != B[-1]:
+        return False
+
+    # Extract given names
+    givens_a, givens_b = A[:-1], B[:-1]
+
+    # Split initials (if they are initials without whitespace)
+    givens_a = split_initials(givens_a)
+    givens_b = split_initials(givens_b)
+    
+    # Compute number of given names
+    n = min(len(givens_a), len(givens_b))
+
+    # Loop through the given names
+    for i in range(n):
+
+        # Extract the tokens (i.e. full name or initial) and their values
+        token_a, value_a = find_token(givens_a[i])
+        token_b, value_b = find_token(givens_b[i])
+
+        # # Check if the tokens and values don't match
+        # If both tokens are full names but are not equal:
+        if token_a == "full" and token_b == "full" and value_a != value_b:
+            return False
+        
+        # If both tokens are initials and are not equal
+        if token_a == "initial" and token_b == "initial" and value_a != value_b:
+            return False
+        
+        # If one is an initial and one is full, and the initial doesn't match the first letter of the full:
+        if token_a == "initial" and token_b == "full" and value_a != value_b[0]:
+            return False
+        if token_a == "full" and token_b == "initial" and value_a[0] != value_b:
+            return False
+    
+    # If passing all tests for all surnames and given names, it is a match!
+    return True
 
 def author_search(logger, df_papers, entry_count, key_authors):
     """Searches a paper for the authors of interest.
@@ -29,13 +99,13 @@ def author_search(logger, df_papers, entry_count, key_authors):
         logger.debug("Searching for Authors")
 
         # Loop over the authors of the paper
-        for author in df_papers.loc[entry_count, "Authors"]:
+        for paper_author in df_papers.loc[entry_count, "Authors"]:
 
             # Loop over the authors in the search terms
             for key_author in key_authors:
 
                 # Search the author field of the paper for any key authors
-                key_author_match = re.search(r"\b"+key_author+r"\b", author)
+                key_author_match = authors_match(key_author, paper_author)
 
                 # If an author is found:
                 if key_author_match:
@@ -46,7 +116,8 @@ def author_search(logger, df_papers, entry_count, key_authors):
                     df_papers.loc[entry_count, "Authors Matches"] += 1
                     
                     # Add the author to the list of found authors
-                    df_papers.loc[entry_count, "Found Authors"].append(key_author)
+                    # Use the author name from the paper so that the user is shown exactly what was matched
+                    df_papers.loc[entry_count, "Found Authors"].append(paper_author)
 
         if df_papers.loc[entry_count, "Authors Matches"] == 0:
             logger.debug(" ... none found")
