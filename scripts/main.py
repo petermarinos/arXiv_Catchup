@@ -8,10 +8,6 @@ from .utils import cli_args
 
 Add type hints to functions
 
-Add the ability to include given names.
-    Escape text on regex searches.
-    Update README.
-
 Add a flag to write only the arXiv IDs to a file. Update README.
 """
 
