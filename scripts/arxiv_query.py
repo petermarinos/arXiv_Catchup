@@ -1,15 +1,21 @@
+# Import classes
+from .paper_classes import Paper, Corpus
+
 # Import functions
 from .string_handling import normalise_string
 from .file_io         import write_xml
 from .utils           import pretty_sleep, progress_bar, delete_file
 
 # Import libraries
+# from typing import cast
 import xml.etree.ElementTree as ET
 import pandas                as pd
 import numpy                 as np
 import urllib.request
 import urllib.error
 import certifi
+import logging
+import typing
 import ssl
 import sys
 import os
@@ -65,7 +71,7 @@ def arxiv_errorcheck(self):
 
     return
 
-def http_errorcheck(logger, error, attempt, max_retries, wait_time):
+def http_errorcheck(logger, error, attempt, max_retries) -> None | float:
     """Handles the HTTP errors that could arise.
 
     inputs
@@ -301,7 +307,7 @@ def arxiv_query(logger, ssl_dict, url, start_num, blocksize):
         # If there is a HTTP error:
         except urllib.error.HTTPError as error:
 
-            retry_after = http_errorcheck(logger, error, attempt, max_retries, wait_time)
+            retry_after = http_errorcheck(logger, error, attempt, max_retries)
 
         # If there is a URL error:
         except urllib.error.URLError as error:
@@ -420,92 +426,28 @@ def arxiv_initial_pull(self):
 
     return max_num
 
-def extract_papers(logger, ns, xml_data):
+def extract_papers(logger: logging.Logger, corpus: Corpus, ns: dict[str, str], xml_data: ET.ElementTree | ET.Element) -> None:
     """Extracts the papers (and their information) from the results of the API query.
 
     inputs
     ------
-    logger : RootLogger
-        The logger object
-    ns     : dict
-        XML namespaces that arXiv uses.
-    xml    : Element
-        XML data from the arXiv query.
-
-    outputs
-    -------
-    papers : list
-        All papers in the entry.
+    logger : The logger object
+    corpus : The corpus of all papers currently found.
+    ns     : XML namespaces that arXiv uses.
+    xml    : XML data from the arXiv query.
     """
-    
-    papers = []
 
     # Loop over the entries (papers) within the current search
+    count = 0
     for entry in xml_data.findall("atom:entry", ns):
 
-        # Find the published and updated dates
-        published_date = entry.find("atom:published", ns).text
-        updated_date   = entry.find("atom:updated", ns).text
+        corpus.addPaperToCorpus(logger, ns, entry)
 
-        # Find the arXiv numbers
-        ID_number      = entry.find("atom:id", ns).text.split("/")[-1][:10]
-        version_number = int( entry.find("atom:id", ns).text.split("/")[-1][11:] )
+        count += 1
 
-        # Extract the author list
-        author_list = [normalise_string(author.find("atom:name", ns).text) for author in entry.findall("atom:author", ns)]
+    logger.debug("Found {:} papers in this search block.".format(count))
 
-        # Extract the title
-        title          = entry.find("atom:title", ns).text.strip()
-        title_numwords = len( re.findall(r'\w+', title) )
-
-        # Extract the abstract
-        abstract          = entry.find("atom:summary", ns).text.strip()
-        abstract_numwords = len( re.findall(r'\w+', abstract) )
-
-        # Place information in a dictionary
-        paper = {
-            # Extract information
-            "arXiv Number"      : ID_number,
-            "Title"             : title,
-            "Authors"           : author_list,
-            "Revised?"          : (updated_date > published_date) or (version_number > 1),
-            "Abstract"          : abstract,
-            "url"               : entry.find("atom:id", ns).text.strip(),
-            "Number of Authors" : len(author_list),
-            "Number of Words"   : {"Title"    : title_numwords,
-                                   "Abstract" : abstract_numwords},
-            # Setup fields used for output
-            # Authors
-            "Found Authors"   : [],
-            "Authors Matches" : 0,
-            "Authors Score"   : 0.,
-            # Included words
-            "Included Words Matches" : {"Title"    : 0,
-                                        "Abstract" : 0,
-                                        "Total"    : 0},
-            "Included Words Score"   : {"Title"    : 0.,
-                                        "Abstract" : 0.,
-                                        "Total"    : 0.},
-            # Excluded words
-            "Excluded Words Matches" : {"Title"    : 0,
-                                        "Abstract" : 0,
-                                        "Total"    : 0},
-            "Excluded Words Score"   : {"Title"    : 0.,
-                                        "Abstract" : 0.,
-                                        "Total"    : 0.},
-            # Final score
-            "Final Score"            : 0.,
-        }
-
-        logger.debug("Found: {:}, version {:}.".format(ID_number, version_number))
-        logger.debug("       published on {:}, updated on {:}.".format(published_date, updated_date))
-        # logger.debug("       Revised? {:}".format((updated_date > published_date) or (version_number > 1)))
-
-        papers.append(paper)
-
-    logger.debug("Found {:} papers in this search block.".format(len(papers)))
-
-    return papers
+    return
 
 def arxiv_search(self):
     """Searches the arXiv for all papers that satisfy our criteria.
@@ -520,8 +462,8 @@ def arxiv_search(self):
         Contains all papers and their information.
     """
 
-    # Initialise the list of entries
-    entries = []
+    # # Initialise the list of entries
+    # entries = []
 
     # Search for xml file. If found, load it
     if os.path.exists(self.paths["papersxml"]):
@@ -530,17 +472,24 @@ def arxiv_search(self):
         self.logger.info("Continuing from the previous failed run.")
 
         # Load the file
-        xml_data = ET.parse(self.paths["papersxml"])
+        try:
+            xml_tree = typing.cast( ET.ElementTree, ET.parse(self.paths["papersxml"]) )
+        except ET.ParseError as e:
+            self.logger.critical("Could not parse XML: %s", e)
+            raise
 
         # Extract the papers from the xml
-        entries.extend(extract_papers(self.logger, self.arxiv_const.ns, xml_data))
+        extract_papers(self.logger, self.corpus, self.arxiv_const.ns, xml_tree)
 
         # Print how many were found
-        self.logger.info("Found {:} of {:} papers in the .xml file.".format(len(entries), self.total_papers))
+        # Compute the length of the corpus
+        self.corpus.getCorpusLength()
+        n_papers = self.corpus.length
+        self.logger.info("Found {:} of {:} papers in the .xml file.".format(self.corpus.length, self.total_papers))
 
         # Check the url from the loaded xml matches the current search url
         expected_url = self.arxiv_const.apiquery.format(start_num=0, blocksize=self.arxiv_const.search_blocksize)
-        returned_urlblock = xml_data.find("atom:link", self.arxiv_const.ns)
+        returned_urlblock = xml_tree.find("atom:link", self.arxiv_const.ns)
         if returned_urlblock is None:
             self.logger.critical("arXiv data did not include a link. It is corrupted (returned None).\n")
             raise
@@ -555,26 +504,30 @@ def arxiv_search(self):
             self.logger.debug("Expected: {:}".format(expected_url))
             self.logger.debug("Found:    {:}".format(returned_url))
 
-            # Clear the entries from the list.
-            entries = []
+            # # Clear the entries from the list.
+            # entries = []
+            self.corpus.clearCorpus(self.logger)
 
             # Clear the .xml file
             delete_file(self.logger, self.paths["papersxml"])
 
         # If the urls match AND the number of papers was less than the total:
-        elif ( not url_missmatch ) and ( len(entries) < self.total_papers ):
+        elif ( not url_missmatch ) and ( n_papers < self.total_papers ):
             self.logger.debug("The .xml file information matches the current search. Continuing.")
 
         # If less than the total, provide info that we are continuing the search
-        elif len(entries) >= self.total_papers:
+        elif n_papers >= self.total_papers:
 
             self.logger.info("All information found in the .xml file. Skipping the search.")
 
+    # Compute the length of the corpus
+    self.corpus.getCorpusLength()
+    n_papers = self.corpus.length
     # If the number of papers is less that the total, connect to arXiv
-    if len(entries) < self.total_papers:
+    if n_papers < self.total_papers:
 
         # Set the starting number
-        start_num = len(entries)
+        start_num = n_papers
 
         self.logger.debug("The number of papers found so far is: {:}".format(start_num))
 
@@ -625,7 +578,7 @@ def arxiv_search(self):
             write_xml(self.logger, self.paths["papersxml"], parsed_xml, self.arxiv_const.ns)
             
             # Extract the paper from the xml
-            entries.extend(extract_papers(self.logger, self.arxiv_const.ns, parsed_xml))
+            extract_papers(self.logger, self.corpus, self.arxiv_const.ns, parsed_xml)
 
         # Close the progress bar
         progress_bar(self.total_papers, self.total_papers)
@@ -633,31 +586,24 @@ def arxiv_search(self):
         self.logger.info("All paper information successfully downloaded from the arXiv servers!")
 
     # Double check that we found the correct number of papers
-    if len(entries) != self.total_papers:
+    self.corpus.getCorpusLength()
+    n_papers = self.corpus.length
+    if n_papers != self.total_papers:
 
-        self.logger.error("Found {:} papers (expected {:}).".format(len(entries), self.total_papers))
+        self.logger.error("Found {:} papers (expected {:}).".format(n_papers, self.total_papers))
 
     else:
 
         self.logger.debug("Found the expected number of papers ({:}).".format(self.total_papers))
 
-    # Place all entries into a dataframe
-    df = pd.DataFrame( entries )
-
-    self.logger.debug("Removing duplicates and revised papers.")
-
-    # Drop duplicate papers, if they exist
-    df.drop_duplicates(subset="arXiv Number", inplace=True, ignore_index=True)
-    num_dup = self.total_papers - len(df)
-    self.logger.debug("Dropped {:} duplicate entries.".format(num_dup))
+    # # Drop duplicate papers, if they exist
+    # # No longer needed as two keys cannot be equal.
+    # self.corpus.dropDuplicates(self.logger)
 
     # Remove revised papers
-    df.drop(df[df["Revised?"]==True].index, inplace=True)
-    df.reset_index(drop=True, inplace=True)
-    num_rev = ( self.total_papers - num_dup ) - len(df)
-    self.logger.debug("Dropped {:} revised papers.".format(num_rev))
+    self.corpus.dropRevisions(self.logger)
 
-    return df
+    return
 
 ## Format of the xml outputs from the arXiv API:
 """Example arXiv API pull:

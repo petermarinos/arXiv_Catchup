@@ -1,3 +1,6 @@
+# Import classes
+from .paper_classes import Corpus
+
 # Import functions
 from .arxiv_query     import arxiv_initial_pull, arxiv_search, arxiv_errorcheck
 from .filtering       import score_papers_matches, score_papers_ML, filter_papers_matches, filter_papers_score
@@ -39,6 +42,9 @@ class CatchupPipeline:
         # Define the ssl_context and define a flag
         self.ssl_dict = {"ssl_context" : None,
                          "ssl_preverr" : False}
+        
+        # Initialise the corpus
+        self.corpus = Corpus()
         
     # # Load search terms from the auxiliary file
     def getSearchterms(self):
@@ -84,7 +90,7 @@ class CatchupPipeline:
 
     # # Loop through the searches and obtain all papers
     def getPapers(self):
-        self.df_papers = arxiv_search(self)
+        arxiv_search(self)
 
     # # Score the papers
     def scorePapers(self):
@@ -109,7 +115,7 @@ class CatchupPipeline:
             open_links(self)
             
         if self.write_to_file:
-            write_links(self.logger, self.paths["catchup"], self.df_papers, self.papers_of_note)
+            write_links(self.logger, self.paths["catchup"], self.corpus, self.papers_of_note)
 
     # # Summarise the search results
     def summary(self):

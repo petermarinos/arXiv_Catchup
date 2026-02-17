@@ -63,7 +63,8 @@ class Paper:
             raise
         else:
             self.abstract = abstract.text.strip()
-            logger.debug("Abstract: {:}".format(self.abstract))
+            logger.debug("Abstract was found")
+            # logger.debug("Abstract: {:}".format(self.abstract))
 
         # Extract the category
         category = entry.findall("atom:category", ns)
@@ -137,13 +138,46 @@ class Corpus:
 
         self.corpus:dict[str, Paper] = {}
 
-    def addPaperToCorpus(self, logger: logging.Logger, ns: dict[str, str], entry: ET.Element):
+    def addPaperToCorpus(self, logger: logging.Logger, ns: dict[str, str], entry: ET.Element) -> None:
 
         # Extract the paper from the xml entry
         paper = Paper(logger, ns, entry)
 
         # Add the paper to the corpus dictionary
-        self.corpus[paper.ID] = paper
+        key = paper.ID + "v{:d}".format(paper.version) # include version to ensure each key is unique. We will drop revisions later
+        value = paper
+        self.corpus[key] = value
+
+    def clearCorpus(self,  logger: logging.Logger):
+
+        logger.debug("Replacing corpus with an empty dictionary.")
+
+        # Replace the corpus with an empty dictionary
+        self.corpus:dict[str, Paper] = {}
+
+    def getCorpusLength(self):
+
+        self.length = len(self.corpus.keys())
+
+    def dropRevisions(self,  logger: logging.Logger):
+
+        logger.debug("Removing revised papers.")
+
+        # Obtain the number of papers before dropping
+        N = self.length
+
+        temp_dict:dict[str, Paper] = {}
+
+        for key, value in self.corpus.items():
+            if not value.revised:
+                temp_dict[key] = value
+
+        self.corpus = temp_dict
+
+        # Update the number of papers
+        self.getCorpusLength()
+        num_dropped = N - self.length
+        logger.debug("Dropped {:} revised entries.".format(num_dropped))
 
 # In score_papers_matches:
 # for paper in Corpus:
