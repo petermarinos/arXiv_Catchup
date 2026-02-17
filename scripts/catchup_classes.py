@@ -11,8 +11,8 @@ from .utils       import logger_setup, delete_file
 import argparse
 import datetime
 
-# Define the class
-class Papers(object):
+# Define the pipeline class
+class CatchupPipeline(object):
 
     # # Initialise the class
     def __init__(self, cdir: str, args: argparse.Namespace) -> None:

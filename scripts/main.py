@@ -1,5 +1,5 @@
 # Import classes
-from .paper_class import Papers
+from .catchup_classes import CatchupPipeline
 
 # Import functions
 from .utils import cli_args
@@ -9,8 +9,8 @@ from .utils import cli_args
 Add type hints to functions
 
 Refactor.
-    Rename Papers
-    Create Paper
+    Rename Papers class to CatchupPipeline -- DONE
+    Create Paper class
     Remove pandas DataFrames
 
 Add a flag to write only the arXiv IDs to a file. Update README.
@@ -24,38 +24,38 @@ def main(cdir):
     args = cli_args()
 
     # # Set up the papers class
-    papers = Papers(cdir, args)
+    pipeline = CatchupPipeline(cdir, args)
 
     # # Load search terms from the auxiliary file
-    papers.getSearchterms()
+    pipeline.getSearchterms()
 
     # # Load and check dates
-    papers.getDates()
+    pipeline.getDates()
 
     # # Setup the API information
-    papers.setupAPI()
+    pipeline.setupAPI()
 
     # # Obtain basic search information
-    papers.getSearchInfo()
+    pipeline.getSearchInfo()
 
     # # Loop through the searches and obtain all papers
-    papers.getPapers()
+    pipeline.getPapers()
 
     # Score the paper
-    papers.scorePapers()
+    pipeline.scorePapers()
 
     # # Filter the papers
     # # Filter based on matches
-    # papers.filterPapersMatches()
+    # pipeline.filterPapersMatches()
     # Filter based on score
-    papers.filterPapersScore()
+    pipeline.filterPapersScore()
 
     # # Display the results
-    papers.display()
+    pipeline.display()
 
     print("Not deleting temp. files.")
     # # Delete xmls/other supplemental files if successfull
-    # papers.clearTempFiles()
+    # pipeline.clearTempFiles()
 
     # # Print a summary
-    papers.summary()
+    pipeline.summary()
