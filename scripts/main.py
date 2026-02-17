@@ -8,6 +8,11 @@ from .utils import cli_args
 
 Add type hints to functions
 
+Refactor.
+    Rename Papers
+    Create Paper
+    Remove pandas DataFrames
+
 Add a flag to write only the arXiv IDs to a file. Update README.
 """
 
@@ -48,8 +53,9 @@ def main(cdir):
     # # Display the results
     papers.display()
 
-    # Delete xmls/other supplemental files if successfull
-    papers.clearTempFiles()
+    print("Not deleting temp. files.")
+    # # Delete xmls/other supplemental files if successfull
+    # papers.clearTempFiles()
 
     # # Print a summary
     papers.summary()
