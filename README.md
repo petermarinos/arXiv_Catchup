@@ -43,6 +43,7 @@ There are additional arguments that can be used:
 - `-f`, `--force-open` skips all confirmation dialogues and opens all links.
 - `-w`, `--write-to-file` skips all confirmation dialogues and writes all links to a file.
 - `-n`, `--new-window` opens all links in a new window (does not work on mac).
+- `--only-ids` will only write the arXiv ID numbers to a file (instead of the url).
 - `-s str`, `--start-date str` manually set the start date for the search.
 - `-e str`, `--end-date str` manually set the end date for the search.
 - `-v int`, `--verbosity int` set the verbosity level. Default is 3.
