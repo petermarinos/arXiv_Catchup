@@ -6,7 +6,7 @@ from .utils import cli_args
 
 """TO-DO:
 
-Add a flag to write only the arXiv IDs to a file. Update README.
+All done at this point :)
 """
 
 # The main script
