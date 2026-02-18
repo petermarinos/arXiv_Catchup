@@ -1,5 +1,5 @@
 # Import classes
-from .paper_classes import Corpus
+from .Corpus import Corpus
 
 # Import functions
 from .utils           import pretty_sleep

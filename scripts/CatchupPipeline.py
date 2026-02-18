@@ -1,5 +1,6 @@
 # Import classes
-from .paper_classes import Corpus
+from .Corpus import Corpus
+from .Paper  import Paper
 
 # Import functions
 from .string_handling import normalise_string

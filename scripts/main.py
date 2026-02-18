@@ -1,12 +1,10 @@
 # Import classes
-from .catchup_classes import CatchupPipeline
+from .CatchupPipeline import CatchupPipeline
 
 # Import functions
 from .utils import cli_args
 
 """TO-DO:
-
-Update all function descriptions
 
 Add comments to classes
 Add documentation to class functions

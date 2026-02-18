@@ -1,5 +1,5 @@
 # Import classes
-from .paper_classes import Corpus
+from .Corpus import Corpus
 
 # Import functions
 from .utils           import progress_bar
@@ -157,7 +157,7 @@ def write_date(logger: logging.Logger, filename: str, date: datetime.date) -> No
     logger.info("Writing the date {:} to the file: {:}.".format(date, filename))
 
     with open(filename, "w") as f:
-        
+
         f.write(date.isoformat())
 
     return
