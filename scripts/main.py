@@ -6,9 +6,6 @@ from .utils import cli_args
 
 """TO-DO:
 
-Add comments to classes
-Add documentation to class functions
-
 Add a flag to write only the arXiv IDs to a file. Update README.
 """
 
@@ -47,7 +44,10 @@ def main(cdir):
     pipeline.find_matches()
 
     # # Score the papers
+    # # Score based on author/word matches
     pipeline.score_papers_matches()
+    # # Score based on the ML model
+    # # NOT YET IMPLEMENTED
     # pipeline.scorePapersML()
 
     # # Filter the papers

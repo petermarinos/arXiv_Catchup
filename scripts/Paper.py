@@ -11,6 +11,14 @@ class Paper:
             
     # # Initialise the class
     def __init__(self, logger: logging.Logger, ns: dict[str, str], entry: ET.Element) -> None:
+        """Create the Paper object that represents a single paper.
+
+        inputs
+        -----
+        logger : The logger object.
+        ns     : XML namespaces.
+        entry  : XML data for a single paper.
+        """
 
         self.logger = logger
 
@@ -121,6 +129,7 @@ class Paper:
         self.logger.debug("Wordcount: Title = {:} | Abstract = {:}".format(self.n_words["Title"], self.n_words["Abstract"]))
 
         # Initialise a few other values
+        # May be best to move this to a new class/dataclass? 
         self.n_author_matches: int                    = 0
         self.found_authors:    list[str]              = []
         score_dict: dict[str, int | float]            = {"Title Score"      : 0.,
@@ -136,12 +145,19 @@ class Paper:
 
     # # Find matches between the paper authors and the authors of interest
     def match_authors(self, key_authors: list[str]) -> None:
+        """Find matches between the authors of the Paper and authors in the search terms.
 
+        inputs
+        ------
+        key_authors : List containing all authors to search for.
+        """
+
+        # If there are no authors to search for, skip the search
         if key_authors is None:
             self.logger.debug("No authors to search for...")
             
         # If there is at least one author of interest
-        if key_authors is not None:
+        elif key_authors is not None:
 
             self.logger.debug("Searching for Authors")
 
@@ -166,21 +182,27 @@ class Paper:
                         # Use the author name from the paper so that the user is shown exactly what was matched
                         self.found_authors.append(paper_author)
 
+            # If no matches were found for this Paper:
             if self.n_author_matches == 0:
                 self.logger.debug(" ... none found")
 
     # # Find matches between the text in the title and abstract and the words of interest
     def match_words(self, key_words: dict[str, str], match_type: str) -> None:
+        """Find matches between the Title/Abstract of the Paper and key words in the search terms.
 
+        inputs
+        ------
+        key_words  : List containing all key words to search for
+        match_type : The type of match we are searching for, either 'Included Words' or 'Excluded Words'.
+        """
+
+        # If there are no key_words to search for, skip the search
         if key_words[match_type] is None:
             self.logger.debug("No {:} to search for...".format(match_type))
 
-        if key_words[match_type] is not None:
+        elif key_words[match_type] is not None:
 
             self.logger.debug("Searching for {:}".format(match_type))
-
-            # # Compute the number of words we are searching for. Used to normalise the score?
-            # num_words = len(search_terms[key])
 
             # Search all titles and abstracts for words in the supplied key
             for word in key_words[match_type]:
@@ -218,16 +240,21 @@ class Paper:
             self.words[match_type]["Total Matches"] = ( self.words[match_type]["Title Matches"] + self.words[match_type]["Abstract Matches"] )
 
             self.logger.debug("Matches | Title {:} | Abstract {:} |".format(self.words[match_type]["Title Matches"], self.words[match_type]["Abstract Matches"]))
+
+            # If no matches were found:
             if self.words[match_type]["Total Matches"] == 0:
                 self.logger.debug(" ... none found")
 
     # # Score the paper based on the author list
     def score_authors(self) -> None:
+        """Score the Paper based on the author list.
+        """
 
         self.logger.debug("** Author Scores **")
 
         # # Compute penalties
         # Author lists are penalised for being above a count of 25
+        # The penalty is minor, but slightly de-prioritises collaboration papers
         authors_penalty  =  25 / self.n_authors
         self.logger.debug("| Author Penalty = {:.2f} |".format(authors_penalty))
 
@@ -241,13 +268,19 @@ class Paper:
 
     # # Score the paper based on the words used in a given category
     def score_words(self, match_type: str) -> None:
+        """Score the Paper based on the found words in the Title/Abstract.
+
+        inputs
+        ------
+        match_type : The type of match we are searching for, either 'Included Words' or 'Excluded Words'.
+        """
 
         self.logger.debug("** {:} Scores **".format(match_type))
 
-        # # Compute word scores
-        # They are bound to the interval [0, 1] via min/max functions
-        # An interesting title has one or two matches
-        # An interesting abstract has ~5 matches
+        # # Compute penalties
+        # Titles are boosted/penalised for word counts below/above 18 (current median in astro)
+        # Abstracts are boosted/penalised for word counts below/above 250 (typical limit)
+        # Ensures that papers with very long abstracts are still scored similarly to those with short abstracts
         title_penalty    =  18 / self.n_words["Title"]
         abstract_penalty = 250 / self.n_words["Abstract"]
         self.logger.debug("| Title Penalty = {:.2f} | Abstract Penalty = {:.2f} |".format(title_penalty, abstract_penalty))
@@ -256,11 +289,15 @@ class Paper:
         inc_title_count    = self.words[match_type]["Title Matches"]
         inc_abstract_count = self.words[match_type]["Abstract Matches"]
         
+        # # Compute word scores
+        # They are bound to the interval [0, 1] via min/max functions
+        # An interesting title has one or two matches
+        # An interesting abstract has ~5 matches
         inc_title_score    = min( title_penalty * inc_title_count / 1.0, 1.0 )
         inc_abstract_score = min( abstract_penalty * inc_abstract_count / 5.0, 1.0 )
         inc_total_score    = ( inc_title_score + inc_abstract_score ) / 2.0
 
-        # Place scores into the dataframe
+        # Place scores into the Papers object
         self.words[match_type]["Title Score"]    = inc_title_score
         self.words[match_type]["Abstract Score"] = inc_abstract_score
         self.words[match_type]["Total Score"]    = inc_total_score
@@ -271,6 +308,8 @@ class Paper:
 
     # # Compute a final score, considering both word categories
     def final_word_score(self) -> None:
+        """Compute a final word score for a Paper based on the combination of 'Included Words' and 'Excluded Words'.
+        """
 
         # Compute the Final score:
         self.final_score = max(self.words["Included Words"]["Total Score"] - self.words["Excluded Words"]["Total Score"], +0)

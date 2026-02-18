@@ -23,16 +23,26 @@ import sys
 import os
 
 class CatchupPipeline:
-    """Pipeline for the entire script.
+    """Pipeline for the entire catchup script.
     """
 
     # # Initialise the class
     def __init__(self, cdir: str, args: argparse.Namespace) -> None:
+        """Create the CatchupPipeline object, which will store important values used throughout the search, scoring, and filtering sections.
+        - May want to break apart to separate pipelines in the future
 
+        inputs
+        ------
+        cdir : Absolute path, '/path/to/catchup.py'.
+        args : CLI arguments.
+        """
+
+        # Define important variables
         self.args   = args
         self.logger = logger_setup(args, cdir)
         self.paths  = set_filenames(cdir)
 
+        # Obtain the arXiv-related values
         url, apiquery, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
         self.arxiv_const = arxivConst(url=url,
                                       apiquery=apiquery,
@@ -41,12 +51,10 @@ class CatchupPipeline:
                                       sleeptimer_search=sleep_search,
                                       search_blocksize=search_blocksize)
         
-       # Define the posting time of the daily list
-        self.post_time    = datetime.time(6, 0, tzinfo=datetime.timezone.utc)  # 06:00 UTC
-        # Define the posting time of the daily list
-        self.search_time  = datetime.time(19, 0, tzinfo=datetime.timezone.utc) # 19:00 UTC
-        # Obtain the current time, converted to the UTC timezone
-        self.current_time = datetime.datetime.now(datetime.timezone.utc)
+       # Define some datetime objects
+        self.post_time    = datetime.time(6, 0, tzinfo=datetime.timezone.utc) # Define the posting time of the daily list
+        self.search_time  = datetime.time(19, 0, tzinfo=datetime.timezone.utc) # Define the times that the daily list covers
+        self.current_time = datetime.datetime.now(datetime.timezone.utc) # Obtain the current time, converted to the UTC timezone
 
         # Define the ssl_context and define a flag
         self.ssl_dict = {"ssl_context" : None,
@@ -69,10 +77,10 @@ class CatchupPipeline:
 
         # Normalise author strings and remove duplicates
         if self.search_terms["Authors"] is not None:
+
             self.search_terms["Authors"] = np.unique([normalise_string(_) for _ in self.search_terms["Authors"]])
 
         # # Check the file
-
         # At least one category is required
         if self.search_terms["Categories"] is None:
 
@@ -112,7 +120,7 @@ class CatchupPipeline:
 
             self.logger.warning("No search terms were found in the 'Authors' entry in the configuration file.")
 
-        # Otherwise, log all found authors
+        # Otherwise, log all authors that were extracted
         else:
 
             for author in self.search_terms["Authors"]:
@@ -156,7 +164,7 @@ class CatchupPipeline:
 
     # # Load and check dates
     def get_dates(self) -> None:
-        """Set up the date that the script uses for the arXiv API calls.
+        """Set up the dates that the script uses for the arXiv API calls.
         """
 
         # If the end_date was passed on the command line, use it
@@ -269,6 +277,9 @@ class CatchupPipeline:
 
     # # Setup some of the API information
     def setup_API(self) -> None:
+        """Set up some information that is required for the arXiv API calls.
+        """
+
         # Format the url
         self.arxiv_const.url = self.arxiv_const.url.format(
                                   start_year  = self.start_date.year,
@@ -297,7 +308,7 @@ class CatchupPipeline:
 
     # # Obtain basic search information
     def get_search_info(self) -> None:
-        """Performs the initial query to obtain important run information.
+        """Obtain the information on how we will obtain all papers within the search period. Will attempt to load from an .xml file, and will fall back to perform an initial query to the arXiv servers in case no file was found, or the file does not match the current search parameters.
         """
 
         # Search for xml file. If found, load it
@@ -401,7 +412,7 @@ class CatchupPipeline:
 
     # # Loop through the searches and obtain all papers
     def get_papers(self) -> None:
-        """Searches the arXiv for all papers that satisfy our criteria.
+        """Obtains all Papers and places them in the Corpus. Will attempt to load the Corpus from an .xml file, and will fall back to querying the arXiv servers in case no file was found, or the file does not match the current search parameters.
         """
 
         # Search for xml file. If found, load it
@@ -533,19 +544,21 @@ class CatchupPipeline:
 
             self.logger.debug("Found the expected number of papers ({:}).".format(self.total_papers))
 
-        # # Drop duplicate papers, if they exist
-        # # No longer needed as two keys cannot be equal.
-        # self.corpus.dropDuplicates(self.logger)
-
         # Remove revised papers
         self.corpus.drop_revisions()
 
     # # # Find matches
     def find_matches(self) -> None:
+        """Find all author/word matches with the search_terms on all Papers in the Corpus
+        """
+
         self.corpus.find_matches_corpus(self.search_terms)
 
     # # Score the papers by author/word matches
     def score_papers_matches(self) -> None:
+        """Score all Papers in the Corpus based on the author/word matches.
+        """
+
         self.corpus.score_corpus_matches()
     
     # # Score the papers via a ML algorithm
@@ -559,14 +572,20 @@ class CatchupPipeline:
 
     # # Filter the papers based on matches
     def filter_papers_matches(self) -> None:
+        """Filter all papers in the Corpus based on the matches with the search_terms.
+        """
         self.corpus.filter_corpus_matches()
 
     # Filter the papers based on their scores
     def filter_papers_score(self) -> None:
+        """Filter all papers in the Corpus based on their scores.
+        """
         self.corpus.filter_corpus_score()
 
     # # Determine how to display the results
     def get_display_method(self) -> None:
+        """Find the preferred method of displaying the results.
+        """
 
         # If there is at least one paper, open/prompt
         if len(self.corpus.papers_of_note) > 0:
@@ -650,6 +669,8 @@ class CatchupPipeline:
     
     # # Display the results
     def display(self) -> None:
+        """Displays the results to the user, based on their preference.
+        """
 
         if self.write_to_file:
 
@@ -697,6 +718,8 @@ class CatchupPipeline:
 
     # # Summarise the results
     def summary(self) -> None:
+        """Summarise the results.
+        """
 
         # Compute the number of digits in the number of papers found
         max_digits = len(str(self.total_papers))
@@ -709,6 +732,8 @@ class CatchupPipeline:
 
     # # Delete the temporarly files
     def clear_temp_files(self) -> None:
+        """Clear the temporary files created by the script.
+        """
 
         delete_file(self.logger, self.paths["searchxml"])
         delete_file(self.logger, self.paths["papersxml"])

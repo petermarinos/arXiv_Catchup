@@ -10,9 +10,17 @@ import numpy                 as np
 import logging
 
 class Corpus:
+    """Contains the entire corpus downloaded from the arXiv servers.
+    """
 
     # # Initialise the class
     def __init__(self, logger: logging.Logger) -> None:
+        """Create the Corpus object.
+
+        inputs
+        ------
+        logger : The logger object
+        """
 
         self.logger = logger
 
@@ -22,23 +30,33 @@ class Corpus:
 
     # # Clear the Corpus
     def clear_corpus(self) -> None:
+        """Delete all entries in the Corpus
+        """
 
-        self.logger.debug("Replacing corpus with an empty dictionary.")
+        self.logger.debug("Deleting all entries in the corpus.")
 
         # Replace the corpus with an empty dictionary
         self.corpus:dict[str, Paper] = {}
 
+        # Set the length back to zero
         self.length = 0
 
     # # Add a Paper object to the Corpus
     def add_paper_to_corpus(self, ns: dict[str, str], entry: ET.Element) -> None:
+        """Add a paper to the Corpus object
+
+        inputs
+        ------
+        ns    : XML namespace.
+        entry : XML data containing a single paper.
+        """
 
         # Extract the paper from the xml entry
         paper = Paper(self.logger, ns, entry)
 
         # Add the paper to the corpus dictionary
-        key = paper.ID + "v{:d}".format(paper.version) # include version to ensure each key is unique. We will drop revisions later
-        value = paper
+        key              = paper.ID + "v{:d}".format(paper.version) # include version to ensure each key is unique. We will drop revisions later
+        value            = paper
         self.corpus[key] = value
 
         # Add one to the length
@@ -46,6 +64,8 @@ class Corpus:
 
     # # Obtain the number of papers in the Corpus
     def get_corpus_length(self) -> None:
+        """Compute the length of the Corpus, i.e. how many papers are contained within.
+        """
 
         if len(self.corpus.keys()) is None:
             self.length = 0
@@ -54,33 +74,50 @@ class Corpus:
 
     # # Drop revised papers from the Corpus
     def drop_revisions(self) -> None:
+        """Drop revised papers from the Corpus.
+        """
 
         self.logger.debug("Removing revised papers.")
 
-        # Obtain the number of papers before dropping
+        # Obtain the number of papers before dropping revisions
         N = self.length
 
+        # Initialise a temporary dictionary that will hold all papers that are not revisions
         temp_dict:dict[str, Paper] = {}
 
+        # Loop over the Corpus
         for key, value in self.corpus.items():
+            
+            # If the current Paper is not a revision:
             if not value.revised:
+                
+                # Add it to the temp dictionary
                 temp_dict[key] = value
 
+        # Replace the Corpus with the temp dictionary
         self.corpus = temp_dict
 
         # Update the number of papers
         self.get_corpus_length()
+
+        # Compute the number of papers that were dropped
         num_dropped = N - self.length
+
         self.logger.debug("Dropped {:} revised entries.".format(num_dropped))
 
     # # Find matches
     def find_matches_corpus(self, search_terms) -> None:
+        """Find search_term matches within each Paper in the Corpus.
 
+        inputs
+        ------
+        search_terms : All search terms to find matches with.
+        """
         # Can process ~2,000 papers per second on a macbook
 
         self.logger.info("Finding keyword matches")
 
-        # Loop over all entries
+        # Loop over all papers in the Corpus
         count = 0
         for arxiv_ID, paper in self.corpus.items():
 
@@ -103,7 +140,7 @@ class Corpus:
 
     # # Score the papers by author/word matches
     def score_corpus_matches(self) -> None:
-        """Scores the papers based on the number of matches found.
+        """Scores all Papers in the Corpus based on the number of matches found.
         NOTE: This function also counts the number of matches.
         """
 
@@ -111,7 +148,7 @@ class Corpus:
 
         self.logger.info("Scoring papers based on matches")
 
-        # Loop over all entries
+        # Loop over all Papers
         count = 0
         for arxiv_ID, paper in self.corpus.items():
 
@@ -137,10 +174,12 @@ class Corpus:
 
     # # Filter the Corpus based on the author/word matches
     def filter_corpus_matches(self) -> None:
+        """Filter the Corpus such that only Papers with matches to the search terms are kept.
+        """
 
         self.logger.info("Filtering corpus based on word matching.")
 
-        # Loop over all entries
+        # Loop over all papers
         self.papers_of_note = np.array([])
         for key, val in self.corpus.items():
 
@@ -162,6 +201,8 @@ class Corpus:
 
     # # Filter the Corpus based on the score
     def filter_corpus_score(self) -> None:
+        """Filter the Corpus such that only Papers with a score above some threshold are kept.
+        """
 
         # Can process ~1e6 papers per second on a macbook
 
@@ -172,7 +213,7 @@ class Corpus:
         # 0.50 => a bit too generous with what papers are considered interesting
         # 0.65 => feels like a good limit to ensure the papers are interesting
         # 0.85 => can potentially miss something
-        # 1.00 => too strict if there are many 'excluded words'
+        # 1.00 => too strict, especially if there are many 'excluded words'
         author_threshold = 0.95 # At least one author in every 25
         word_threshold   = 0.65
 
