@@ -8,7 +8,6 @@ from .utils import cli_args
 
 Add comments to classes
 Add documentation to class functions
-Functions that loop through the Corpus should be moved to the Corpus class
 
 Add a flag to write only the arXiv IDs to a file. Update README.
 """
@@ -24,46 +23,46 @@ def main(cdir):
     pipeline = CatchupPipeline(cdir, args)
 
     # # Load search terms from the auxiliary file
-    pipeline.getSearchterms()
+    pipeline.get_searchterms()
 
     # # Load the dates
-    pipeline.getDates()
+    pipeline.get_dates()
 
     # # Check for errors with the dates
-    pipeline.dateErrorCheck()
+    pipeline.date_error_check()
 
     # # Setup the API information
-    pipeline.setupAPI()
+    pipeline.setup_API()
 
     # # Obtain basic search information
-    pipeline.getSearchInfo()
+    pipeline.get_search_info()
 
     # # Check for errors
-    pipeline.arxivErrorCheck()
+    pipeline.arxiv_error_check()
 
     # # Loop through the searches and obtain all papers
-    pipeline.getPapers()
+    pipeline.get_papers()
 
     # # Find matches in the papers
-    pipeline.findMatches()
+    pipeline.find_matches()
 
     # # Score the papers
-    pipeline.scorePapersMatches()
+    pipeline.score_papers_matches()
     # pipeline.scorePapersML()
 
     # # Filter the papers
     # # Filter based on matches
-    # pipeline.filterPapersMatches()
+    # pipeline.filter_papers_matches()
     # Filter based on score
-    pipeline.filterPapersScore()
+    pipeline.filter_papers_score()
 
     # # Display the results
-    pipeline.getDisplayMethod()
+    pipeline.get_display_method()
     pipeline.display()
 
     # print("Not deleting temp. files.")
     # # Delete xmls/other supplemental files if successfull
-    pipeline.clearTempFiles()
+    pipeline.clear_temp_files()
 
     # # Print a summary
     pipeline.summary()

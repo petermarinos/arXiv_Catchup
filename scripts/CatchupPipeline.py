@@ -53,10 +53,10 @@ class CatchupPipeline:
                          "ssl_preverr" : False}
         
         # Initialise the corpus
-        self.corpus = Corpus()
+        self.corpus = Corpus(self.logger)
         
     # # Load search terms from the auxiliary file
-    def getSearchterms(self) -> None:
+    def get_searchterms(self) -> None:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
         """
 
@@ -155,7 +155,7 @@ class CatchupPipeline:
                 self.logger.warning("The term '{:}' appears in both the Included and Excluded word fields.".format(inc_word))
 
     # # Load and check dates
-    def getDates(self) -> None:
+    def get_dates(self) -> None:
         """Set up the date that the script uses for the arXiv API calls.
         """
 
@@ -206,7 +206,7 @@ class CatchupPipeline:
         self.logger.info("Searching from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19:00 UTC".format(self.start_date.year, self.start_date.month, self.start_date.day, self.end_date.year, self.end_date.month, self.end_date.day))
 
     # # Error check the dates
-    def dateErrorCheck(self) -> None:
+    def date_error_check(self) -> None:
         """Check for errors with the dates.
         """
 
@@ -268,7 +268,7 @@ class CatchupPipeline:
             self.logger.info("Days since the previous search: {:}".format(prev_run.days))
 
     # # Setup some of the API information
-    def setupAPI(self) -> None:
+    def setup_API(self) -> None:
         # Format the url
         self.arxiv_const.url = self.arxiv_const.url.format(
                                   start_year  = self.start_date.year,
@@ -296,7 +296,7 @@ class CatchupPipeline:
                                   )
 
     # # Obtain basic search information
-    def getSearchInfo(self) -> None:
+    def get_search_info(self) -> None:
         """Performs the initial query to obtain important run information.
         """
 
@@ -355,7 +355,7 @@ class CatchupPipeline:
         self.total_papers = int(max_num_str)
 
     # # Check the search info query results for errors
-    def arxivErrorCheck(self) -> None:
+    def arxiv_error_check(self) -> None:
         """Runs some error checks on the results of the initial arXiv API pull (i.e. the one that collects some basic information).
         """
 
@@ -400,7 +400,7 @@ class CatchupPipeline:
         self.logger.debug("All search information tests passed!")
 
     # # Loop through the searches and obtain all papers
-    def getPapers(self) -> None:
+    def get_papers(self) -> None:
         """Searches the arXiv for all papers that satisfy our criteria.
         """
 
@@ -422,7 +422,6 @@ class CatchupPipeline:
 
             # Print how many were found
             # Compute the length of the corpus
-            self.corpus.getCorpusLength()
             n_papers = self.corpus.length
             self.logger.info("Found {:} of {:} papers in the .xml file.".format(self.corpus.length, self.total_papers))
 
@@ -445,7 +444,7 @@ class CatchupPipeline:
 
                 # # Clear the entries from the list.
                 # entries = []
-                self.corpus.clearCorpus(self.logger)
+                self.corpus.clear_corpus()
 
                 # Clear the .xml file
                 delete_file(self.logger, self.paths["papersxml"])
@@ -460,7 +459,6 @@ class CatchupPipeline:
                 self.logger.info("All information found in the .xml file. Skipping the search.")
 
         # Compute the length of the corpus
-        self.corpus.getCorpusLength()
         n_papers = self.corpus.length
         # If the number of papers is less that the total, connect to arXiv
         if n_papers < self.total_papers:
@@ -525,7 +523,7 @@ class CatchupPipeline:
             self.logger.info("All paper information successfully downloaded from the arXiv servers!")
 
         # Double check that we found the correct number of papers
-        self.corpus.getCorpusLength()
+        self.corpus.get_corpus_length()
         n_papers = self.corpus.length
         if n_papers != self.total_papers:
 
@@ -540,89 +538,35 @@ class CatchupPipeline:
         # self.corpus.dropDuplicates(self.logger)
 
         # Remove revised papers
-        self.corpus.dropRevisions(self.logger)
+        self.corpus.drop_revisions()
 
-    # # Find matches
-    def findMatches(self) -> None:
-
-        self.logger.info("Finding keyword matches")
-
-        # Loop over all entries
-        count = 0
-        for arxiv_ID, paper in self.corpus.corpus.items():
-
-            progress_bar(count, self.corpus.length) # No time estimate as it should always be fast.
-
-            self.logger.debug("Seaching for matches in arXiv:{:}.".format(arxiv_ID))
-            
-            # Seach for Authors
-            paper.matchAuthors(self.logger, self.search_terms["Authors"])
-
-            # # Search for included words
-            paper.matchWords(self.logger, self.search_terms, "Included Words")
-
-            # # Search for excluded words
-            paper.matchWords(self.logger, self.search_terms, "Excluded Words")
-
-            count += 1
-
-        progress_bar(self.corpus.length, self.corpus.length)
+    # # # Find matches
+    def find_matches(self) -> None:
+        self.corpus.find_matches_corpus(self.search_terms)
 
     # # Score the papers by author/word matches
-    def scorePapersMatches(self) -> None:
-        """Scores the papers based on the number of matches found.
-        NOTE: This function also counts the number of matches.
-        """
-
-        self.logger.info("Scoring papers based on matches")
-
-        # Loop over all entries
-        count = 0
-        for arxiv_ID, paper in self.corpus.corpus.items():
-
-            progress_bar(count, self.corpus.length) # No time estimate as it should always be fast
-
-            self.logger.debug("Computing a score for arXiv:{:}.".format(arxiv_ID))
-
-            # Score the authors
-            paper.scoreAuthors(self.logger)
-
-            # Score for included words
-            paper.scoreWords(self.logger, "Included Words")
-
-            # Score for excluded words
-            paper.scoreWords(self.logger, "Excluded Words")
-
-            # Finalise the score
-            paper.finalWordScore(self.logger)
-
-            count += 1
-
-        progress_bar(self.corpus.length, self.corpus.length)
+    def score_papers_matches(self) -> None:
+        self.corpus.score_corpus_matches()
     
     # # Score the papers via a ML algorithm
-    def scorePapersML(self) -> None:
+    def score_papers_ML(self) -> None:
         """Scores the papers based on a machine-learning algorithm.
         NOTE: This method is not implemented. Current plan is to create a model that can be traied by the user on a directory containing many .pdf files. This function would then use said model to score each paper in the arXiv search.
-
-        outputs
-        -------
-        entries_of_note : Contains the indices of all papers that pass the filter.
         """
 
         self.logger.error("Attempting to use ML model to score papers. This has not been implemented yet. Returning no results.\n")
         raise
 
     # # Filter the papers based on matches
-    def filterPapersMatches(self) -> None:
-        self.corpus.filterCorpusMatches(self.logger)
+    def filter_papers_matches(self) -> None:
+        self.corpus.filter_corpus_matches()
 
     # Filter the papers based on their scores
-    def filterPapersScore(self) -> None:
-        self.corpus.filterCorpusScore(self.logger)
+    def filter_papers_score(self) -> None:
+        self.corpus.filter_corpus_score()
 
     # # Determine how to display the results
-    def getDisplayMethod(self) -> None:
+    def get_display_method(self) -> None:
 
         # If there is at least one paper, open/prompt
         if len(self.corpus.papers_of_note) > 0:
@@ -724,13 +668,9 @@ class CatchupPipeline:
 
                 progress_bar(request_count, total, ( total - request_count ) * self.arxiv_const.sleeptimer_opening)
 
-                # # arXiv asks that you limit opening pages to four requests per second
-                # Sleep before the request to prevent an unnecessary sleep at the end
-                # # Sleep for 1s every four pages (recommended)
-                # if request_count % 4 == 0:
-                #     time.sleep(1)
-                # Sleep for 0.25s per request (my preferred method when having to watch it open a large number)
+                # # arXiv asks that you limit opening pages to four requests per second. They recommend burst of four papers, but I prefer one per every quarter second.
                 if request_count > 0:
+
                     time.sleep(self.arxiv_const.sleeptimer_opening)
 
                 link = self.corpus.corpus[arxiv_id].link_abs
@@ -740,16 +680,16 @@ class CatchupPipeline:
 
                     if request_count == 0:
 
-                        webbrowser.open(link, new=1)  # new=1: open in a new browser window
+                        webbrowser.open(link, new=1) # new=1: open in a new browser window
 
                     else:
 
-                        webbrowser.open(link, new=2)  # new=2: open in a new tab
+                        webbrowser.open(link, new=2) # new=2: open in a new tab
 
                 # Otherwise, open in the current window
                 else:
 
-                    webbrowser.open(link)  # Default behavior, just opens everything in the current window
+                    webbrowser.open(link) # Default behavior, just opens everything in the current window
 
                 request_count += 1
 
@@ -768,7 +708,7 @@ class CatchupPipeline:
         print("")
 
     # # Delete the temporarly files
-    def clearTempFiles(self) -> None:
+    def clear_temp_files(self) -> None:
 
         delete_file(self.logger, self.paths["searchxml"])
         delete_file(self.logger, self.paths["papersxml"])

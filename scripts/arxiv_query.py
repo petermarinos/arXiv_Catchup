@@ -308,7 +308,7 @@ def extract_papers(logger: logging.Logger, corpus: Corpus, ns: dict[str, str], x
     count = 0
     for entry in xml_data.findall("atom:entry", ns):
 
-        corpus.addPaperToCorpus(logger, ns, entry)
+        corpus.add_paper_to_corpus(ns, entry)
 
         count += 1
 
