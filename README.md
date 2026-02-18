@@ -18,7 +18,7 @@ It then computes an 'interest' score for every paper based on the search terms y
 
 ### Requirements
 
-Four of the required packages are not part of the default python3 standard library: `numpy`, `pandas`, `pylatexenc`, and `yaml`.
+Four of the required packages are not part of the default python3 standard library: `numpy`, `pylatexenc`, and `yaml`.
 An up-to-date version of `certifi` is also required to connect to the arXiv servers.
 Use the included `requirements.txt` file to create an environment.
 
@@ -136,7 +136,6 @@ Thank you to arXiv for use of its open access interoperability.
 In addition to the python standard library, we make use of the following packages:
 - `pylatexenc` - [homepage](https://github.com/phfaist/pylatexenc)
 - `numpy` - [homepage](https://numpy.org/citing-numpy/)
-- `pandas` - [homepage](https://pandas.pydata.org)
 - `yaml` - [homepage](https://pyyaml.org/)
 
 ## Future Improvements
