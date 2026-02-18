@@ -17,26 +17,20 @@ import ssl
 # from email.message import Message
 # from unittest.mock import patch
 
-def http_errorcheck(logger, error, attempt, max_retries) -> None | float:
+def http_errorcheck(logger: logging.Logger, error: urllib.error.HTTPError, attempt: int, max_retries: int) -> float | None:
     """Handles the HTTP errors that could arise.
 
     inputs
     ------
-    logger      : RootLogger
-        The logger object
-    error       : urllib.error.HTTPError
-        Error returned from the connection attempt.
-    attempt     : int
-        Attempt number.
-    max_retries : int
-        Maximum number of attempts allowed.
-    wait_time   : float
-        Time to wait between attempts.
+    logger      : The logger object.
+    error       : Error returned from the connection attempt.
+    attempt     : Attempt number.
+    max_retries : Maximum number of attempts allowed.
+    wait_time   : Time to wait between attempts.
 
     returns
     -------
-    retry_after : None or float
-        Holds the time that the query attempts should be paused for, if there is a request to pause. Otherwise, it is None.
+    retry_after : Holds the time that the query attempts should be paused for, if there is a request to pause. Otherwise, it is None.
     """
 
     # Define some error codes. If one of these, we will retry
@@ -74,7 +68,7 @@ def http_errorcheck(logger, error, attempt, max_retries) -> None | float:
             if error.headers["Retry-After"] is not None:
 
                 logger.debug("Found Retry-After header.")
-                retry_after = error.headers["Retry-After"]
+                retry_after = float( error.headers["Retry-After"] )
 
                 logger.warning("---> Received a wait command from the server. Increasing wait time to the recommended {:} seconds ...".format(retry_after))
 
@@ -99,26 +93,20 @@ def http_errorcheck(logger, error, attempt, max_retries) -> None | float:
 
     return retry_after
 
-def url_errorcheck(logger, error, cert_error_bool, wait_time):
+def url_errorcheck(logger: logging.Logger, error: urllib.error.URLError, cert_error_bool: bool, wait_time: float) -> tuple[ssl.SSLContext | None, bool]:
     """Handles the URL errors that could arise.
 
     inputs
     ------
-    logger          : RootLogger
-        The logger object
-    error           : urllib.error.URLError
-        Error returned from the connection attempt.
-    cert_error_bool : bool
-        True if the error was caused by a certification error, False otherwise.
-    wait_time       : float
-        Time to wait between attempts.
+    logger          : The logger object.
+    error           : Error returned from the connection attempt.
+    cert_error_bool : True if the error was caused by a certification error, False otherwise.
+    wait_time       : Time to wait between attempts.
 
     returns
     -------
-    ssl_context     : None or SSLContext
-        New SSLContext to use for the connection if the error is caused by a certification error, otherwise None.
-    cert_error_bool : bool
-        True if the error was a certification error, otherwise False.
+    ssl_context     : New SSLContext to use for the connection if the error is caused by a certification error, otherwise None.
+    cert_error_bool : True if the error was a certification error, otherwise False.
     """
 
     # If it is a certificate verification error, and no certification error has occured before:
@@ -155,25 +143,22 @@ def url_errorcheck(logger, error, cert_error_bool, wait_time):
 
     return ssl_context, cert_error_bool
 
-def arxiv_query(logger, ssl_dict, url, start_num, blocksize) -> tuple[ET.Element, dict]:
+def arxiv_query(logger: logging.Logger, ssl_dict: dict, url: str, start_num: int, blocksize: int) -> tuple[ET.Element, dict]:
     """Queries the arXiv servers for the papers.
     Will catch errors and attempt retries (if the error allows retries).
 
     inputs
     ------
-    logger    : RootLogger
-        The logger object
-    url       : str
-        URL for the arXiv API. Should be formatted to include dates/etc, except for the start_num and blocksize
-    start_num : int
-        Starting paper number for the search query.
-    blocksize : int
-        Number of papers to download in the search query.
+    logger    : The logger object.
+    ssl_dict  : Contains None, False if there have been no certification errors. Contains ssl_context, True if ther has been a cert. error.
+    url       : URL for the arXiv API. Should be formatted to include dates/etc, except for the start_num and blocksize.
+    start_num : Starting paper number for the search query.
+    blocksize : Number of papers to download in the search query.
 
     outputs
     -------
-    parsed_xml_data : Element
-        XML data from the arXiv query.
+    parsed_xml_data : XML data from the arXiv query.
+    ssl_context     : Contains the SSLContext and a bool to say if a certificate error has been encountered.
     """
 
     # Define some values for retry attempts. These are magic values and kept from the users.
@@ -313,7 +298,7 @@ def extract_papers(logger: logging.Logger, corpus: Corpus, ns: dict[str, str], x
 
     inputs
     ------
-    logger : The logger object
+    logger : The logger object.
     corpus : The corpus of all papers currently found.
     ns     : XML namespaces that arXiv uses.
     xml    : XML data from the arXiv query.

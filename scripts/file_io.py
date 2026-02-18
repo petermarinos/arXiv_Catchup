@@ -157,6 +157,7 @@ def write_date(logger: logging.Logger, filename: str, date: datetime.date) -> No
     logger.info("Writing the date {:} to the file: {:}.".format(date, filename))
 
     with open(filename, "w") as f:
+        
         f.write(date.isoformat())
 
     return

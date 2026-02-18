@@ -10,6 +10,7 @@ import re
 
 class Paper:
             
+    # # Initialise the class
     def __init__(self, logger: logging.Logger, ns: dict[str, str], entry: ET.Element) -> None:
 
         # # Extract values, and perform some error checking
@@ -132,6 +133,7 @@ class Paper:
         
         logger.debug("Paper successfully extracted from xml.")
 
+    # # Find matches between the paper authors and the authors of interest
     def matchAuthors(self, logger: logging.Logger, key_authors: list[str]) -> None:
 
         if key_authors is None:
@@ -166,6 +168,7 @@ class Paper:
             if self.n_author_matches == 0:
                 logger.debug(" ... none found")
 
+    # # Find matches between the text in the title and abstract and the words of interest
     def matchWords(self, logger: logging.Logger, key_words: dict[str, str], match_type: str) -> None:
 
         if key_words[match_type] is None:
@@ -217,6 +220,7 @@ class Paper:
             if self.words[match_type]["Total Matches"] == 0:
                 logger.debug(" ... none found")
 
+    # # Score the paper based on the author list
     def scoreAuthors(self, logger: logging.Logger) -> None:
 
         logger.debug("** Author Scores **")
@@ -234,6 +238,7 @@ class Paper:
         logger.debug("| Total authors = {:} | Found = {:} |".format(len(self.authors), authors_found))
         logger.debug("| Author score = {:.2f} |".format(self.author_score))
 
+    # # Score the paper based on the words used in a given category
     def scoreWords(self, logger: logging.Logger, match_type: str) -> None:
 
         logger.debug("** {:} Scores **".format(match_type))
@@ -263,6 +268,7 @@ class Paper:
         logger.debug("| Abstract Matches = {:.2f} | Abstract Score = {:.2f} |".format(inc_abstract_count, inc_abstract_score))
         logger.debug("| {:} Score = {:.2f} |".format(match_type, inc_total_score))
 
+    # # Compute a final score, considering both word categories
     def finalWordScore(self, logger: logging.Logger) -> None:
 
         # Compute the Final score:
@@ -271,12 +277,13 @@ class Paper:
         logger.debug("Final Score = {:}".format(self.final_score))
 
 class Corpus:
-    # The corpus (all papers)
 
+    # # Initialise the class
     def __init__(self) -> None:
 
         self.corpus:dict[str, Paper] = {}
 
+    # # Add a Paper object to the Corpus
     def addPaperToCorpus(self, logger: logging.Logger, ns: dict[str, str], entry: ET.Element) -> None:
 
         # Extract the paper from the xml entry
@@ -287,6 +294,7 @@ class Corpus:
         value = paper
         self.corpus[key] = value
 
+    # # Clear the Corpus
     def clearCorpus(self,  logger: logging.Logger) -> None:
 
         logger.debug("Replacing corpus with an empty dictionary.")
@@ -294,10 +302,12 @@ class Corpus:
         # Replace the corpus with an empty dictionary
         self.corpus:dict[str, Paper] = {}
 
+    # # Obtain the number of papers in the Corpus
     def getCorpusLength(self) -> None:
 
         self.length = len(self.corpus.keys())
 
+    # # Drop revised papers from the Corpus
     def dropRevisions(self, logger: logging.Logger) -> None:
 
         logger.debug("Removing revised papers.")
@@ -318,6 +328,7 @@ class Corpus:
         num_dropped = N - self.length
         logger.debug("Dropped {:} revised entries.".format(num_dropped))
 
+    # # Filter the Corpus based on the author/word matches
     def filterCorpusMatches(self, logger: logging.Logger) -> None:
 
         logger.info("Filtering corpus based on word matching.")
@@ -342,6 +353,7 @@ class Corpus:
                 # self.papers_of_note.append(key)
                 np.append(self.papers_of_note, key)
 
+    # # Filter the Corpus based on the score
     def filterCorpusScore(self, logger: logging.Logger) -> None:
 
         logger.info("Filtering corpus based on scores.")

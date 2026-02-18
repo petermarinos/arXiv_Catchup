@@ -21,8 +21,9 @@ import yaml
 import sys
 import os
 
-# Define the pipeline class
 class CatchupPipeline:
+    """Pipeline for the entire script.
+    """
 
     # # Initialise the class
     def __init__(self, cdir: str, args: argparse.Namespace) -> None:
@@ -352,6 +353,7 @@ class CatchupPipeline:
         # Set the number of papers
         self.total_papers = int(max_num_str)
 
+    # # Check the search info query results for errors
     def arxivErrorCheck(self) -> None:
         """Runs some error checks on the results of the initial arXiv API pull (i.e. the one that collects some basic information).
         """
@@ -565,7 +567,7 @@ class CatchupPipeline:
 
         progress_bar(self.corpus.length, self.corpus.length)
 
-    # # Score the papers
+    # # Score the papers by author/word matches
     def scorePapersMatches(self) -> None:
         """Scores the papers based on the number of matches found.
         NOTE: This function also counts the number of matches.
@@ -597,6 +599,7 @@ class CatchupPipeline:
 
         progress_bar(self.corpus.length, self.corpus.length)
     
+    # # Score the papers via a ML algorithm
     def scorePapersML(self) -> None:
         """Scores the papers based on a machine-learning algorithm.
         NOTE: This method is not implemented. Current plan is to create a model that can be traied by the user on a directory containing many .pdf files. This function would then use said model to score each paper in the arXiv search.
@@ -617,7 +620,7 @@ class CatchupPipeline:
     def filterPapersScore(self) -> None:
         self.corpus.filterCorpusScore(self.logger)
 
-    # # Display the results
+    # # Determine how to display the results
     def getDisplayMethod(self) -> None:
 
         # If there is at least one paper, open/prompt
@@ -699,7 +702,8 @@ class CatchupPipeline:
 
             # Write the end date of the search to a file for the next run
             write_date(self.logger, self.paths["prevsearch"], self.end_date)
-            
+    
+    # # Display the results
     def display(self) -> None:
 
         if self.write_to_file:
@@ -750,7 +754,7 @@ class CatchupPipeline:
 
             progress_bar(total, total)
 
-    # # Summarise the search results
+    # # Summarise the results
     def summary(self) -> None:
 
         # Compute the number of digits in the number of papers found

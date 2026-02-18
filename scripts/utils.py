@@ -13,6 +13,7 @@ import time
 import sys
 
 class FlushingStreamHandler(logging.StreamHandler):
+    
     def emit(self, record):
         # Flush the current stream
         sys.stdout.write("\r\033[K")

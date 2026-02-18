@@ -24,11 +24,11 @@ def is_posting_day_bool(dt: datetime.date) -> bool:
 
     inputs
     ------
-    dt : Date to be checked if it is a posting day
+    dt : Date to be checked if it is a posting day.
 
     outputs
     -------
-    : True if date is a valid posting day, False otherwise
+    : True if date is a valid posting day, False otherwise.
     """
 
     # dt.weekday() = 0 for Monday, ..., 4 for Friday, 5 for Saturday, and 6 for Sunday
@@ -42,11 +42,11 @@ def is_searching_day_bool(dt: datetime.date) -> bool:
 
     inputs
     ------
-    dt : Date to be checked if it is a valid search day
+    dt : Date to be checked if it is a valid search day.
 
     outputs
     -------
-    : True if date is a valid search day, False otherwise
+    : True if date is a valid search day, False otherwise.
     """
 
     # dt.weekday() = 0 for Monday, ..., 4 for Friday, 5 for Saturday, and 6 for Sunday
@@ -70,17 +70,13 @@ def calc_search_endtime(input_time: datetime.datetime, search_time: datetime.tim
 
     inputs
     ------
-    input_time  : datetime.time (with timezone and date)
-        Either the current time, or the time input from the CLI.
-    search_time : datetime.time (with timezone)
-        Time that arXiv seaches use
-    post_time   : datetime.time (with timezone)
-        Time that arXiv postings occur
+    input_time  : Either the current time, or the time input from the CLI.
+    search_time : Time that arXiv seaches use.
+    post_time   : Time that arXiv postings occur.
 
     outputs
     -------
-    search_endtime : datetime.time (with timezone and date)
-        Most recent valid search endtime relative to the input `now`.
+    search_endtime : Most recent valid search endtime relative to the input `now`.
     """
 
     # If now is after post_time, search_time will be 19:00 the previous day
@@ -104,15 +100,12 @@ def calc_next_posttime(input_time: datetime.datetime, post_time: datetime.time) 
 
     inputs
     ------
-    input_time : datetime.time (with timezone and date)
-        Either the current time, or the time input from the CLI.
-    post_time  : datetime.time (with timezone)
-        Time that arXiv postings occur
+    input_time : Either the current time, or the time input from the CLI.
+    post_time  : Time that arXiv postings occur.
 
     outputs
     -------
-    next_post_time : datetime.time (with timezone and date)
-        Next valid arXiv list post time relative to the input `now`.
+    next_post_time : Next valid arXiv list post time relative to the input `now`.
     """
 
     # If now is after post_time, the next post_time will be 06:00 the following day
@@ -137,23 +130,16 @@ def parse_date(logger: logging.Logger, date_iso: str, date_name: str, search_tim
 
     inputs
     ------
-    logger      : RootLogger
-        The logger object
-    date_iso    : str
-        ISO representation of the date
-    date_name   : str
-        Name of the date (e.g. start_time, end_time)
-    search_time : datetime.time (timezone aware)
-        Time of the arXiv search start/end points
-    post_time   : datetime.time (timezone aware)
-        Time of the arXiv daily postings
+    logger      : The logger object.
+    date_iso    : sISO representation of the date.
+    date_name   : Name of the date (e.g. start_time, end_time).
+    search_time : Time of the arXiv search start/end points.
+    post_time   : Time of the arXiv daily postings.
 
     outputs
     -------
-    parsed_time : datetime.time (timezone aware)
-        Time, with the correct timezone
-    parsed_date : datetime.date (timezone aware)
-        Date, with the correct timezone
+    parsed_time : Datetime, with the correct timezone.
+    parsed_date : Date, with the correct timezone.
     """
 
     try:

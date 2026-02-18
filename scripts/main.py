@@ -6,10 +6,11 @@ from .utils import cli_args
 
 """TO-DO:
 
-Add type hints to functions
+Update all function descriptions
 
 Add comments to classes
 Add documentation to class functions
+Functions that loop through the Corpus should be moved to the Corpus class
 
 Add a flag to write only the arXiv IDs to a file. Update README.
 """
@@ -27,8 +28,10 @@ def main(cdir):
     # # Load search terms from the auxiliary file
     pipeline.getSearchterms()
 
-    # # Load and check dates
+    # # Load the dates
     pipeline.getDates()
+
+    # # Check for errors with the dates
     pipeline.dateErrorCheck()
 
     # # Setup the API information
