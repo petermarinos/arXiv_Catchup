@@ -1,6 +1,7 @@
 # Import libraries
 from pylatexenc.latex2text import LatexNodes2Text
 from unicodedata           import normalize       as normalise
+
 import re
 
 def LaTeX_to_unicode(s: str) -> str:

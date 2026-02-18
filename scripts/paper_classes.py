@@ -1,16 +1,14 @@
 # Import functions
 from .string_handling import normalise_string
+from .filtering       import authors_match
 
 # Import libraries
 import xml.etree.ElementTree as ET
-# import argparse
-# import datetime
+import numpy                 as np
 import logging
 import re
 
 class Paper:
-
-    # One paper
             
     def __init__(self, logger: logging.Logger, ns: dict[str, str], entry: ET.Element) -> None:
 
@@ -119,17 +117,158 @@ class Paper:
         logger.debug("Revised: {:}".format(self.revised))
         logger.debug("Number of authors: {:}".format(self.n_authors))
         logger.debug("Wordcount: Title = {:} | Abstract = {:}".format(self.n_words["Title"], self.n_words["Abstract"]))
+
+        # Initialise a few other values
+        self.n_author_matches: int                    = 0
+        self.found_authors:    list[str]              = []
+        score_dict: dict[str, int | float]            = {"Title Score"      : 0.,
+                                                         "Title Matches"    : 0,
+                                                         "Abstract Score"   : 0.,
+                                                         "Abstract Matches" : 0,
+                                                         "Total Score"      : 0.,
+                                                         "Total Matches"    : 0}
+        self.words: dict[str, dict[str, int | float]] = {"Included Words" : score_dict.copy(),
+                                                         "Excluded Words" : score_dict.copy()}
         
         logger.debug("Paper successfully extracted from xml.")
 
-    # def scoreAuthors():
-    #     print("todo")
+    def matchAuthors(self, logger: logging.Logger, key_authors: list[str]) -> None:
 
-    # def scoreIncluded():
-    #     print("todo")
+        if key_authors is None:
+            logger.debug("No authors to search for...")
+            
+        # If there is at least one author of interest
+        if key_authors is not None:
 
-    # def scoreExcluded():
-    #     print("todo")
+            logger.debug("Searching for Authors")
+
+            # Loop over the authors of the paper
+            for paper_author in self.authors:
+
+                # Loop over the authors in the search terms
+                for key_author in key_authors:
+
+                    # Search the author field of the paper for any key authors
+                    key_author_match = authors_match(key_author, paper_author)
+
+                    # If an author is found:
+                    if key_author_match:
+
+                        logger.debug("Found author: {:} | Matched with: {:}".format(key_author, paper_author))
+                        
+                        # Increase the number of author matches by 1
+                        self.n_author_matches += 1
+                        
+                        # Add the author to the list of found authors
+                        # Use the author name from the paper so that the user is shown exactly what was matched
+                        self.found_authors.append(paper_author)
+
+            if self.n_author_matches == 0:
+                logger.debug(" ... none found")
+
+    def matchWords(self, logger: logging.Logger, key_words: dict[str, str], match_type: str) -> None:
+
+        if key_words[match_type] is None:
+            logger.debug("No {:} to search for...".format(match_type))
+
+        if key_words[match_type] is not None:
+
+            logger.debug("Searching for {:}".format(match_type))
+
+            # # Compute the number of words we are searching for. Used to normalise the score?
+            # num_words = len(search_terms[key])
+
+            # Search all titles and abstracts for words in the supplied key
+            for word in key_words[match_type]:
+
+                # Search the author field in the entry
+                title_match = re.search(r"\b"+word+r"\b", self.title, re.IGNORECASE)
+
+                # If a match is found in the title:
+                if title_match:
+
+                    # Count the number of matches
+                    num_title_matches = len( re.findall(r"\b"+word+r"\b", self.title, re.IGNORECASE) )
+
+                    logger.debug("Found '{:}' {:} time(s) in the title.".format(word, num_title_matches))
+
+                    # Add to score
+                    self.words[match_type]["Title Matches"] += num_title_matches
+
+                # If something exists in the abstract field, search it for matches
+                if self.abstract is not None:
+                    
+                    abstract_match = re.search(r"\b"+word+r"\b", self.abstract, re.IGNORECASE)
+
+                    # If a match is found in the abstract:
+                    if abstract_match:
+
+                        # Count the number of matches
+                        num_abstract_matches = len( re.findall(r"\b"+word+r"\b", self.abstract, re.IGNORECASE) )
+
+                        logger.debug("Found '{:}' {:} time(s) in the abstract.".format(word, num_abstract_matches))
+
+                        self.words[match_type]["Abstract Matches"] += num_abstract_matches
+                    
+            # Compute the total number of matches
+            self.words[match_type]["Total Matches"] = ( self.words[match_type]["Title Matches"] + self.words[match_type]["Abstract Matches"] )
+
+            logger.debug("Matches | Title {:} | Abstract {:} |".format(self.words[match_type]["Title Matches"], self.words[match_type]["Abstract Matches"]))
+            if self.words[match_type]["Total Matches"] == 0:
+                logger.debug(" ... none found")
+
+    def scoreAuthors(self, logger: logging.Logger) -> None:
+
+        logger.debug("** Author Scores **")
+
+        # # Compute penalties
+        # Author lists are penalised for being above a count of 25
+        authors_penalty  =  25 / self.n_authors
+        logger.debug("| Author Penalty = {:.2f} |".format(authors_penalty))
+
+        # Compute the Author score:
+        authors_found     = len( self.found_authors )
+        authors_score     = min(authors_found * authors_penalty, 1.)
+        self.author_score = max(authors_score, 0)
+
+        logger.debug("| Total authors = {:} | Found = {:} |".format(len(self.authors), authors_found))
+        logger.debug("| Author score = {:.2f} |".format(self.author_score))
+
+    def scoreWords(self, logger: logging.Logger, match_type: str) -> None:
+
+        logger.debug("** {:} Scores **".format(match_type))
+
+        # # Compute word scores
+        # They are bound to the interval [0, 1] via min/max functions
+        # An interesting title has one or two matches
+        # An interesting abstract has ~5 matches
+        title_penalty    =  18 / self.n_words["Title"]
+        abstract_penalty = 250 / self.n_words["Abstract"]
+        logger.debug("| Title Penalty = {:.2f} | Abstract Penalty = {:.2f} |".format(title_penalty, abstract_penalty))
+
+        # Compute the Included Word scores:
+        inc_title_count    = self.words[match_type]["Title Matches"]
+        inc_abstract_count = self.words[match_type]["Abstract Matches"]
+        
+        inc_title_score    = min( title_penalty * inc_title_count / 1.0, 1.0 )
+        inc_abstract_score = min( abstract_penalty * inc_abstract_count / 5.0, 1.0 )
+        inc_total_score    = ( inc_title_score + inc_abstract_score ) / 2.0
+
+        # Place scores into the dataframe
+        self.words[match_type]["Title Score"]    = inc_title_score
+        self.words[match_type]["Abstract Score"] = inc_abstract_score
+        self.words[match_type]["Total Score"]    = inc_total_score
+        
+        logger.debug("| Title Matches = {:} | Title Score = {:.2f} |".format(inc_title_count, inc_title_score))
+        logger.debug("| Abstract Matches = {:.2f} | Abstract Score = {:.2f} |".format(inc_abstract_count, inc_abstract_score))
+        logger.debug("| {:} Score = {:.2f} |".format(match_type, inc_total_score))
+
+    def finalWordScore(self, logger: logging.Logger) -> None:
+
+        # Compute the Final score:
+        self.final_score = max(self.words["Included Words"]["Total Score"] - self.words["Excluded Words"]["Total Score"], +0)
+
+        logger.debug("Final Score = {:}".format(self.final_score))
 
 class Corpus:
     # The corpus (all papers)
@@ -148,18 +287,18 @@ class Corpus:
         value = paper
         self.corpus[key] = value
 
-    def clearCorpus(self,  logger: logging.Logger):
+    def clearCorpus(self,  logger: logging.Logger) -> None:
 
         logger.debug("Replacing corpus with an empty dictionary.")
 
         # Replace the corpus with an empty dictionary
         self.corpus:dict[str, Paper] = {}
 
-    def getCorpusLength(self):
+    def getCorpusLength(self) -> None:
 
         self.length = len(self.corpus.keys())
 
-    def dropRevisions(self,  logger: logging.Logger):
+    def dropRevisions(self, logger: logging.Logger) -> None:
 
         logger.debug("Removing revised papers.")
 
@@ -179,8 +318,64 @@ class Corpus:
         num_dropped = N - self.length
         logger.debug("Dropped {:} revised entries.".format(num_dropped))
 
-# In score_papers_matches:
-# for paper in Corpus:
-#     paper.scoreAuthors()
-#     paper.scoreIncluded()
-#     paper.scoreExcluded()
+    def filterCorpusMatches(self, logger: logging.Logger) -> None:
+
+        logger.info("Filtering corpus based on word matching.")
+
+        # Loop over all entries
+        self.papers_of_note = np.array([])
+        for key, val in self.corpus.items():
+
+            # If an Author was found, append it to the entries of note
+            if val.n_author_matches >= 1:
+
+                logger.debug("Adding paper: {:} (found author)".format(key))
+
+                # self.papers_of_note.append(key)
+                np.append(self.papers_of_note, key)
+
+            # If there were included word matches and *no* excluded word matches, append
+            elif ( val.words["Included Words"]["Total Matches"] >= 1 ) and ( val.words["Excluded Words"]["Total Matches"] == 0 ):
+
+                logger.debug("Adding paper: {:} (found word)".format(key))
+
+                # self.papers_of_note.append(key)
+                np.append(self.papers_of_note, key)
+
+    def filterCorpusScore(self, logger: logging.Logger) -> None:
+
+        logger.info("Filtering corpus based on scores.")
+
+        # Define the thresholds
+        # Words
+        # 0.50 => a bit too generous with what papers are considered interesting
+        # 0.65 => feels like a good limit to ensure the papers are interesting
+        # 0.85 => can potentially miss something
+        # 1.00 => too strict if there are many 'excluded words'
+        author_threshold = 0.95 # At least one author in every 25
+        word_threshold   = 0.65
+
+        # Loop over all papers
+        self.papers_of_note_unsorted: list[str] = []
+        self.scores: list[float]                = []
+        for key, val in self.corpus.items():
+
+            # If the author score is above the threshold, append the paper to the papers of note
+            if val.author_score >= author_threshold:
+
+                logger.debug("Adding paper: {:} (Author score = {:})".format(key, val.author_score))
+
+                self.papers_of_note_unsorted.append(key)
+                self.scores.append(val.author_score)
+
+            # Otherwise, if the score is above the threshold, append it to the papers of note
+            elif val.final_score >= word_threshold:
+
+                logger.debug("Adding paper: {:} (Word score = {:})".format(key, val.final_score))
+
+                self.papers_of_note_unsorted.append(key)
+                self.scores.append(val.final_score)
+
+        # Sort the papers of note by their score
+        logger.info("Sorting papers based on score (descending).")
+        self.papers_of_note = np.array(self.papers_of_note_unsorted)[np.array(self.scores).argsort()[::-1]]
