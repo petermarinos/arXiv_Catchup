@@ -31,7 +31,7 @@ filenames = set_filenames(cdir)
 url, apiquery, ns, sleep_opening, sleep_search, search_blocksize = set_arxiv_constants()
 
 # Setup logging
-logger = logger_setup(args)
+logger = logger_setup(args, cdir)
 
 # Read the catchup file
 papers = read_catchup(logger, filenames["catchup"], sleep_opening)

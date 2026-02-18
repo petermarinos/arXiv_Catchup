@@ -1,24 +1,8 @@
 # Import libraries
 from pylatexenc.latex2text import LatexNodes2Text
 from unicodedata           import normalize       as normalise
+
 import re
-
-def LaTeX_to_unicode(s: str) -> str:
-    """Stip LaTeX-style accents, special characters, and ligatures from the string and convert to unicode (e.g. {\'o} and \'o -> ó). This function covers all commands built into LaTeX.
-
-    inputs
-    ------
-    s : Any string that may (or may not) contain LaTeX commands.
-
-    outputs
-    -------
-    s_unicode : The input string, stripped of all LaTeX commands.
-    """
-
-    # Convert LaTeX accents/ligatures/special characters to unicode
-    s_unicode = LatexNodes2Text().latex_to_text(s)
-
-    return s_unicode
 
 def normalise_string(s: str) -> str:
     """First removes LaTeX commands/etc., then normalises the string (i.e. ensures a consisted unicode encoding), then converts to ASCII.
@@ -30,6 +14,12 @@ def normalise_string(s: str) -> str:
     outputs
     -------
     s_asci : The input string in basic ASCII encoding. No accents or LaTeX commands, etc..
+
+    examples
+    --------
+    '{\'o}' -> 'o'
+    '\'o'   -> 'o'
+    'ó'     -> 'o'
     """
 
     # If s is None then return an empty string
@@ -40,7 +30,7 @@ def normalise_string(s: str) -> str:
     form = "NFKD" # "compatibility deecomposition"
     
     # Convert any latex commands to unicode
-    s_unicode = LaTeX_to_unicode(s)
+    s_unicode = LatexNodes2Text().latex_to_text(s)
 
     # Normalise the string
     s_normalised = normalise(form, s_unicode) # Function from unicodedata

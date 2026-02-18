@@ -1,7 +1,7 @@
 # Import libraries
 from dataclasses import dataclass
 
-def set_filenames(cdir):
+def set_filenames(cdir: str) -> dict[str, str]:
     """Compute the filenames of various auxiliary files that may or may not be used.
 
     inputs
@@ -26,23 +26,17 @@ def set_filenames(cdir):
     
     return filenames
 
-def set_arxiv_constants() -> tuple[str, str, dict, float, float, int]:
+def set_arxiv_constants() -> tuple[str, str, dict[str, str], float, float, int]:
     """Define the constants that will be used when making API calls to arXiv.
 
     outputs
     -------
-    url              : str
-        Unformatted url that is used for the API calls to arXiv.
-    apiquery         : str
-        Unformatted url that is returned by API calls to arXiv.
-    ns               : dict
-        XML namespaces used by arXiv.
-    sleep_opening    :
-        Sleep timer (in seconds) between opening links in the browser. arXiv asks this to be limited to 0.25s per link.
-    sleep_search     :
-        Sleep timer (in seconds) between searches of papers. arXiv asks this to be limited to 3s per search.
-    search_blocksize : int
-        Size of the block used when searching through the papers. arXiv asks this to be limited to 10.
+    url              : Unformatted url that is used for the API calls to arXiv.
+    apiquery         : Unformatted url that is returned by API calls to arXiv.
+    ns               : XML namespaces used by arXiv.
+    sleep_opening    : Sleep timer (in seconds) between opening links in the browser. arXiv asks this to be limited to 0.25s per link.
+    sleep_search     : Sleep timer (in seconds) between searches of papers. arXiv asks this to be limited to 3s per search.
+    search_blocksize : Size of the block used when searching through the papers. arXiv asks this to be limited to 10.
     """
 
     # Define the urls
