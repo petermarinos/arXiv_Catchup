@@ -86,13 +86,14 @@ class Corpus:
         temp_dict:dict[str, Paper] = {}
 
         # Loop over the Corpus
-        for key, value in self.corpus.items():
+        for key, val in self.corpus.items():
             
             # If the current Paper is not a revision:
-            if not value.revised:
+            if not val.revised:
                 
                 # Add it to the temp dictionary
-                temp_dict[key] = value
+                # Use the arXiv ID number without a version number for the new key
+                temp_dict[val.ID] = val
 
         # Replace the Corpus with the temp dictionary
         self.corpus = temp_dict
@@ -227,7 +228,7 @@ class Corpus:
 
                 self.logger.debug("Adding paper: {:} (Author score = {:})".format(key, val.author_score))
 
-                self.papers_of_note_unsorted.append(key)
+                self.papers_of_note_unsorted.append(val.ID)
                 self.scores_unsorted.append(val.author_score)
 
             # Otherwise, if the score is above the threshold, append it to the papers of note
@@ -235,7 +236,7 @@ class Corpus:
 
                 self.logger.debug("Adding paper: {:} (Word score = {:})".format(key, val.final_score))
 
-                self.papers_of_note_unsorted.append(key)
+                self.papers_of_note_unsorted.append(val.ID)
                 self.scores_unsorted.append(val.final_score)
 
         # Sort the papers of note by their score

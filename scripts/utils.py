@@ -38,6 +38,8 @@ def cli_args() -> argparse.Namespace:
                         help='Skip all user prompts and open links in the web browser.')
     parser.add_argument('-w', '--write-to-file', action='store_true',
                         help='Skip all user prompts and write all links to a file.')
+    parser.add_argument('--only-ids', action='store_true',
+                        help='Will only write the arXiv ID numbers to the file (if writing).')
     parser.add_argument('-n', '--new-window', action='store_true',
                         help='Open all papers in a new browser window as tabs.') # Doesn't work on mac with firefox
     parser.add_argument('-s', '--start-date', type=str,
@@ -238,13 +240,13 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
 
 def delete_catchup(logger: logging.Logger, filename: str, links: list[str]) -> None:
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
-    NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed) links manually.
+    NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed) links manually. Also because there is an option to only output the ID numbers.
 
     inputs
     ------
-    logger   :  The logger object
+    logger   : The logger object
     filename : Path+filename of the `catchup.txt` file.
-    links    :  List containing all arXiv links in the file.
+    links    : List containing all arXiv links in the file.
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no

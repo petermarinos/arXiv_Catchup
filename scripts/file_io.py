@@ -8,6 +8,7 @@ from .utils           import progress_bar
 import xml.etree.ElementTree as ET
 import numpy                 as np
 import webbrowser
+import argparse
 import datetime
 import logging
 import time
@@ -67,11 +68,12 @@ def read_catchup(logger: logging.Logger, filename: str, sleep_time: float) -> li
 
     return links
 
-def write_links(logger: logging.Logger, filename: str, corpus: Corpus, papers_of_note: np.ndarray) -> None:
+def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str, corpus: Corpus, papers_of_note: np.ndarray) -> None:
     """Write all links to the `catchup.txt` file.
 
     inputs
     ------
+    args           : CLI arguments.
     logger         : The logger object.
     filename       : Path+filename of the `catchup.txt` file.
     corpus         : Contains all papers and their information.
@@ -82,11 +84,17 @@ def write_links(logger: logging.Logger, filename: str, corpus: Corpus, papers_of
 
     with open(filename, "a+", encoding="utf-8") as f:
 
-        for arxiv_ID in papers_of_note:
+        for arxiv_id in papers_of_note:
 
-            link = corpus.corpus[arxiv_ID].link_abs
-        
-            f.write(f"{link}\n")
+            if args.only_ids:
+            
+                f.write(f"{arxiv_id}\n")
+
+            else:
+
+                link = corpus.corpus[arxiv_id].link_abs
+            
+                f.write(f"{link}\n")
 
     return
 

@@ -674,7 +674,7 @@ class CatchupPipeline:
 
         if self.write_to_file:
 
-            write_links(self.logger, self.paths["catchup"], self.corpus, self.corpus.papers_of_note)
+            write_links(self.args, self.logger, self.paths["catchup"], self.corpus, self.corpus.papers_of_note)
 
         if self.open_in_brower:
             
