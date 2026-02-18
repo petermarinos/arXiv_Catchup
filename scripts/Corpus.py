@@ -219,7 +219,7 @@ class Corpus:
 
         # Loop over all papers
         self.papers_of_note_unsorted: list[str] = []
-        self.scores: list[float]                = []
+        self.scores_unsorted: list[float]       = []
         for key, val in self.corpus.items():
 
             # If the author score is above the threshold, append the paper to the papers of note
@@ -228,7 +228,7 @@ class Corpus:
                 self.logger.debug("Adding paper: {:} (Author score = {:})".format(key, val.author_score))
 
                 self.papers_of_note_unsorted.append(key)
-                self.scores.append(val.author_score)
+                self.scores_unsorted.append(val.author_score)
 
             # Otherwise, if the score is above the threshold, append it to the papers of note
             elif val.final_score >= word_threshold:
@@ -236,8 +236,13 @@ class Corpus:
                 self.logger.debug("Adding paper: {:} (Word score = {:})".format(key, val.final_score))
 
                 self.papers_of_note_unsorted.append(key)
-                self.scores.append(val.final_score)
+                self.scores_unsorted.append(val.final_score)
 
         # Sort the papers of note by their score
         self.logger.info("Sorting papers based on score (descending).")
-        self.papers_of_note = np.array(self.papers_of_note_unsorted)[np.array(self.scores).argsort()[::-1]]
+        self.papers_of_note = np.array(self.papers_of_note_unsorted)[np.array(self.scores_unsorted).argsort()[::-1]]
+        self.scores         = np.array(self.scores_unsorted)[np.array(self.scores_unsorted).argsort()[::-1]]
+
+        self.logger.debug("Final Paper scores:")
+        for ii in range(0, len(self.papers_of_note)):
+            self.logger.debug("arXiv:{:} = {:.2f}".format(self.papers_of_note[ii], self.scores[ii]))
