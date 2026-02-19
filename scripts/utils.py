@@ -238,6 +238,31 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
 
     return
 
+def set_filenames(cdir: str) -> dict[str, str]:
+    """Compute the filenames of various auxiliary files that may or may not be used.
+
+    inputs
+    ------
+    cdir : str
+        Top directory of the project, i.e. `/path/to/arXiv_Catchup/`.
+
+    outputs
+    -------
+    filenames : dict
+        Contains the path+filename for the various auxiliary/temporary files the script requires/creates.
+    """
+
+    # Place filenames into a dictionary
+    filenames = {
+                 "prevsearch"  : cdir+"/prev_search.txt",   # File that stores the date of the previous run
+                 "searchterms" : cdir+"/search_terms.yaml", # File that stores the search terms
+                 "catchup"     : cdir+"/catchup.txt",       # File that stores the links to the papers of interest (if writing to a file)
+                 "searchxml"   : cdir+"/search.xml",        # File that stores the .xml data of the initial arXiv query, i.e. the information on the search
+                 "papersxml"   : cdir+"/papers.xml",        # File that stores the .xml data for all downloaded papers
+                }
+    
+    return filenames
+
 def delete_catchup(logger: logging.Logger, filename: str, links: list[str]) -> None:
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
     NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed) links manually. Also because there is an option to only output the ID numbers.
