@@ -86,7 +86,6 @@ class Paper:
         # Initialise the scores. Will set them all to zero
         self.paperScores = paperScores([], 0, {}, {}, 0.)
     
-
     # # Find matches between the paper authors and the authors of interest
     def match_authors(self, key_authors: list[str]) -> None:
         """Find matches between the authors of the Paper and authors in the search terms.
@@ -151,16 +150,20 @@ class Paper:
             # Search all titles and abstracts for words in the supplied key
             for word in key_words[match_type]:
 
+                # Define the pattern to search for
                 pattern = rf"(?<!\w){re.escape(word)}(?!\w)"
 
+                # Define the text to search through
+                title = re.escape(self.paperInfo.title)
+
                 # Search the author field in the entry
-                title_match = re.search(pattern, self.paperInfo.title, re.IGNORECASE)
+                title_match = re.search(pattern, title, re.IGNORECASE)
 
                 # If a match is found in the title:
                 if title_match:
 
                     # Count the number of matches
-                    num_title_matches = len( re.findall(pattern, self.paperInfo.title, re.IGNORECASE) )
+                    num_title_matches = len( re.findall(pattern, title, re.IGNORECASE) )
 
                     self.logger.debug("Found '{:}' {:} time(s) in the title.".format(word, num_title_matches))
 
@@ -169,14 +172,17 @@ class Paper:
 
                 # If something exists in the abstract field, search it for matches
                 if self.paperInfo.abstract is not None:
+
+                    # Define the text to search through
+                    abstract = re.escape(self.paperInfo.abstract)
                     
-                    abstract_match = re.search(pattern, self.paperInfo.abstract, re.IGNORECASE)
+                    abstract_match = re.search(pattern, abstract, re.IGNORECASE)
 
                     # If a match is found in the abstract:
                     if abstract_match:
 
                         # Count the number of matches
-                        num_abstract_matches = len( re.findall(pattern, self.paperInfo.abstract, re.IGNORECASE) )
+                        num_abstract_matches = len( re.findall(pattern, abstract, re.IGNORECASE) )
 
                         self.logger.debug("Found '{:}' {:} time(s) in the abstract.".format(word, num_abstract_matches))
 
