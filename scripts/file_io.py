@@ -68,7 +68,7 @@ def read_catchup(logger: logging.Logger, filename: str, sleep_time: float) -> li
 
     return links
 
-def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str, corpus: Corpus, papers_of_note: np.ndarray) -> None:
+def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str, corpus: Corpus) -> None:
     """Write all links to the `catchup.txt` file.
 
     inputs
@@ -84,7 +84,7 @@ def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str,
 
     with open(filename, "a+", encoding="utf-8") as f:
 
-        for arxiv_id in papers_of_note:
+        for arxiv_id in corpus.papers_of_note:
 
             if args.only_ids:
             
@@ -92,7 +92,7 @@ def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str,
 
             else:
 
-                link = corpus.corpus[arxiv_id].link_abs
+                link = corpus.corpus[arxiv_id].paperInfo.link_abs
             
                 f.write(f"{link}\n")
 

@@ -55,7 +55,7 @@ class Corpus:
         paper = Paper(self.logger, ns, entry)
 
         # Add the paper to the corpus dictionary
-        key              = paper.ID + "v{:d}".format(paper.version) # include version to ensure each key is unique. We will drop revisions later
+        key              = paper.paperInfo.id_num + "v{:d}".format(paper.paperInfo.version) # include version to ensure each key is unique. We will drop revisions later
         value            = paper
         self.corpus[key] = value
 
@@ -86,14 +86,14 @@ class Corpus:
         temp_dict:dict[str, Paper] = {}
 
         # Loop over the Corpus
-        for key, val in self.corpus.items():
+        for key, paper in self.corpus.items():
             
             # If the current Paper is not a revision:
-            if not val.revised:
+            if not paper.paperInfo.revised:
                 
                 # Add it to the temp dictionary
                 # Use the arXiv ID number without a version number for the new key
-                temp_dict[val.ID] = val
+                temp_dict[paper.paperInfo.id_num] = paper
 
         # Replace the Corpus with the temp dictionary
         self.corpus = temp_dict
@@ -173,6 +173,15 @@ class Corpus:
 
         progress_bar(self.length, self.length)
 
+    # # Score the papers via a ML algorithm
+    def score_papers_ML(self) -> None:
+        """Scores the papers based on a machine-learning algorithm.
+        NOTE: This method is not implemented. Current plan is to create a model that can be traied by the user on a directory containing many .pdf files. This function would then use said model to score each paper in the arXiv search.
+        """
+
+        self.logger.error("Attempting to use ML model to score papers. This has not been implemented yet. Returning no results.\n")
+        raise
+
     # # Filter the Corpus based on the author/word matches
     def filter_corpus_matches(self) -> None:
         """Filter the Corpus such that only Papers with matches to the search terms are kept.
@@ -182,10 +191,10 @@ class Corpus:
 
         # Loop over all papers
         self.papers_of_note = np.array([])
-        for key, val in self.corpus.items():
+        for key, paper in self.corpus.items():
 
             # If an Author was found, append it to the entries of note
-            if val.n_author_matches >= 1:
+            if paper.n_author_matches >= 1:
 
                 self.logger.debug("Adding paper: {:} (found author)".format(key))
 
@@ -193,7 +202,7 @@ class Corpus:
                 np.append(self.papers_of_note, key)
 
             # If there were included word matches and *no* excluded word matches, append
-            elif ( val.words["Included Words"]["Total Matches"] >= 1 ) and ( val.words["Excluded Words"]["Total Matches"] == 0 ):
+            elif ( paper.paperScores.matches["Included Words"]["Total"] >= 1 ) and ( paper.paperScores.matches["Excluded Words"]["Total"] == 0 ):
 
                 self.logger.debug("Adding paper: {:} (found word)".format(key))
 
@@ -221,23 +230,23 @@ class Corpus:
         # Loop over all papers
         self.papers_of_note_unsorted: list[str] = []
         self.scores_unsorted: list[float]       = []
-        for key, val in self.corpus.items():
+        for key, paper in self.corpus.items():
 
             # If the author score is above the threshold, append the paper to the papers of note
-            if val.author_score >= author_threshold:
+            if paper.author_score >= author_threshold:
 
-                self.logger.debug("Adding paper: {:} (Author score = {:})".format(key, val.author_score))
+                self.logger.debug("Adding paper: {:} (Author score = {:})".format(key, paper.author_score))
 
-                self.papers_of_note_unsorted.append(val.ID)
-                self.scores_unsorted.append(val.author_score)
+                self.papers_of_note_unsorted.append(paper.paperInfo.id_num)
+                self.scores_unsorted.append(paper.author_score)
 
             # Otherwise, if the score is above the threshold, append it to the papers of note
-            elif val.final_score >= word_threshold:
+            elif paper.final_score >= word_threshold:
 
-                self.logger.debug("Adding paper: {:} (Word score = {:})".format(key, val.final_score))
+                self.logger.debug("Adding paper: {:} (Word score = {:})".format(key, paper.final_score))
 
-                self.papers_of_note_unsorted.append(val.ID)
-                self.scores_unsorted.append(val.final_score)
+                self.papers_of_note_unsorted.append(paper.paperInfo.id_num)
+                self.scores_unsorted.append(paper.final_score)
 
         # Sort the papers of note by their score
         self.logger.info("Sorting papers based on score (descending).")
@@ -247,3 +256,17 @@ class Corpus:
         self.logger.debug("Final Paper scores:")
         for ii in range(0, len(self.papers_of_note)):
             self.logger.debug("arXiv:{:} = {:.2f}".format(self.papers_of_note[ii], self.scores[ii]))
+
+    # # Summarise the results
+    def summary(self) -> None:
+        """Summarise the results.
+        """
+
+        # Compute the number of digits in the number of papers found
+        max_digits = len(str(self.length))
+        
+        # Print a summary
+        print("")
+        self.logger.info("There was a total of {: >{fill}} papers submitted to the categories of interest within the search window.".format(self.length, fill=max_digits))
+        self.logger.info("           of these, {: >{fill}} papers were opened/linked.".format(len(self.papers_of_note), fill=max_digits))
+        print("")
