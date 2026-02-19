@@ -151,14 +151,16 @@ class Paper:
             # Search all titles and abstracts for words in the supplied key
             for word in key_words[match_type]:
 
+                pattern = rf"(?<!\w){re.escape(word)}(?!\w)"
+
                 # Search the author field in the entry
-                title_match = re.search(r"\b"+word+r"\b", self.paperInfo.title, re.IGNORECASE)
+                title_match = re.search(pattern, self.paperInfo.title, re.IGNORECASE)
 
                 # If a match is found in the title:
                 if title_match:
 
                     # Count the number of matches
-                    num_title_matches = len( re.findall(r"\b"+word+r"\b", self.paperInfo.title, re.IGNORECASE) )
+                    num_title_matches = len( re.findall(pattern, self.paperInfo.title, re.IGNORECASE) )
 
                     self.logger.debug("Found '{:}' {:} time(s) in the title.".format(word, num_title_matches))
 
@@ -168,13 +170,13 @@ class Paper:
                 # If something exists in the abstract field, search it for matches
                 if self.paperInfo.abstract is not None:
                     
-                    abstract_match = re.search(r"\b"+word+r"\b", self.paperInfo.abstract, re.IGNORECASE)
+                    abstract_match = re.search(pattern, self.paperInfo.abstract, re.IGNORECASE)
 
                     # If a match is found in the abstract:
                     if abstract_match:
 
                         # Count the number of matches
-                        num_abstract_matches = len( re.findall(r"\b"+word+r"\b", self.paperInfo.abstract, re.IGNORECASE) )
+                        num_abstract_matches = len( re.findall(pattern, self.paperInfo.abstract, re.IGNORECASE) )
 
                         self.logger.debug("Found '{:}' {:} time(s) in the abstract.".format(word, num_abstract_matches))
 
@@ -207,7 +209,7 @@ class Paper:
         authors_score     = min(authors_found * authors_penalty, 1.)
         self.author_score = max(authors_score, 0)
 
-        self.logger.debug("| Total authors = {:} | Found = {:} |".format(len(self.paperInfo.authors), authors_found))
+        self.logger.debug("| Total authors = {:d} | Found = {:d} |".format(len(self.paperInfo.authors), authors_found))
         self.logger.debug("| Author score = {:.2f} |".format(self.author_score))
 
     # # Score the paper based on the words used in a given category
@@ -246,8 +248,8 @@ class Paper:
         self.paperScores.scores[match_type]["Abstract"] = inc_abstract_score
         self.paperScores.scores[match_type]["Total"]    = inc_total_score
         
-        self.logger.debug("| Title Matches = {:} | Title Score = {:.2f} |".format(inc_title_count, inc_title_score))
-        self.logger.debug("| Abstract Matches = {:.2f} | Abstract Score = {:.2f} |".format(inc_abstract_count, inc_abstract_score))
+        self.logger.debug("| Title Matches = {:d} | Title Score = {:.2f} |".format(inc_title_count, inc_title_score))
+        self.logger.debug("| Abstract Matches = {:d} | Abstract Score = {:.2f} |".format(inc_abstract_count, inc_abstract_score))
         self.logger.debug("| {:} Score = {:.2f} |".format(match_type, inc_total_score))
 
     # # Compute a final score, considering both word categories
