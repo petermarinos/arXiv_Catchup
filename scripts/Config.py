@@ -1,29 +1,18 @@
-# Import classes
-# from .ArxivConst import ArxivConst
-# from .Logger     import Logger
-# from .CLI        import CLI
-
 # Import functions
 from .string_handling import normalise_string
-from .arxiv_query     import arxiv_query
-from .file_io         import write_date, write_links, write_xml
+from .file_io         import write_date
 from .dates           import parse_date, calc_search_endtime, calc_next_posttime
-from .utils           import progress_bar, pretty_sleep, set_filenames, delete_file
+from .utils           import set_filenames, delete_file
 
 # Import libraries
-import xml.etree.ElementTree as ET
-import numpy                 as np
-import webbrowser
+import numpy as np
 import argparse
 import datetime
 import logging
-import typing
-import time
 import yaml
-import sys
 import os
 
-class SearchParameters:
+class Config:
     """Defines important parameters required for the search
     """
 
@@ -258,68 +247,6 @@ class SearchParameters:
         # If there are no issues, let the user know how many days we are searching over
         else:
             self.logger.info("Days since the previous search: {:}".format(prev_run.days))
-
-    # # # Display the results
-    # def display(self, cli: CLI, arxiv_const: ArxivConst, corpus: Corpus) -> None:
-    #     """Displays the results to the user, based on their preference.
-    #     """
-
-    #     if cli.write_to_file:
-
-    #         write_links(cli_args, self.logger, self.paths["catchup"], corpus)
-
-    #     if cli.open_in_brower:
-            
-    #         # Calculate the number of links
-    #         total = len(corpus.papers_of_note)
-
-    #         # Loop through the list and open all in the web browser
-    #         request_count = 0
-    #         # time_start = time.time()
-    #         self.logger.info("Opening the papers. Estimated time: {:.2f} seconds".format(total * arxiv_const.sleep_opening))
-    #         for arxiv_id in corpus.papers_of_note:
-
-    #             progress_bar(request_count, total, ( total - request_count ) * arxiv_const.sleep_opening)
-
-    #             # # arXiv asks that you limit opening pages to four requests per second. They recommend burst of four papers, but I prefer one per every quarter second.
-    #             if request_count > 0:
-
-    #                 time.sleep(arxiv_const.sleep_opening)
-
-    #             link = corpus.corpus[arxiv_id].paperInfo.link_abs
-
-    #             # Open in new window if flag is set
-    #             if cli_args.new_window:
-
-    #                 if request_count == 0:
-
-    #                     webbrowser.open(link, new=1) # new=1: open in a new browser window
-
-    #                 else:
-
-    #                     webbrowser.open(link, new=2) # new=2: open in a new tab
-
-    #             # Otherwise, open in the current window
-    #             else:
-
-    #                 webbrowser.open(link) # Default behavior, just opens everything in the current window
-
-    #             request_count += 1
-
-    #         progress_bar(total, total)
-
-    # def write_aux_files(self, corpus: Corpus):
-
-    #     # Check if any papers were found
-    #     if corpus.length == 0:
-
-    #         self.logger.warning("As no papers were found, the date file was not updated")
-
-    #     # If papers were found, update the date file
-    #     else:
-
-    #         # Write the end date of the search to a file for the next run
-    #         write_date(self.logger, self.paths["prevsearch"], self.end_date)
 
     # # Delete the temporarly files
     def clear_temp_files(self) -> None:

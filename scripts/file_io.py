@@ -1,14 +1,8 @@
-# # Import classes
-# from .SearchParameters import SearchParameters
-# from .Corpus           import Corpus
-# from .CLI              import CLI
-
 # Import functions
-from .utils           import progress_bar
+from .utils import progress_bar
 
 # Import libraries
 import xml.etree.ElementTree as ET
-import numpy                 as np
 import webbrowser
 import argparse
 import datetime

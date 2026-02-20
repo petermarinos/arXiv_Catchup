@@ -1,7 +1,4 @@
-# Import classes
-# from .SearchParameters import SearchParameters
-
-# import functions
+# Import functions
 from .arxiv_query import arxiv_query
 from .file_io     import write_xml
 from .utils       import delete_file
@@ -21,7 +18,7 @@ class ArxivConst():
     sleep_search     : float
     search_blocksize : int
 
-class API():
+class ArxivClient():
 
     # # Setup some of the API information
     def __init__(self, logger: logging.Logger, start_date, end_date, search_terms, cat_urlstring) -> None:

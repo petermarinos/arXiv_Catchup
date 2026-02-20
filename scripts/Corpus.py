@@ -1,8 +1,6 @@
 # Import classes
-# from .SearchParameters import SearchParameters
-from .API   import API
-from .API   import ArxivConst
-from .Paper import Paper
+from .ArxivClient import ArxivClient, ArxivConst
+from .Paper       import Paper
 
 # Import function
 from .arxiv_query import arxiv_query
@@ -93,7 +91,7 @@ class Corpus:
         return
 
     # # Loop through the searches and obtain all papers
-    def get_papers(self, arxiv_const: ArxivConst, api: API, xml_path) -> None:
+    def get_papers(self, arxiv_const: ArxivConst, api: ArxivClient, xml_path) -> None:
         """Obtains all Papers and places them in the Corpus. Will attempt to load the Corpus from an .xml file, and will fall back to querying the arXiv servers in case no file was found, or the file does not match the current search parameters.
         """
 
@@ -357,7 +355,7 @@ class Corpus:
         self.logger.info("Filtering corpus based on word matching.")
 
         # Loop over all papers
-        self.papers_of_note = np.array([])
+        self.papers_of_note: list[str] = []
         for key, paper in self.corpus.items():
 
             # If an Author was found, append it to the entries of note
@@ -366,7 +364,7 @@ class Corpus:
                 self.logger.debug("Adding paper: {:} (found author)".format(key))
 
                 # self.papers_of_note.append(key)
-                np.append(self.papers_of_note, key)
+                self.papers_of_note.append(key)
 
             # If there were included word matches and *no* excluded word matches, append
             elif ( paper.paperScores.matches["Included Words"]["Total"] >= 1 ) and ( paper.paperScores.matches["Excluded Words"]["Total"] == 0 ):
@@ -374,7 +372,7 @@ class Corpus:
                 self.logger.debug("Adding paper: {:} (found word)".format(key))
 
                 # self.papers_of_note.append(key)
-                np.append(self.papers_of_note, key)
+                self.papers_of_note.append(key)
 
     # # Filter the Corpus based on the score
     def filter_papers_score(self) -> None:
@@ -417,8 +415,9 @@ class Corpus:
 
         # Sort the papers of note by their score
         self.logger.info("Sorting papers based on score (descending).")
-        self.papers_of_note = np.array(self.papers_of_note_unsorted)[np.array(self.scores_unsorted).argsort()[::-1]]
-        self.scores         = np.array(self.scores_unsorted)[np.array(self.scores_unsorted).argsort()[::-1]]
+        pairs = sorted(zip(self.scores_unsorted, self.papers_of_note_unsorted), reverse=True)
+        self.papers_of_note = [paper for _,paper in pairs]
+        self.scores         = [score for score,_ in pairs]
 
         self.logger.debug("Final Paper scores:")
         for ii in range(0, len(self.papers_of_note)):

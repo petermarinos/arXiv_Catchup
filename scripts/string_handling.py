@@ -1,6 +1,6 @@
 # Import libraries
 from pylatexenc.latex2text import LatexNodes2Text
-from unicodedata           import normalize       as normalise
+from unicodedata           import normalize       as normalise # Fix a spelling error
 
 import re
 

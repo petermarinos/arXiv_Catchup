@@ -1,8 +1,8 @@
 # Import classes
-from .SearchParameters import SearchParameters
-from .Corpus           import Corpus
-from .API              import API
-from .CLI              import CLI
+from .ArxivClient import ArxivClient
+from .Config      import Config
+from .Corpus      import Corpus
+from .CLI         import CLI
 
 # Import functions
 from .file_io import write_aux_files
@@ -25,7 +25,7 @@ def main(cdir):
     logger = logger_setup(cli.args, cdir)
 
     # # Set up the papers class
-    search_params = SearchParameters(logger, cdir)
+    search_params = Config(logger, cdir)
 
     # # # Load the constants
     # arxiv_const = ArxivConst()
@@ -43,7 +43,7 @@ def main(cdir):
 
     # # Setup the API information
     # pipeline.setup_API()
-    api = API(logger, search_params.start_date, search_params.end_date, search_params.search_terms, search_params.cat_urlstring)
+    api = ArxivClient(logger, search_params.start_date, search_params.end_date, search_params.search_terms, search_params.cat_urlstring)
 
     # # Obtain basic search information
     # pipeline.get_search_info()

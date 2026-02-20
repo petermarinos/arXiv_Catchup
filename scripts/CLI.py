@@ -1,13 +1,9 @@
 # Import classes
-from .API    import ArxivConst
-from .Corpus import Corpus
+from .ArxivClient import ArxivConst
+from .Corpus      import Corpus
 
 # Import functions
-from .file_io import write_date
-from .utils   import logger_setup, cli_args
-
-# import libraries
-import logging
+from .utils   import cli_args
 
 class CLI():
     """Deals with all CLI tasks.

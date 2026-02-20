@@ -1,11 +1,7 @@
-# Import classes
-# from .Corpus import Corpus
-
 # Import functions
-from .utils           import pretty_sleep
+from .utils import pretty_sleep
 
 # Import libraries
-# from typing import cast
 import xml.etree.ElementTree as ET
 import urllib.request
 import urllib.error

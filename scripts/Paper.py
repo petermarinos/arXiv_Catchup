@@ -1,7 +1,6 @@
 # Import functions
-from .string_handling import normalise_string
-from .xml_handling    import extract_paper_info
-from .filtering       import authors_match
+from .xml_handling import extract_paper_info
+from .filtering    import authors_match
 
 # Import libraries
 from dataclasses import dataclass

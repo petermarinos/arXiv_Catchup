@@ -1,14 +1,8 @@
-# # import classes
-# from .SearchParameters import SearchParameters
-# from .ArxivConst       import ArxivConst
-# from .Corpus           import Corpus
-# from .CLI              import CLI
-
-# import functions
+# Import functions
 from .file_io import write_links
 from .utils   import progress_bar
 
-# import libraries
+# Import libraries
 import webbrowser
 import argparse
 import logging
