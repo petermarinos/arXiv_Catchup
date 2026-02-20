@@ -232,10 +232,7 @@ class Corpus:
         """Compute the length of the Corpus, i.e. how many papers are contained within.
         """
 
-        if len(self.corpus.keys()) is None:
-            self.length = 0
-        else:
-            self.length = len(self.corpus.keys())
+        self.length = len(self.corpus)
 
     # # Drop revised papers from the Corpus
     def drop_revisions(self) -> None:
