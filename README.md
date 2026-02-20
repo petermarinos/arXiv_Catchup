@@ -17,7 +17,7 @@ It then computes an 'interest' score for every paper based on the search terms y
 <div align="center">
 
     [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-    [![lint: pylint]](https://img.shields.io/badge/lint-pylint-yellowgreen)
+    <!-- [![lint: pylint]](https://img.shields.io/badge/lint-pylint-yellowgreen) -->
 
 </div>
 
