@@ -71,7 +71,7 @@ def split_initials(name: list[str]) -> list[str]:
     # Define regex token for two initials, with periods, not separated by whitespace
     token = r"^(?:[A-Z]\.){2,}$"
 
-    if re.findall(token, split_name):
+    if len(re.findall(token, split_name)) >= 1:
 
         initial_list = re.findall(r"[A-Z]\.", split_name)
         name = [_ for _ in initial_list]

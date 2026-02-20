@@ -38,8 +38,8 @@ def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Ele
 
     # Extract the link to the pdf page
     link = entry.findall("atom:link", ns)
-    if link is None:
-        logger.critical("Could not extract the main url.\n")
+    if len(link) != 2:
+        logger.critical("Could not extract the urls.\n")
         raise
     else:
         link_abs = link[0].attrib["href"]
@@ -59,7 +59,7 @@ def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Ele
 
     # Extract the category
     category = entry.findall("atom:category", ns)
-    if category is None:
+    if len(category) == 0:
         logger.critical("Could not extract the category.\n")
         raise
     else:
@@ -87,8 +87,8 @@ def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Ele
     # Extract the author list
     author_list = []
     authors = entry.findall("atom:author", ns)
-    if authors is None:
-        logger.critical("Could not extract the author list.\n")
+    if len(authors) == 0:
+        logger.critical("Count not find author list.\n")
         raise
     else:
         for author in authors:
