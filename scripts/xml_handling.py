@@ -37,13 +37,27 @@ def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Ele
         logger.debug("Updated on: {:}".format(updated))
 
     # Extract the link to the pdf page
-    link = entry.findall("atom:link", ns)
-    if len(link) != 2:
-        logger.critical("Could not extract the urls.\n")
+    links = entry.findall("atom:link", ns)
+    if len(links) < 2:
+        logger.critical("Could not find all urls.\n")
         raise
     else:
-        link_abs = link[0].attrib["href"]
-        link_pdf = link[1].attrib["href"]
+        link_abs = "" # ensure type checkers know they are strings
+        link_pdf = "" # ensure type checkers know they are strings
+        for link in links:
+            attrs = link.attrib
+            if attrs.get("rel") == "alternate" and attrs.get("type") == "text/html":
+                link_abs = attrs.get("href")
+            elif attrs.get("rel") == "related" and attrs.get("type") == "application/pdf" and attrs.get("title") == "pdf":
+                link_pdf = attrs.get("href")
+    if link_abs is None or link_pdf is None:
+        if link_abs is None:
+            logger.critical("Could not find the abstract url.\n")
+            raise
+        elif link_pdf is None:
+            logger.critical("Could not find the .pdf url.\n")
+            raise
+    else:
         logger.debug("Main page: {:}".format(link_abs))
         logger.debug(".pdf page: {:}".format(link_pdf))
 
