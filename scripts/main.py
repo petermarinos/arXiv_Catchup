@@ -27,9 +27,6 @@ def main(cdir):
     # # Set up the papers class
     search_params = Config(logger, cdir)
 
-    # # # Load the constants
-    # arxiv_const = ArxivConst()
-
     # # Load search terms from the auxiliary file
     search_params.get_searchterms()
 
@@ -42,19 +39,15 @@ def main(cdir):
     # search_parameters.date_error_check()
 
     # # Setup the API information
-    # pipeline.setup_API()
     api = ArxivClient(logger, search_params.start_date, search_params.end_date, search_params.search_terms, search_params.cat_urlstring)
 
     # # Obtain basic search information
-    # pipeline.get_search_info()
     api.get_search_info(api.arxiv_const, search_params.paths["searchxml"])
 
     # # Check for errors
-    # pipeline.arxiv_error_check()
     api.arxiv_error_check(api.arxiv_const, search_params.paths["searchxml"])
 
     # # Loop through the searches and obtain all papers
-    # pipeline.get_papers()
     corpus = Corpus(logger)
     corpus.get_papers(api.arxiv_const, api, search_params.paths["papersxml"])
     # corpus = get_papers(api, )
