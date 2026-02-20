@@ -129,16 +129,16 @@ def log_environment(logger: logging.Logger) -> None:
 
     # Print system info
     logger.debug("=== Environment Information ===")
-    logger.debug(f"Python: {sys.version}")
-    logger.debug(f"Platform: {platform.platform()}")
+    logger.debug("Python: {}".format(sys.version))
+    logger.debug("Platform: {}".format(platform.platform()))
 
     # Print project info
-    logger.debug(f"arXiv_Catchup=={__version__}")
+    logger.debug("arXiv_Catchup=={:}".format(__version__))
 
     # Print package info
     for pkg in ["certifi", "numpy", "pandas", "pylatexenc", "PyYAML"]:
         version = metadata.version(pkg)
-        logger.debug(f"{pkg}=={version}")
+        logger.debug("{:}=={:}".format(pkg, version))
 
     logger.debug("===============================")
 

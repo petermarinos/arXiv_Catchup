@@ -66,21 +66,21 @@ class Config:
             self.search_terms["Categories"] = np.unique(self.search_terms["Categories"])
 
             # Define category string for the urls/API calls
-            self.cat_urlstring = "+OR+".join(f"cat:{c}" for c in self.search_terms["Categories"])
+            self.cat_urlstring = "+OR+".join("cat:{:}".format(c) for c in self.search_terms["Categories"])
 
             # Define category string to make nice print statements
             if len(self.search_terms["Categories"]) == 2:
 
-                self.cat_printstring = " and ".join(f"{c}" for c in self.search_terms["Categories"])
+                self.cat_printstring = " and ".join("{:}".format(c) for c in self.search_terms["Categories"])
 
             elif len(self.search_terms["Categories"]) > 2:
 
-                catstring_temp  = ", ".join(f"{c}" for c in self.search_terms["Categories"][:-1])
+                catstring_temp  = ", ".join("{:}".format(c) for c in self.search_terms["Categories"][:-1])
                 self.cat_printstring = ", and ".join([catstring_temp, self.search_terms["Categories"][-1]])
 
             else:
 
-                self.cat_printstring = ", ".join(f"{c}" for c in self.search_terms["Categories"])
+                self.cat_printstring = ", ".join("{:}".format(c) for c in self.search_terms["Categories"])
 
             # Print which categories are being searched over
             self.logger.info("Searching the {:} categories".format(self.cat_printstring))

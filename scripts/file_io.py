@@ -98,13 +98,13 @@ def write_links(logger: logging.Logger, args: argparse.Namespace, papers_of_note
 
             if args.only_ids:
             
-                f.write(f"{arxiv_id}\n")
+                f.write("{:}\n".format(arxiv_id))
 
             else:
 
                 link = "https://arxiv.org/abs/"+arxiv_id
             
-                f.write(f"{link}\n")
+                f.write("{:}\n".format(link))
 
     return
 

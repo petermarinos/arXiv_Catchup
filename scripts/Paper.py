@@ -166,7 +166,7 @@ class Paper:
             for word in key_words[match_type]:
 
                 # Define the pattern to search for
-                pattern = rf"(?<!\w){re.escape(word)}(?!\w)"
+                pattern = r"(?<!\w){:}(?!\w)".format(word)
 
                 # Define the text to search through
                 title = self.paperInfo.title # DO NOT ESCAPE
