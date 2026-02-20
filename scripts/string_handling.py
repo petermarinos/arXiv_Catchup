@@ -1,8 +1,9 @@
 # Import libraries
 from pylatexenc.latex2text import LatexNodes2Text
-from unicodedata           import normalize       as normalise # Fix a spelling error
+from unicodedata import normalize as normalise  # Fix a spelling error
 
 import re
+
 
 def normalise_string(s: str) -> str:
     """First removes LaTeX commands/etc., then normalises the string (i.e. ensures a consisted unicode encoding), then converts to ASCII.
@@ -25,20 +26,21 @@ def normalise_string(s: str) -> str:
     # If s is None then return an empty string
     if s is None:
         return ""
-    
+
     # Define the form for the normalisation
-    form = "NFKD" # "compatibility deecomposition"
-    
+    form = "NFKD"  # "compatibility deecomposition"
+
     # Convert any latex commands to unicode
     s_unicode = LatexNodes2Text().latex_to_text(s)
 
     # Normalise the string
-    s_normalised = normalise(form, s_unicode) # Function from unicodedata
+    s_normalised = normalise(form, s_unicode)  # Function from unicodedata
 
     # Convert the string to ASCII
     s_ascii = s_normalised.encode("ascii", "ignore").decode("ascii")
-    
+
     return s_ascii
+
 
 def split_initials(name: list[str]) -> list[str]:
     """Splits initials that are not separated by whitespace. Does nothing if there are no initials or the initials were already split.
@@ -66,7 +68,7 @@ def split_initials(name: list[str]) -> list[str]:
     joined_name = " ".join([_ for _ in name])
 
     # Split at the whitespace, and take the first block
-    split_name  = joined_name.split()[0]
+    split_name = joined_name.split()[0]
 
     # Define regex token for two initials, with periods, not separated by whitespace
     token = r"^(?:[A-Z]\.){2,}$"
@@ -77,6 +79,7 @@ def split_initials(name: list[str]) -> list[str]:
         name = [_ for _ in initial_list]
 
     return name
+
 
 def find_token(name: str) -> tuple[str, str]:
     """Determine if the supplied string is a 'full' name or an initial.
@@ -104,7 +107,7 @@ def find_token(name: str) -> tuple[str, str]:
     # If it is an initial:
     if initial_regex.match(name):
         return ("initial", name[0])
-    
+
     # Else it is a full name
     else:
         return ("full", name)

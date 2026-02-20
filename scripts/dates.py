@@ -18,6 +18,7 @@ import logging
 # The API is not updated on these days, so the search should return zero results, and raise an error.
 # Running the following day should work, and no papers *should* be missed (not tested)
 
+
 def is_posting_day_bool(dt: datetime.date) -> bool:
     """Determines if the input day iss an arXiv posting day.
     Does not account for deferred listings.
@@ -36,6 +37,7 @@ def is_posting_day_bool(dt: datetime.date) -> bool:
     # Lists are posted for 0 <= dt.weekday() <= 4
 
     return dt.weekday() <= 4
+
 
 def is_searching_day_bool(dt: datetime.date) -> bool:
     """Determines if the input day is a valid arXiv search day.
@@ -56,16 +58,19 @@ def is_searching_day_bool(dt: datetime.date) -> bool:
     if dt.weekday() == 6:
 
         return True
-    
+
     elif 0 <= dt.weekday() <= 3:
 
         return True
-    
+
     else:
 
         return False
 
-def calc_search_endtime(input_time: datetime.datetime, search_time: datetime.time, post_time: datetime.time) -> datetime.datetime:
+
+def calc_search_endtime(
+    input_time: datetime.datetime, search_time: datetime.time, post_time: datetime.time
+) -> datetime.datetime:
     """Computes the most recent arXiv daily list posting relative to the input time.
 
     inputs
@@ -95,7 +100,10 @@ def calc_search_endtime(input_time: datetime.datetime, search_time: datetime.tim
 
     return search_endtime
 
-def calc_next_posttime(input_time: datetime.datetime, post_time: datetime.time) -> datetime.datetime:
+
+def calc_next_posttime(
+    input_time: datetime.datetime, post_time: datetime.time
+) -> datetime.datetime:
     """Return the datetime of the next arXiv daily list posting relative to the input time `now`.
 
     inputs
@@ -125,7 +133,14 @@ def calc_next_posttime(input_time: datetime.datetime, post_time: datetime.time) 
 
     return next_post_time
 
-def parse_date(logger: logging.Logger, date_iso: str, date_name: str, search_time: datetime.time, post_time: datetime.time) -> tuple[datetime.datetime, datetime.date]:
+
+def parse_date(
+    logger: logging.Logger,
+    date_iso: str,
+    date_name: str,
+    search_time: datetime.time,
+    post_time: datetime.time,
+) -> tuple[datetime.datetime, datetime.date]:
     """Take an input string and convert to the correct datetime object.
 
     inputs
@@ -144,23 +159,31 @@ def parse_date(logger: logging.Logger, date_iso: str, date_name: str, search_tim
 
     try:
 
-        raw_datetime = datetime.datetime.combine(datetime.datetime.strptime(date_iso, "%Y-%m-%d"), search_time)
-        parsed_date  = raw_datetime.date()
-        parsed_time  = raw_datetime.timetz()
+        raw_datetime = datetime.datetime.combine(
+            datetime.datetime.strptime(date_iso, "%Y-%m-%d"), search_time
+        )
+        parsed_date = raw_datetime.date()
+        parsed_time = raw_datetime.timetz()
 
         logger.debug("Attempting to set {:} to {:}".format(date_name, date_iso))
 
         # If the date is not a valid search date, warn the user and roll the day back to the previous valid day
         if not is_searching_day_bool(parsed_date):
 
-            logger.warning("{:} is not a valid date. Rolling back to the previous valid day".format(date_name))
+            logger.warning(
+                "{:} is not a valid date. Rolling back to the previous valid day".format(
+                    date_name
+                )
+            )
 
-            parsed_date = calc_search_endtime(raw_datetime, search_time, post_time).date()
+            parsed_date = calc_search_endtime(
+                raw_datetime, search_time, post_time
+            ).date()
 
         logger.debug("Set {:} to {:}".format(date_name, parsed_date))
 
         return datetime.datetime.combine(parsed_date, parsed_time), parsed_date
-    
+
     except ValueError:
 
         logger.critical("{:} must be in the YYYY-mm-dd format.\n".format(date_name))

@@ -11,7 +11,10 @@ import pathlib
 import time
 import os
 
-def read_catchup(logger: logging.Logger, filename: pathlib.Path, sleep_time: float) -> list:
+
+def read_catchup(
+    logger: logging.Logger, filename: pathlib.Path, sleep_time: float
+) -> list:
     """Read the `catchup.txt` file and open all links in the browser.
 
     inputs
@@ -36,7 +39,11 @@ def read_catchup(logger: logging.Logger, filename: pathlib.Path, sleep_time: flo
             if link[:21] != "http://arxiv.org/abs/":
 
                 print("")
-                logger.critical("One or more links in the catchup file is malformed.\n          Found    {:}\n          Expected http://arxiv.org/abs/0123.45678v9 format\n".format(link))
+                logger.critical(
+                    "One or more links in the catchup file is malformed.\n          Found    {:}\n          Expected http://arxiv.org/abs/0123.45678v9 format\n".format(
+                        link
+                    )
+                )
                 raise
 
             links.append(link)
@@ -46,7 +53,7 @@ def read_catchup(logger: logging.Logger, filename: pathlib.Path, sleep_time: flo
     request_count = 0
     for link in links:
 
-        progress_bar(request_count, total, ( total - request_count ) * sleep_time)
+        progress_bar(request_count, total, (total - request_count) * sleep_time)
 
         if request_count > 0:
             time.sleep(sleep_time)
@@ -65,7 +72,13 @@ def read_catchup(logger: logging.Logger, filename: pathlib.Path, sleep_time: flo
 
     return links
 
-def write_aux_files(logger: logging.Logger, filename: pathlib.Path, end_date: datetime.date, n_papers: int):
+
+def write_aux_files(
+    logger: logging.Logger,
+    filename: pathlib.Path,
+    end_date: datetime.date,
+    n_papers: int,
+):
 
     # Check if any papers were found
     if n_papers == 0:
@@ -78,7 +91,13 @@ def write_aux_files(logger: logging.Logger, filename: pathlib.Path, end_date: da
         # Write the end date of the search to a file for the next run
         write_date(logger, filename, end_date)
 
-def write_links(logger: logging.Logger, args: argparse.Namespace, papers_of_note: list[str], filename: pathlib.Path) -> None:
+
+def write_links(
+    logger: logging.Logger,
+    args: argparse.Namespace,
+    papers_of_note: list[str],
+    filename: pathlib.Path,
+) -> None:
     """Write all links to the `catchup.txt` file.
 
     inputs
@@ -97,18 +116,25 @@ def write_links(logger: logging.Logger, args: argparse.Namespace, papers_of_note
         for arxiv_id in papers_of_note:
 
             if args.only_ids:
-            
+
                 f.write("{:}\n".format(arxiv_id))
 
             else:
 
-                link = "https://arxiv.org/abs/"+arxiv_id
-            
+                link = "https://arxiv.org/abs/" + arxiv_id
+
                 f.write("{:}\n".format(link))
 
     return
 
-def write_xml(logger: logging.Logger, filename: pathlib.Path, xml_data: ET.Element, ns: dict[str, str], overwrite: bool=False) -> None:
+
+def write_xml(
+    logger: logging.Logger,
+    filename: pathlib.Path,
+    xml_data: ET.Element,
+    ns: dict[str, str],
+    overwrite: bool = False,
+) -> None:
     """Writes an XML to a .xml file.
 
     inputs
@@ -151,17 +177,25 @@ def write_xml(logger: logging.Logger, filename: pathlib.Path, xml_data: ET.Eleme
 
             # Obtain each entry and append to the file
             if new_root is None:
-                logger.critical("Malformed or corrupted .xml from arXiv. It returned None.\n")
+                logger.critical(
+                    "Malformed or corrupted .xml from arXiv. It returned None.\n"
+                )
                 raise
             for entry in new_root.findall("atom:entry", ns):
                 master_root.append(entry)
 
             # Write the new file
-            master_tree.write(filename, encoding="utf-8", )
+            master_tree.write(
+                filename,
+                encoding="utf-8",
+            )
 
     return
 
-def write_date(logger: logging.Logger, filename: pathlib.Path, date: datetime.date) -> None:
+
+def write_date(
+    logger: logging.Logger, filename: pathlib.Path, date: datetime.date
+) -> None:
     """Write a datetime.date object to a file.
     While the current implementation only uses this to write Papers.start_date to Papers.paths['prevsearch'], this function is left as-is.
 

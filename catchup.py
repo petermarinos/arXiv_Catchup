@@ -1,3 +1,5 @@
+"""Main script."""
+
 # Import libraries
 from scripts.main import main
 

@@ -6,7 +6,26 @@ import xml.etree.ElementTree as ET
 import logging
 import re
 
-def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Element) -> tuple[str, int, str, str, str, str, str, list[str], str, str, list[str], int, bool, int, int]:
+
+def extract_paper_info(
+    logger: logging.Logger, ns: dict[str, str], entry: ET.Element
+) -> tuple[
+    str,
+    int,
+    str,
+    str,
+    str,
+    str,
+    str,
+    list[str],
+    str,
+    str,
+    list[str],
+    int,
+    bool,
+    int,
+    int,
+]:
 
     # Extract the arXiv ID number
     arXiv_ID = entry.find("atom:id", ns)
@@ -14,8 +33,8 @@ def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Ele
         logger.critical("Could not extract the arXiv ID number.\n")
         raise
     else:
-        id_num  = arXiv_ID.text.split("/")[-1][:10]
-        version = int( arXiv_ID.text.split("/")[-1][11:] )
+        id_num = arXiv_ID.text.split("/")[-1][:10]
+        version = int(arXiv_ID.text.split("/")[-1][11:])
         logger.debug("arXiv ID: {:}, version: {:}".format(id_num, version))
 
     # Extract the title
@@ -41,22 +60,24 @@ def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Ele
     if len(links) < 2:
         logger.critical("Could not find all urls.\n")
         raise
-    else:
-        link_abs = "" # ensure type checkers know they are strings
-        link_pdf = "" # ensure type checkers know they are strings
-        for link in links:
-            attrs = link.attrib
-            if attrs.get("rel") == "alternate" and attrs.get("type") == "text/html":
-                link_abs = attrs.get("href")
-            elif attrs.get("rel") == "related" and attrs.get("type") == "application/pdf" and attrs.get("title") == "pdf":
-                link_pdf = attrs.get("href")
-    if link_abs is None or link_pdf is None:
-        if link_abs is None:
-            logger.critical("Could not find the abstract url.\n")
-            raise
-        elif link_pdf is None:
-            logger.critical("Could not find the .pdf url.\n")
-            raise
+    link_abs = None  # ensure type checkers know they are strings
+    link_pdf = None  # ensure type checkers know they are strings
+    for link in links:
+        attrs = link.attrib
+        if attrs.get("rel") == "alternate" and attrs.get("type") == "text/html":
+            link_abs = attrs.get("href")
+        elif (
+            attrs.get("rel") == "related"
+            and attrs.get("type") == "application/pdf"
+            and attrs.get("title") == "pdf"
+        ):
+            link_pdf = attrs.get("href")
+    if link_abs is None:
+        logger.critical("Could not find the abstract url.\n")
+        raise
+    if link_pdf is None:  #
+        logger.critical("Could not find the .pdf url.\n")
+        raise
     else:
         logger.debug("Main page: {:}".format(link_abs))
         logger.debug(".pdf page: {:}".format(link_pdf))
@@ -116,17 +137,37 @@ def extract_paper_info(logger: logging.Logger, ns: dict[str, str], entry: ET.Ele
         authors = author_list
         logger.debug("Found Authors: {:}".format(author_list))
         n_authors = len(authors)
-    
+
     # Place additional information into this object
-    revised   = (updated > published) or (version > 1)
+    revised = (updated > published) or (version > 1)
     n_authors = len(authors)
-    n_words_title   = len( re.findall(r'\w+', title) )
-    n_words_abstract = len( re.findall(r'\w+', abstract) )
-    
+    n_words_title = len(re.findall(r"\w+", title))
+    n_words_abstract = len(re.findall(r"\w+", abstract))
+
     logger.debug("Revised: {:}".format(revised))
     logger.debug("Number of authors: {:}".format(n_authors))
-    logger.debug("Wordcount: Title = {:} | Abstract = {:}".format(n_words_title, n_words_abstract))
-    
+    logger.debug(
+        "Wordcount: Title = {:} | Abstract = {:}".format(
+            n_words_title, n_words_abstract
+        )
+    )
+
     logger.debug("Paper successfully extracted from xml.")
 
-    return id_num, version, title, updated, link_abs, link_pdf, abstract, category, published, comment, authors, n_authors, revised, n_words_title, n_words_abstract
+    return (
+        id_num,
+        version,
+        title,
+        updated,
+        link_abs,
+        link_pdf,
+        abstract,
+        category,
+        published,
+        comment,
+        authors,
+        n_authors,
+        revised,
+        n_words_title,
+        n_words_abstract,
+    )

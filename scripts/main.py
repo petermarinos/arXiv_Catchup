@@ -1,20 +1,23 @@
+"""The main"""
+
 # Import classes
 from .ArxivClient import ArxivClient
-from .Config      import Config
-from .Corpus      import Corpus
-from .CLI         import CLI
+from .Config import Config
+from .Corpus import Corpus
+from .CLI import CLI
 
 # Import functions
 from .file_io import write_aux_files
-from .output  import display
-from .utils   import logger_setup
+from .output import display
+from .utils import logger_setup
 
 import pathlib
 
 """TO-DO:
 
-AAAAAAAAAHH
+Current branch will fix issues #32, #33, #34, and #35
 """
+
 
 # The main script
 # Performs the entire pipeline
@@ -43,7 +46,13 @@ def main():
     # search_parameters.date_error_check()
 
     # # Setup the API information
-    api = ArxivClient(logger, search_params.start_date, search_params.end_date, search_params.search_terms, search_params.cat_urlstring)
+    api = ArxivClient(
+        logger,
+        search_params.start_date,
+        search_params.end_date,
+        search_params.search_terms,
+        search_params.cat_urlstring,
+    )
 
     # # Obtain basic search information
     api.get_search_info(api.arxiv_const, search_params.paths["searchxml"])
@@ -74,10 +83,20 @@ def main():
 
     # # Display the results
     cli.get_display_method(api.arxiv_const, corpus)
-    display(logger, cli.args, corpus.papers_of_note, cli.open_in_brower, api.arxiv_const.sleep_opening, cli.write_to_file, search_params.paths["catchup"])
+    display(
+        logger,
+        cli.args,
+        corpus.papers_of_note,
+        cli.open_in_brower,
+        api.arxiv_const.sleep_opening,
+        cli.write_to_file,
+        search_params.paths["catchup"],
+    )
 
     # # Write some auxiliary file(s) for the next run
-    write_aux_files(logger, search_params.paths["prevsearch"], search_params.end_date, corpus.length)
+    write_aux_files(
+        logger, search_params.paths["prevsearch"], search_params.end_date, corpus.length
+    )
 
     print("Not deleting temp. files.")
     # # Delete xmls/other supplemental files if successfull
