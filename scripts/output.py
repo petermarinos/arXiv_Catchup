@@ -6,10 +6,11 @@ from .utils   import progress_bar
 import webbrowser
 import argparse
 import logging
+import pathlib
 import time
 
 
-def display(logger: logging.Logger, args: argparse.Namespace, papers_of_note, open_in_browser, sleeptimer, write_to_file, filename) -> None:
+def display(logger: logging.Logger, args: argparse.Namespace, papers_of_note: list[str], open_in_browser: bool, sleeptimer: float, write_to_file: bool, filename: pathlib.Path) -> None:
     """Displays the results to the user, based on their preference.
     """
 

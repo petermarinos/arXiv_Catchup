@@ -11,6 +11,7 @@ from .utils       import progress_bar, pretty_sleep, delete_file
 import xml.etree.ElementTree as ET
 import numpy                 as np
 import logging
+import pathlib
 import typing
 import os
 
@@ -91,7 +92,7 @@ class Corpus:
         return
 
     # # Loop through the searches and obtain all papers
-    def get_papers(self, arxiv_const: ArxivConst, api: ArxivClient, xml_path) -> None:
+    def get_papers(self, arxiv_const: ArxivConst, api: ArxivClient, xml_path: pathlib.Path) -> None:
         """Obtains all Papers and places them in the Corpus. Will attempt to load the Corpus from an .xml file, and will fall back to querying the arXiv servers in case no file was found, or the file does not match the current search parameters.
         """
 

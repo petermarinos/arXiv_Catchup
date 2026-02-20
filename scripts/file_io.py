@@ -11,7 +11,7 @@ import pathlib
 import time
 import os
 
-def read_catchup(logger: logging.Logger, filename: str, sleep_time: float) -> list:
+def read_catchup(logger: logging.Logger, filename: pathlib.Path, sleep_time: float) -> list:
     """Read the `catchup.txt` file and open all links in the browser.
 
     inputs
@@ -65,7 +65,7 @@ def read_catchup(logger: logging.Logger, filename: str, sleep_time: float) -> li
 
     return links
 
-def write_aux_files(logger: logging.Logger, filename: pathlib.Path, end_date, n_papers):
+def write_aux_files(logger: logging.Logger, filename: pathlib.Path, end_date: datetime.date, n_papers: int):
 
     # Check if any papers were found
     if n_papers == 0:
@@ -78,7 +78,7 @@ def write_aux_files(logger: logging.Logger, filename: pathlib.Path, end_date, n_
         # Write the end date of the search to a file for the next run
         write_date(logger, filename, end_date)
 
-def write_links(logger: logging.Logger, args: argparse.Namespace, papers_of_note, filename: str) -> None:
+def write_links(logger: logging.Logger, args: argparse.Namespace, papers_of_note: list[str], filename: pathlib.Path) -> None:
     """Write all links to the `catchup.txt` file.
 
     inputs

@@ -6,7 +6,9 @@ from .utils       import delete_file
 # Import libraries
 from dataclasses import dataclass
 import xml.etree.ElementTree as ET
+import datetime
 import logging
+import pathlib
 import sys
 import os
 
@@ -21,7 +23,7 @@ class ArxivConst():
 class ArxivClient():
 
     # # Setup some of the API information
-    def __init__(self, logger: logging.Logger, start_date, end_date, search_terms, cat_urlstring) -> None:
+    def __init__(self, logger: logging.Logger, start_date: datetime.date, end_date: datetime.date, search_terms: dict[str, list[str]], cat_urlstring: str) -> None:
         """Set up some information that is required for the arXiv API calls.
         """
 
@@ -82,7 +84,7 @@ class ArxivClient():
                          "ssl_preverr" : False}
         
     # # Obtain basic search information
-    def get_search_info(self, arxiv_const: ArxivConst, xml_path) -> None:
+    def get_search_info(self, arxiv_const: ArxivConst, xml_path: pathlib.Path) -> None:
         """Obtain the information on how we will obtain all papers within the search period. Will attempt to load from an .xml file, and will fall back to perform an initial query to the arXiv servers in case no file was found, or the file does not match the current search parameters.
 
         xml_path : Path to searchxml
@@ -143,7 +145,7 @@ class ArxivClient():
         self.total_papers = int(max_num_str)
 
     # # Check the search info query results for errors
-    def arxiv_error_check(self, arxiv_const: ArxivConst, xml_path) -> None:
+    def arxiv_error_check(self, arxiv_const: ArxivConst, xml_path: pathlib.Path) -> None:
         """Runs some error checks on the results of the initial arXiv API pull (i.e. the one that collects some basic information).
         """
 
