@@ -53,7 +53,7 @@ def cli_args() -> argparse.Namespace:
 
     return args
 
-def logger_setup(args: argparse.Namespace, cdir: str) -> logging.Logger:
+def logger_setup(args: argparse.Namespace, root_dir: pathlib.Path) -> logging.Logger:
     """Set up the logger. Writes all messages to a log file, and takes the CLI argument for the terminal logs.
 
     inputs
@@ -76,7 +76,7 @@ def logger_setup(args: argparse.Namespace, cdir: str) -> logging.Logger:
     logger.handlers.clear()
 
     # Create a handler that will output *all* messages to a file. Will overwrite the file on each execution.
-    handler_file = logging.FileHandler(cdir+"/catchup.log", mode="w")
+    handler_file = logging.FileHandler(root_dir / "catchup.log", mode="w")
     handler_file.setLevel(logging.DEBUG)
     handler_file.setFormatter(logging.Formatter("%(asctime)s.%(msecs)03d | %(levelname)s | %(message)s", "%Y-%m-%d %H:%M:%S"))
 
@@ -238,7 +238,7 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
 
     return
 
-def set_filenames(cdir: str) -> dict[str, str]:
+def set_filenames(root_dir: pathlib.Path) -> dict[str, pathlib.Path]:
     """Compute the filenames of various auxiliary files that may or may not be used.
 
     inputs
@@ -254,16 +254,16 @@ def set_filenames(cdir: str) -> dict[str, str]:
 
     # Place filenames into a dictionary
     filenames = {
-                 "prevsearch"  : cdir+"/prev_search.txt",   # File that stores the date of the previous run
-                 "searchterms" : cdir+"/search_terms.yaml", # File that stores the search terms
-                 "catchup"     : cdir+"/catchup.txt",       # File that stores the links to the papers of interest (if writing to a file)
-                 "searchxml"   : cdir+"/search.xml",        # File that stores the .xml data of the initial arXiv query, i.e. the information on the search
-                 "papersxml"   : cdir+"/papers.xml",        # File that stores the .xml data for all downloaded papers
+                 "prevsearch"  : root_dir / "prev_search.txt",   # File that stores the date of the previous run
+                 "searchterms" : root_dir / "search_terms.yaml", # File that stores the search terms
+                 "catchup"     : root_dir / "catchup.txt",       # File that stores the links to the papers of interest (if writing to a file)
+                 "searchxml"   : root_dir / "search.xml",        # File that stores the .xml data of the initial arXiv query, i.e. the information on the search
+                 "papersxml"   : root_dir / "papers.xml",        # File that stores the .xml data for all downloaded papers
                 }
     
     return filenames
 
-def delete_catchup(logger: logging.Logger, filename: str, links: list[str]) -> None:
+def delete_catchup(logger: logging.Logger, filename: pathlib.Path, links: list[str]) -> None:
     """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
     NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed) links manually. Also because there is an option to only output the ID numbers.
 
@@ -307,7 +307,7 @@ def delete_catchup(logger: logging.Logger, filename: str, links: list[str]) -> N
 
     return
 
-def delete_file(logger: logging.Logger, filename: str) -> None:
+def delete_file(logger: logging.Logger, filename: pathlib.Path) -> None:
     """Deletes a file.
 
     inputs

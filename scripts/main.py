@@ -9,6 +9,8 @@ from .file_io import write_aux_files
 from .output  import display
 from .utils   import logger_setup
 
+import pathlib
+
 """TO-DO:
 
 AAAAAAAAAHH
@@ -16,16 +18,18 @@ AAAAAAAAAHH
 
 # The main script
 # Performs the entire pipeline
-def main(cdir):
+def main():
+
+    root_path = pathlib.Path(__file__).resolve().parent.parent
 
     # # # Parse command-line arguments
     cli = CLI()
 
     # # Set up the logger
-    logger = logger_setup(cli.args, cdir)
+    logger = logger_setup(cli.args, root_path)
 
     # # Set up the papers class
-    search_params = Config(logger, cdir)
+    search_params = Config(logger, root_path)
 
     # # Load search terms from the auxiliary file
     search_params.get_searchterms()

@@ -7,6 +7,7 @@ import webbrowser
 import argparse
 import datetime
 import logging
+import pathlib
 import time
 import os
 
@@ -64,7 +65,7 @@ def read_catchup(logger: logging.Logger, filename: str, sleep_time: float) -> li
 
     return links
 
-def write_aux_files(logger: logging.Logger, filename, end_date, n_papers):
+def write_aux_files(logger: logging.Logger, filename: pathlib.Path, end_date, n_papers):
 
     # Check if any papers were found
     if n_papers == 0:
@@ -107,7 +108,7 @@ def write_links(logger: logging.Logger, args: argparse.Namespace, papers_of_note
 
     return
 
-def write_xml(logger: logging.Logger, filename: str, xml_data: ET.Element, ns: dict[str, str], overwrite: bool=False) -> None:
+def write_xml(logger: logging.Logger, filename: pathlib.Path, xml_data: ET.Element, ns: dict[str, str], overwrite: bool=False) -> None:
     """Writes an XML to a .xml file.
 
     inputs
@@ -160,7 +161,7 @@ def write_xml(logger: logging.Logger, filename: str, xml_data: ET.Element, ns: d
 
     return
 
-def write_date(logger: logging.Logger, filename: str, date: datetime.date) -> None:
+def write_date(logger: logging.Logger, filename: pathlib.Path, date: datetime.date) -> None:
     """Write a datetime.date object to a file.
     While the current implementation only uses this to write Papers.start_date to Papers.paths['prevsearch'], this function is left as-is.
 

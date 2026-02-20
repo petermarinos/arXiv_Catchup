@@ -9,6 +9,7 @@ import numpy as np
 import argparse
 import datetime
 import logging
+import pathlib
 import yaml
 import os
 
@@ -17,7 +18,7 @@ class Config:
     """
 
     # # Initialise the class
-    def __init__(self, logger: logging.Logger, cdir: str) -> None:
+    def __init__(self, logger: logging.Logger, root_dir: pathlib.Path) -> None:
         """Create the CatchupPipeline object, which will store important values used throughout the search, scoring, and filtering sections.
         - May want to break apart to separate pipelines in the future
 
@@ -29,7 +30,7 @@ class Config:
 
         # Define important variables
         self.logger = logger
-        self.paths  = set_filenames(cdir)
+        self.paths  = set_filenames(root_dir)
         
        # Define some datetime objects
         self.post_time    = datetime.time(6, 0, tzinfo=datetime.timezone.utc) # Define the posting time of the daily list
