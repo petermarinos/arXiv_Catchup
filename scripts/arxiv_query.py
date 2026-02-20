@@ -1,5 +1,5 @@
 # Import classes
-from .Corpus import Corpus
+# from .Corpus import Corpus
 
 # Import functions
 from .utils           import pretty_sleep
@@ -293,28 +293,7 @@ def arxiv_query(logger: logging.Logger, ssl_dict: dict, url: str, start_num: int
     logger.critical("Something went wrong...?\n")
     raise
 
-def extract_papers(logger: logging.Logger, corpus: Corpus, ns: dict[str, str], xml_data: ET.ElementTree | ET.Element) -> None:
-    """Extracts the papers (and their information) from the results of the API query.
 
-    inputs
-    ------
-    logger : The logger object.
-    corpus : The corpus of all papers currently found.
-    ns     : XML namespaces that arXiv uses.
-    xml    : XML data from the arXiv query.
-    """
-
-    # Loop over the entries (papers) within the current search
-    count = 0
-    for entry in xml_data.findall("atom:entry", ns):
-
-        corpus.add_paper_to_corpus(ns, entry)
-
-        count += 1
-
-    logger.debug("Found {:} papers in this search block.".format(count))
-
-    return
 
 ## Format of the xml outputs from the arXiv API:
 """Example arXiv API pull:

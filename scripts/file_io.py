@@ -1,5 +1,7 @@
-# Import classes
-from .Corpus import Corpus
+# # Import classes
+# from .SearchParameters import SearchParameters
+# from .Corpus           import Corpus
+# from .CLI              import CLI
 
 # Import functions
 from .utils           import progress_bar
@@ -68,7 +70,20 @@ def read_catchup(logger: logging.Logger, filename: str, sleep_time: float) -> li
 
     return links
 
-def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str, corpus: Corpus) -> None:
+def write_aux_files(logger: logging.Logger, filename, end_date, n_papers):
+
+    # Check if any papers were found
+    if n_papers == 0:
+
+        logger.warning("As no papers were found, the date file was not updated")
+
+    # If papers were found, update the date file
+    else:
+
+        # Write the end date of the search to a file for the next run
+        write_date(logger, filename, end_date)
+
+def write_links(logger: logging.Logger, args: argparse.Namespace, papers_of_note, filename: str) -> None:
     """Write all links to the `catchup.txt` file.
 
     inputs
@@ -84,7 +99,7 @@ def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str,
 
     with open(filename, "a+", encoding="utf-8") as f:
 
-        for arxiv_id in corpus.papers_of_note:
+        for arxiv_id in papers_of_note:
 
             if args.only_ids:
             
@@ -92,7 +107,7 @@ def write_links(args: argparse.Namespace, logger: logging.Logger, filename: str,
 
             else:
 
-                link = corpus.corpus[arxiv_id].paperInfo.link_abs
+                link = "https://arxiv.org/abs/"+arxiv_id
             
                 f.write(f"{link}\n")
 

@@ -1,13 +1,20 @@
 # Import classes
+# from .SearchParameters import SearchParameters
+from .API   import API
+from .API   import ArxivConst
 from .Paper import Paper
 
 # Import function
-from .utils import progress_bar
+from .arxiv_query import arxiv_query
+from .file_io     import write_xml
+from .utils       import progress_bar, pretty_sleep, delete_file
 
 # Import libraries
 import xml.etree.ElementTree as ET
 import numpy                 as np
 import logging
+import typing
+import os
 
 class Corpus:
     """Contains the entire corpus downloaded from the arXiv servers.
@@ -62,6 +69,166 @@ class Corpus:
         # Add one to the length
         self.length += 1
 
+    def extract_papers(self, ns: dict[str, str], xml_data: ET.ElementTree | ET.Element) -> None:
+        """Extracts the papers (and their information) from the results of the API query.
+
+        inputs
+        ------
+        logger : The logger object.
+        corpus : The corpus of all papers currently found.
+        ns     : XML namespaces that arXiv uses.
+        xml    : XML data from the arXiv query.
+        """
+
+        # Loop over the entries (papers) within the current search
+        count = 0
+        for entry in xml_data.findall("atom:entry", ns):
+
+            self.add_paper_to_corpus(ns, entry)
+
+            count += 1
+
+        self.logger.debug("Found {:} papers in this search block.".format(count))
+
+        return
+
+    # # Loop through the searches and obtain all papers
+    def get_papers(self, arxiv_const: ArxivConst, api: API, xml_path) -> None:
+        """Obtains all Papers and places them in the Corpus. Will attempt to load the Corpus from an .xml file, and will fall back to querying the arXiv servers in case no file was found, or the file does not match the current search parameters.
+        """
+
+        # Search for xml file. If found, load it
+        if os.path.exists(xml_path):
+            
+            self.logger.info("Found an .xml file: {:}".format(xml_path))
+            self.logger.info("Continuing from the previous failed run.")
+
+            # Load the file
+            try:
+                xml_tree = typing.cast( ET.ElementTree, ET.parse(xml_path) )
+            except ET.ParseError as e:
+                self.logger.critical("Could not parse XML: %s", e)
+                raise
+
+            # Extract the papers from the xml
+            self.extract_papers(arxiv_const.ns, xml_tree)
+
+            # Print how many were found
+            # Compute the length of the corpus
+            n_papers = self.length
+            self.logger.info("Found {:} of {:} papers in the .xml file.".format(self.length, api.total_papers))
+
+            # Check the url from the loaded xml matches the current search url
+            expected_url = api.apiquery.format(start_num=0, blocksize=arxiv_const.search_blocksize)
+            returned_urlblock = xml_tree.find("atom:link", arxiv_const.ns)
+            if returned_urlblock is None:
+                self.logger.critical("arXiv data did not include a link. It is corrupted (returned None).\n")
+                raise
+            returned_url = returned_urlblock.attrib["href"]
+
+            url_missmatch = ( expected_url != returned_url )
+
+            # If the urls do not match, discard and restart the search
+            if url_missmatch:
+
+                self.logger.warning("The .xml file information does not match the current search. Discarding the file and re-connecting.")
+                self.logger.debug("Expected: {:}".format(expected_url))
+                self.logger.debug("Found:    {:}".format(returned_url))
+
+                # # Clear the entries from the list.
+                # entries = []
+                self.clear_corpus()
+
+                # Clear the .xml file
+                delete_file(self.logger, xml_path)
+
+            # If the urls match AND the number of papers was less than the total:
+            elif ( not url_missmatch ) and ( n_papers < api.total_papers ):
+                self.logger.debug("The .xml file information matches the current search. Continuing.")
+
+            # If less than the total, provide info that we are continuing the search
+            elif n_papers >= api.total_papers:
+
+                self.logger.info("All information found in the .xml file. Skipping the search.")
+
+        # Compute the length of the corpus
+        n_papers = self.length
+        # If the number of papers is less that the total, connect to arXiv
+        if n_papers < api.total_papers:
+
+            # Set the starting number
+            start_num = n_papers
+
+            self.logger.debug("The number of papers found so far is: {:}".format(start_num))
+
+            # # Compute the estimated time for the search
+            # The time to complete depends almost entirely on the number of connections to arXiv and the number of sleeps, though there is some slowdown due to connecting to the arXiv servers and waiting for a response
+            # It is typically 0.7s per connection, though it varies *wildly*
+            # We also add jitter to the timers with random.uniform(0, 0.3) (average slowdown of 0.15 seconds)
+            # Because of how wildly it varies, computing the remaining search time accurately during the loop is pointless. Just use the fudge_timer
+            fudge_timer = 0.7 + 0.15
+            est_time    = - ( arxiv_const.sleep_search + fudge_timer ) * ( ( api.total_papers - start_num ) // -arxiv_const.search_blocksize )
+
+            # Compute the number of steps it will take
+            num_steps = int( np.ceil(api.total_papers/arxiv_const.search_blocksize) * arxiv_const.search_blocksize )
+
+            # Search the arXiv
+            self.logger.info("Searching for papers. Estimated time: {:.0f} seconds".format(est_time))
+            for ii in range(start_num, api.total_papers, arxiv_const.search_blocksize):
+
+                # Compute the progress of the loop
+                if ii+arxiv_const.search_blocksize > api.total_papers:
+                    remaining_steps = 1
+                    search_interval = api.total_papers - ii
+                    search_endnum   = api.total_papers
+                else:
+                    remaining_steps = -((api.total_papers-ii)//-arxiv_const.search_blocksize)
+                    search_interval = arxiv_const.search_blocksize
+                    search_endnum   = ii + arxiv_const.search_blocksize
+
+                # Print the progress bar
+                progress_bar(ii, num_steps, remaining_steps * ( arxiv_const.sleep_search + fudge_timer ))
+
+                # Debug messages
+                self.logger.debug("Remaining steps: {:}".format(remaining_steps))
+                self.logger.debug("Starting number: {:}".format(ii))
+                self.logger.debug("Ending number:   {:}".format(search_endnum))
+
+                # Sleep before the query so that there is no dead time on the last query. Also need to sleep here as we do not wait after the initial API call
+                # Add jitter to the sleep timer
+                current_sleep_time = arxiv_const.sleep_search
+                progress_bar(ii, num_steps, remaining_steps * current_sleep_time)
+                pretty_sleep(self.logger, current_sleep_time)
+
+                # Query the API
+                parsed_xml, api.ssl_dict = arxiv_query(self.logger, api.ssl_dict, api.url, ii, search_interval)
+                
+                # Write the xml to a file
+                #logger, filename, xml_data, ns, overwrite=False
+                write_xml(self.logger, xml_path, parsed_xml, arxiv_const.ns)
+                
+                # Extract the paper from the xml
+                self.extract_papers(arxiv_const.ns, parsed_xml)
+
+            # Close the progress bar
+            progress_bar(api.total_papers, api.total_papers)
+
+            self.logger.info("All paper information successfully downloaded from the arXiv servers!")
+
+        # Double check that we found the correct number of papers
+        self.get_corpus_length()
+        n_papers = self.length
+        if n_papers != api.total_papers:
+
+            self.logger.error("Found {:} papers (expected {:}).".format(n_papers, api.total_papers))
+
+        else:
+
+            self.logger.debug("Found the expected number of papers ({:}).".format(api.total_papers))
+
+        # Remove revised papers
+        self.drop_revisions()
+
     # # Obtain the number of papers in the Corpus
     def get_corpus_length(self) -> None:
         """Compute the length of the Corpus, i.e. how many papers are contained within.
@@ -107,7 +274,7 @@ class Corpus:
         self.logger.debug("Dropped {:} revised entries.".format(num_dropped))
 
     # # Find matches
-    def find_matches_corpus(self, search_terms) -> None:
+    def find_matches(self, search_terms: dict[str, list[str]]) -> None:
         """Find search_term matches within each Paper in the Corpus.
 
         inputs
@@ -140,7 +307,7 @@ class Corpus:
         progress_bar(self.length, self.length)
 
     # # Score the papers by author/word matches
-    def score_corpus_matches(self) -> None:
+    def score_papers_matches(self) -> None:
         """Scores all Papers in the Corpus based on the number of matches found.
         NOTE: This function also counts the number of matches.
         """
@@ -183,7 +350,7 @@ class Corpus:
         raise
 
     # # Filter the Corpus based on the author/word matches
-    def filter_corpus_matches(self) -> None:
+    def filter_papers_matches(self) -> None:
         """Filter the Corpus such that only Papers with matches to the search terms are kept.
         """
 
@@ -194,7 +361,7 @@ class Corpus:
         for key, paper in self.corpus.items():
 
             # If an Author was found, append it to the entries of note
-            if paper.n_author_matches >= 1:
+            if paper.paperScores.n_author_matches >= 1:
 
                 self.logger.debug("Adding paper: {:} (found author)".format(key))
 
@@ -210,7 +377,7 @@ class Corpus:
                 np.append(self.papers_of_note, key)
 
     # # Filter the Corpus based on the score
-    def filter_corpus_score(self) -> None:
+    def filter_papers_score(self) -> None:
         """Filter the Corpus such that only Papers with a score above some threshold are kept.
         """
 

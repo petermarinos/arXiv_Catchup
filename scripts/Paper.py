@@ -84,7 +84,23 @@ class Paper:
                                   )
 
         # Initialise the scores. Will set them all to zero
-        self.paperScores = paperScores([], 0, {}, {}, 0.)
+        match_dict: dict[WordKind, dict[Section, int]] = {"Included Words" : {"Title"    : 0,
+                                                                                "Abstract" : 0,
+                                                                                "Total"    : 0},
+                                                            "Excluded Words" : {"Title"    : 0,
+                                                                                "Abstract" : 0,
+                                                                                "Total"    : 0},}
+        score_dict: dict[WordKind, dict[Section, float]] = {"Included Words" : {"Title"    : 0.,
+                                                                                "Abstract" : 0.,
+                                                                                "Total"    : 0.},
+                                                            "Excluded Words" : {"Title"    : 0.,
+                                                                                "Abstract" : 0.,
+                                                                                "Total"    : 0.},}
+        self.paperScores = paperScores(found_authors=[],
+                                       n_author_matches=0,
+                                       matches=match_dict,
+                                       scores=score_dict,
+                                       final_score=0.)
     
     # # Find matches between the paper authors and the authors of interest
     def match_authors(self, key_authors: list[str]) -> None:
@@ -119,18 +135,18 @@ class Paper:
                         self.logger.debug("Found author: {:} | Matched with: {:}".format(key_author, paper_author))
                         
                         # Increase the number of author matches by 1
-                        self.n_author_matches += 1
+                        self.paperScores.n_author_matches += 1
                         
                         # Add the author to the list of found authors
                         # Use the author name from the paper so that the user is shown exactly what was matched
                         self.paperScores.found_authors.append(paper_author)
 
             # If no matches were found for this Paper:
-            if self.n_author_matches == 0:
+            if self.paperScores.n_author_matches == 0:
                 self.logger.debug(" ... none found")
 
     # # Find matches between the text in the title and abstract and the words of interest
-    def match_words(self, key_words: dict[str, str], match_type: WordKind) -> None:
+    def match_words(self, key_words: dict[str, list[str]], match_type: WordKind) -> None:
         """Find matches between the Title/Abstract of the Paper and key words in the search terms.
 
         inputs
@@ -154,7 +170,7 @@ class Paper:
                 pattern = rf"(?<!\w){re.escape(word)}(?!\w)"
 
                 # Define the text to search through
-                title = re.escape(self.paperInfo.title)
+                title = self.paperInfo.title # DO NOT ESCAPE
 
                 # Search the author field in the entry
                 title_match = re.search(pattern, title, re.IGNORECASE)
@@ -174,7 +190,7 @@ class Paper:
                 if self.paperInfo.abstract is not None:
 
                     # Define the text to search through
-                    abstract = re.escape(self.paperInfo.abstract)
+                    abstract = self.paperInfo.abstract # DO NOT ESCAPE
                     
                     abstract_match = re.search(pattern, abstract, re.IGNORECASE)
 
