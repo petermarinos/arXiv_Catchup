@@ -1,17 +1,21 @@
-# Import functions
-from .utils import pretty_sleep
+"""Defines functions used for connections to the arXiv servers."""
 
-# Import libraries
+# Import standard libraries
 import xml.etree.ElementTree as ET
 import urllib.request
 import urllib.error
-import certifi
 import logging
 import ssl
+
+# Import non-standard libraries
+import certifi
 
 # # Import libraries used to test API connections and errors
 # from email.message import Message
 # from unittest.mock import patch
+
+# Import functions
+from .utils import pretty_sleep
 
 
 def http_errorcheck(
@@ -339,45 +343,43 @@ def arxiv_query(
 
 
 ## Format of the xml outputs from the arXiv API:
-"""Example arXiv API pull:
-<ns0:feed xmlns:ns0="http://www.w3.org/2005/Atom" xmlns:ns1="http://a9.com/-/spec/opensearch/1.1/" xmlns:ns2="http://arxiv.org/schemas/atom">
-  <ns0:id>https://arxiv.org/api/RdGiJmCzUo9LqFSmMy0zaOoHqng</ns0:id>
-  <ns0:title>arXiv Query: search_query=submittedDate:"{start_date}1900 TO {end_date}1900" AND cat:{cat_urlstring}&amp;id_list=&amp;start={ii}&amp;max_results={interval}</ns0:title>
-  <ns0:updated>YYYY-mm-ddTHH:MM:SSZ</ns0:updated>
-  <ns0:link href="{formatted_url}" type="application/atom+xml" />
-  <ns1:itemsPerPage>{interval}</ns1:itemsPerPage>
-  <ns1:totalResults>{max_num}}</ns1:totalResults>
-  <ns1:startIndex>{ii}}</ns1:startIndex>
-  <ns0:entry>
-    [paper entry 0]
-  </ns0:entry>
-  <ns0:entry>
-    [paper entry 1]
-  </ns0:entry>
-  ...
-</ns0:feed>
-"""
+# Example arXiv API pull:
+# <ns0:feed xmlns:ns0="http://www.w3.org/2005/Atom" xmlns:ns1="http://a9.com/-/spec/opensearch/1.1/" xmlns:ns2="http://arxiv.org/schemas/atom">
+#   <ns0:id>https://arxiv.org/api/RdGiJmCzUo9LqFSmMy0zaOoHqng</ns0:id>
+#   <ns0:title>arXiv Query: search_query=submittedDate:"{start_date}1900 TO {end_date}1900" AND cat:{cat_urlstring}&amp;id_list=&amp;start={ii}&amp;max_results={interval}</ns0:title>
+#   <ns0:updated>YYYY-mm-ddTHH:MM:SSZ</ns0:updated>
+#   <ns0:link href="{formatted_url}" type="application/atom+xml" />
+#   <ns1:itemsPerPage>{interval}</ns1:itemsPerPage>
+#   <ns1:totalResults>{max_num}}</ns1:totalResults>
+#   <ns1:startIndex>{ii}}</ns1:startIndex>
+#   <ns0:entry>
+#     [paper entry 0]
+#   </ns0:entry>
+#   <ns0:entry>
+#     [paper entry 1]
+#   </ns0:entry>
+#   ...
+# </ns0:feed>
 
-"""Example paper entry:
-  <ns0:entry>
-    <ns0:id>http://arxiv.org/abs/{arXiv:ID}</ns0:id>
-    <ns0:title>Title text</ns0:title>
-    <ns0:updated>YYYY-mm-ddTHH:MM:SSZ</ns0:updated>
-    <ns0:link href="https://arxiv.org/abs/{arXiv:ID}" rel="alternate" type="text/html" />
-    <ns0:link href="https://arxiv.org/pdf/{arXiv:ID}" rel="related" type="application/pdf" title="pdf" />
-    <ns0:summary>Abstract text</ns0:summary>
-    <ns0:category term="cat0" scheme="http://arxiv.org/schemas/atom" />
-    <ns0:category term="cat1" scheme="http://arxiv.org/schemas/atom" />
-    ...
-    <ns0:published>2026-02-06T18:51:45Z</ns0:published>
-    <ns2:comment>Comment text</ns2:comment>
-    <ns2:primary_category term="cat0" />
-    <ns0:author>
-      <ns0:name>example name 0</ns0:name>
-    </ns0:author>
-    <ns0:author>
-      <ns0:name>example name 1</ns0:name>
-    </ns0:author>
-    ...
-  </ns0:entry>
-"""
+# Example paper entry:
+#   <ns0:entry>
+#     <ns0:id>http://arxiv.org/abs/{arXiv:ID}</ns0:id>
+#     <ns0:title>Title text</ns0:title>
+#     <ns0:updated>YYYY-mm-ddTHH:MM:SSZ</ns0:updated>
+#     <ns0:link href="https://arxiv.org/abs/{arXiv:ID}" rel="alternate" type="text/html" />
+#     <ns0:link href="https://arxiv.org/pdf/{arXiv:ID}" rel="related" type="application/pdf" title="pdf" />
+#     <ns0:summary>Abstract text</ns0:summary>
+#     <ns0:category term="cat0" scheme="http://arxiv.org/schemas/atom" />
+#     <ns0:category term="cat1" scheme="http://arxiv.org/schemas/atom" />
+#     ...
+#     <ns0:published>2026-02-06T18:51:45Z</ns0:published>
+#     <ns2:comment>Comment text</ns2:comment>
+#     <ns2:primary_category term="cat0" />
+#     <ns0:author>
+#       <ns0:name>example name 0</ns0:name>
+#     </ns0:author>
+#     <ns0:author>
+#       <ns0:name>example name 1</ns0:name>
+#     </ns0:author>
+#     ...
+#   </ns0:entry>

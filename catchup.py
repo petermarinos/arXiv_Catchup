@@ -1,4 +1,4 @@
-"""Main script."""
+"""Thin entry point."""
 
 # Import libraries
 from scripts.main import main

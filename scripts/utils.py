@@ -1,9 +1,8 @@
-# Import version number
-from scripts import __version__
+"""Utily functions."""
 
+# fmt: off
 # Import libraries
-import importlib.metadata as metadata
-import numpy as np
+from importlib import metadata
 import argparse
 import platform
 import logging
@@ -11,6 +10,13 @@ import pathlib
 import random
 import time
 import sys
+
+# Import non-standard libraries
+import numpy as np
+
+# Import version number
+from scripts import __version__
+# fmt: on
 
 
 class FlushingStreamHandler(logging.StreamHandler):
@@ -186,7 +192,7 @@ def log_environment(logger: logging.Logger) -> None:
     logger.debug("arXiv_Catchup=={:}".format(__version__))
 
     # Print package info
-    for pkg in ["certifi", "numpy", "pandas", "pylatexenc", "PyYAML"]:
+    for pkg in ["certifi", "numpy", "pylatexenc", "PyYAML"]:
         version = metadata.version(pkg)
         logger.debug("{:}=={:}".format(pkg, version))
 

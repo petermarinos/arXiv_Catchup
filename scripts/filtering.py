@@ -1,3 +1,5 @@
+"""Functions used in the filtering operations."""
+
 # Import functions
 from .string_handling import split_initials, find_token
 

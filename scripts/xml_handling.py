@@ -1,10 +1,12 @@
-# Import functions
-from .string_handling import normalise_string
+"""Functions to handle .xml files."""
 
 # Import libraries
 import xml.etree.ElementTree as ET
 import logging
 import re
+
+# Import functions
+from .string_handling import normalise_string
 
 
 def extract_paper_info(

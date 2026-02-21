@@ -1,21 +1,31 @@
+"""Functions to compute dates."""
+
 # Import libraries
 import datetime
 import logging
 
 # Technically this script is not tied to the daily listings and when they are posted.
-# However, as the API is not updated simultaneously -- with papers being added at approximately the same time as the daily listings.
+# However, the API is not updated simultaneously.
+# The papers are added at approximately the same time as the daily listings are updated.
 # Hence, it is best to time the searches around the daily listings.
 
-# The daily list of papers is typically released around 02:00 UTC to 04:00 UTC, though can be a little later. We use 06:00 UTC here for safety.
+# The daily list of papers is typically released around 02:00 UTC to 04:00 UTC.
+# We use 06:00 UTC here for safety.
 # They are published on Monday, Tuesday, Wednesday, Thursday, and Friday (UTC).
-# The lists contain all papers published from 19:00 UTC two posting days ago to 19:00 UTC on the prior posting day
+# The lists contain all papers from 19:00 UTC two posting days ago to 19:00 UTC on the prior day
 
 # For example:
-#     If searching on Wednesday at 20:00 UTC, we need to search the list posted on Wednesday at 06:00 UTC, which will include papers from Monday 19:00 UTC to Tuesday 19:00 UTC.
-#     If searching on Tuesday at 05:00 UTC, we need to search the list posted on Monday day at 06:00 UTC, which will include papers from Thursday 19:00 UTC to Friday 19:00 UTC.
+#     If searching on Wednesday at 20:00 UTC
+#         Search the list posted on Wednesday at 06:00 UTC
+#         Will include papers from Monday 19:00 UTC to Tuesday 19:00 UTC.
+#     If searching on Tuesday at 05:00 UTC
+#         Search the list posted on Monday day at 06:00 UTC
+#         Will include papers from Thursday 19:00 UTC to Friday 19:00 UTC.
 
-# No lists are released on certain days. These days are chosen ad-hoc, and are days that are important to USAians. It includes Christmas, their Thanksgiving, and others.
-# The API is not updated on these days, so the search should return zero results, and raise an error.
+# No lists are released on certain days.
+# These days are chosen ad-hoc, and are days that are important to USAians.
+# It includes Christmas, their Thanksgiving, and others.
+# The API isn't updated on these days so the search should return zero results and raise an error.
 # Running the following day should work, and no papers *should* be missed (not tested)
 
 

@@ -1,7 +1,6 @@
-# Import functions
-from .utils import progress_bar
+"""Functions for file I/O operations."""
 
-# Import libraries
+# Import standard libraries
 import xml.etree.ElementTree as ET
 import webbrowser
 import argparse
@@ -10,6 +9,9 @@ import logging
 import pathlib
 import time
 import os
+
+# Import functions
+from .utils import progress_bar
 
 
 def read_catchup(

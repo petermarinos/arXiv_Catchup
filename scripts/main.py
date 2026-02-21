@@ -1,27 +1,30 @@
-"""The main"""
+"""The main script."""
+
+# fmt: off
+# Import standard libraries
+import pathlib
 
 # Import classes
-from .ArxivClient import ArxivClient
-from .Config import Config
-from .Corpus import Corpus
-from .CLI import CLI
+from .arxiv_client import ArxivClient
+from .config       import Config
+from .corpus       import Corpus
+from .cli          import CLI
 
 # Import functions
 from .file_io import write_aux_files
-from .output import display
-from .utils import logger_setup
+from .output  import display
+from .utils   import logger_setup
+# fmt: on
 
-import pathlib
-
-"""TO-DO:
-
-Current branch will fix issues #32, #33, #34, and #35
-"""
+# # TO-DO:
+#
+# # Current branch will fix issues #32, #33, #34, and #35
 
 
 # The main script
 # Performs the entire pipeline
 def main():
+    """Pipeline that runs from start to finish."""
 
     root_path = pathlib.Path(__file__).resolve().parent.parent
 

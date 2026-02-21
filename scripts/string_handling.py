@@ -1,8 +1,11 @@
-# Import libraries
-from pylatexenc.latex2text import LatexNodes2Text
-from unicodedata import normalize as normalise  # Fix a spelling error
+"""Functions used for handling strings."""
 
+# Import standard libraries
+from unicodedata import normalize as normalise  # Fix a spelling error
 import re
+
+# Import non-standard libraries
+from pylatexenc.latex2text import LatexNodes2Text
 
 
 def normalise_string(s: str) -> str:

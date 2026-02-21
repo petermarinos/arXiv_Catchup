@@ -1,17 +1,23 @@
-# Import functions
-from .string_handling import normalise_string
-from .file_io import write_date
-from .dates import parse_date, calc_search_endtime, calc_next_posttime
-from .utils import set_filenames, delete_file
+"""Config class."""
 
-# Import libraries
-import numpy as np
+# fmt: off
+# Import standard libraries
 import argparse
 import datetime
 import logging
 import pathlib
-import yaml
 import os
+
+# Import non-standard libraries
+import numpy as np
+import yaml
+
+# Import functions
+from .string_handling import normalise_string
+from .file_io         import write_date
+from .dates           import parse_date, calc_search_endtime, calc_next_posttime
+from .utils           import set_filenames, delete_file
+# fmt: on
 
 
 class Config:

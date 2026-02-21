@@ -1,19 +1,25 @@
-# Import classes
-from .ArxivClient import ArxivClient, ArxivConst
-from .Paper import Paper
+"""Corpus class."""
 
-# Import function
-from .arxiv_query import arxiv_query
-from .file_io import write_xml
-from .utils import progress_bar, pretty_sleep, delete_file
-
-# Import libraries
+# fmt: off
+# Import standard libraries
 import xml.etree.ElementTree as ET
-import numpy as np
 import logging
 import pathlib
 import typing
 import os
+
+# Import non-standard libraries
+import numpy as np
+
+# Import function
+from .arxiv_query import arxiv_query
+from .file_io     import write_xml
+from .utils       import progress_bar, pretty_sleep, delete_file
+
+# Import classes
+from .arxiv_client import ArxivClient, ArxivConst
+from .paper        import Paper
+# fmt: on
 
 
 class Corpus:

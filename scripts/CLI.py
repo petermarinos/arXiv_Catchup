@@ -1,9 +1,13 @@
+"""CLI class, for interactions with the CLI."""
+
+# fmt: off
 # Import classes
-from .ArxivClient import ArxivConst
-from .Corpus import Corpus
+from .arxiv_client import ArxivConst
+from .corpus       import Corpus
 
 # Import functions
 from .utils import cli_args
+# fmt: on
 
 
 class CLI:

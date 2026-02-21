@@ -1,14 +1,17 @@
-# Import functions
-from .xml_handling import extract_paper_info
-from .filtering import authors_match
+"""The Paper class."""
 
+# fmt: off
 # Import libraries
 from dataclasses import dataclass
-from typing import Literal
-
+from typing      import Literal
 import xml.etree.ElementTree as ET
 import logging
 import re
+
+# Import functions
+from .xml_handling import extract_paper_info
+from .filtering    import authors_match
+# fmt: on
 
 # Define some literals. Bounds the expected values.
 WordKind = Literal["Included Words", "Excluded Words"]

@@ -11,6 +11,10 @@ However, if there is something small, feel free to contribute!
 - Add type hints on everything, check with PyLance.
 - Use the black formatter and the PyLint linter
 
+### Exceptions to black
+
+- Arrange imports into columns.
+
 ## Reporting issues
 
 When reporting a bug, please include the catchup.log flie.

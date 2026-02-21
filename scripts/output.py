@@ -1,13 +1,17 @@
-# Import functions
-from .file_io import write_links
-from .utils import progress_bar
+"""Functions used in creating the outputs."""
 
-# Import libraries
+# fmt: off
+# Import standard libraries
 import webbrowser
 import argparse
 import logging
 import pathlib
 import time
+
+# Import functions
+from .file_io import write_links
+from .utils   import progress_bar
+# fmt: on
 
 
 def display(

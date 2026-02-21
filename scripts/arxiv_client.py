@@ -1,9 +1,7 @@
-# Import functions
-from .arxiv_query import arxiv_query
-from .file_io import write_xml
-from .utils import delete_file
+"""arXiv client class, which controls connections to the API."""
 
-# Import libraries
+# fmt: off
+# Import standard libraries
 from dataclasses import dataclass
 import xml.etree.ElementTree as ET
 import datetime
@@ -11,6 +9,12 @@ import logging
 import pathlib
 import sys
 import os
+
+# Import functions
+from .arxiv_query import arxiv_query
+from .file_io     import write_xml
+from .utils       import delete_file
+# fmt: on
 
 
 @dataclass
