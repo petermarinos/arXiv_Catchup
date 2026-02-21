@@ -4,6 +4,9 @@ __pycache__
 # mac indexing file
 .DS_Store
 
+# VSCode settings
+.vscode/
+
 # Temporary files
 *.xml
 *.log
