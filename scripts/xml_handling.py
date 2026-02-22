@@ -128,7 +128,7 @@ def extract_paper_info(
     logger.debug(f"Comment: {comment}")
 
     # Extract the author list
-    author_list = []
+    author_list: list[str] = []
     authors = entry.findall("atom:author", ns)
     if len(authors) == 0:
         logger.exception("Count not find author list.\n")
@@ -140,15 +140,13 @@ def extract_paper_info(
             raise TypeError("Malformed author name. Could not extract.")
         normalised_name = normalise_string(name.text)
         author_list.append(normalised_name)
-    authors = author_list
     logger.debug(f"Found Authors: {author_list}")
-    n_authors = len(authors)
 
     # Derive some additional information
     revised = (updated > published) or (version > 1)
     logger.debug(f"Revised: {revised}")
 
-    n_authors = len(authors)
+    n_authors = len(author_list)
     logger.debug(f"Number of authors: {n_authors}")
 
     n_words_title = len(re.findall(r"\w+", title))
@@ -168,7 +166,7 @@ def extract_paper_info(
         category,
         published,
         comment,
-        authors,
+        author_list,
         n_authors,
         revised,
         n_words_title,
