@@ -55,8 +55,8 @@ class Corpus:
 
         self.logger.debug("Deleting all entries in the corpus.")
 
-        # Replace the corpus with an empty dictionary
-        self.corpus: dict[str, Paper] = {}
+        # Clear all entries from the Corpus dictionary
+        self.corpus.clear()
 
         # Set the length back to zero
         self.length = 0
@@ -417,7 +417,6 @@ class Corpus:
         self.logger.info("Filtering corpus based on word matching.")
 
         # Loop over all papers
-        self.papers_of_note: list[str] = []
         for key, paper in self.corpus.items():
 
             # If an Author was found, append it to the entries of note

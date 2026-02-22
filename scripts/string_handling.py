@@ -30,14 +30,12 @@ def normalise_string(s: str) -> str:
     if s is None:
         return ""
 
-    # Define the form for the normalisation
-    form = "NFKD"  # "compatibility deecomposition"
-
     # Convert any latex commands to unicode
     s_unicode = LatexNodes2Text().latex_to_text(s)
 
     # Normalise the string
-    s_normalised = normalise(form, s_unicode)  # Function from unicodedata
+    # Use "compatibility deecomposition"
+    s_normalised = normalise("NFKD", s_unicode)  # Function from unicodedata
 
     # Convert the string to ASCII
     s_ascii = s_normalised.encode("ascii", "ignore").decode("ascii")

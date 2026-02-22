@@ -22,6 +22,10 @@ from .utils           import set_filenames, delete_file
 class Config:
     """Defines important parameters required for the search"""
 
+    # There are 10 attributes. All of which are required to set up the execution of the script.
+    # Disable linting warnings
+    # pylint: disable=R0902
+
     # Define some datetime objects
     # Posting time of the daily list
     POST_TIME = datetime.time(6, 0, tzinfo=datetime.timezone.utc)
@@ -52,7 +56,7 @@ class Config:
         self.end_time: datetime.datetime
         self.end_date: datetime.date
 
-        self.search_terms: dict[str, list[str]]
+        self.search_terms: dict[str, list[str] | None]
 
         self.cat_printstring = ""
         self.cat_urlstring = ""
@@ -171,13 +175,18 @@ class Config:
                 self.logger.debug(f"Found excluded word: {excluded_word}")
 
         # Check to see if any word is in both the 'included' and 'excluded fields
-        for inc_word in self.search_terms["Included Words"]:
+        if (
+            self.search_terms["Included Words"] is not None
+            and self.search_terms["Excluded Words"] is not None
+        ):
 
-            if inc_word in self.search_terms["Excluded Words"]:
+            for inc_word in self.search_terms["Included Words"]:
 
-                self.logger.warning(
-                    f"The term '{inc_word}' appears in both the Included and Excluded word fields."
-                )
+                if inc_word in self.search_terms["Excluded Words"]:
+
+                    self.logger.warning(
+                        f"The term '{inc_word}' appears in both the Included and Excluded fields."
+                    )
 
     def get_dates(self, cli_args: argparse.Namespace) -> None:
         """Set up the dates that the script uses for the arXiv API calls.

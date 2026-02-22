@@ -16,7 +16,7 @@ from .ui import progress_bar
 
 def read_catchup(
     logger: logging.Logger, filename: pathlib.Path, sleep_time: float
-) -> list:
+) -> list[str]:
     """Read the `catchup.txt` file and open all links in the browser.
 
     inputs
@@ -30,7 +30,7 @@ def read_catchup(
     links : Contains all arXiv paper links from the `catchup.txt` file.
     """
 
-    links = []
+    links: list[str] = []
 
     with open(filename, "r", encoding="utf8") as f:
 

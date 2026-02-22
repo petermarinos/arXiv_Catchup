@@ -24,6 +24,11 @@ class PaperInfo:
     Stores all data from the arXiv query, plus a few derived values.
     """
 
+    # 11 attributes from the .xml
+    # 4 attributes are derived
+    # Want to store *all* data. Disable linting warning for >7 attributes
+    # pylint: disable=R0902
+
     id_num: str
     version: int
     title: str
@@ -67,6 +72,12 @@ class Paper:
         ns     : XML namespaces.
         entry  : XML data for a single paper.
         """
+
+        # 11 variables from the .xml
+        # 4 variables derived from the .xml
+        # 6 variables to store future scores
+        # Want to store *all* paper information. Disable linting warning for >15 variables
+        # pylint: disable=R0914
 
         self.logger = logger
 

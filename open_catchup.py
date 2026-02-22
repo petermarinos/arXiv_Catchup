@@ -11,8 +11,8 @@ import argparse
 import pathlib
 
 # Import packages
-from scripts.file_io      import read_catchup
-from scripts.utils        import logger_setup, delete_catchup, set_filenames
+from scripts.file_io import read_catchup
+from scripts.utils   import logger_setup, delete_catchup, set_filenames
 # fmt: on
 
 # The goal of this script is to save the link opening for later if the user chooses

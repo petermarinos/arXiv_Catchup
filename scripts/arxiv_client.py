@@ -31,6 +31,11 @@ class ArxivClient:
     Also performs said connections.
     """
 
+    # All 8 attributes are required to ensure connections can be made to the arXiv servers,
+    #     and for error checking.
+    # Disable pylint warning for >7 attributes
+    # pylint: disable=R0902
+
     # # Constants relating to connecting to the arXiv servers.
     # DO NOT CHANGE
 
@@ -123,18 +128,16 @@ class ArxivClient:
             cats=api_catstring,
         )
 
-        # Define wait times
+        # Initialise wait times. Values will be modified if connection errors occur
         self.wait_time = 3
-        self.retry_after = (
-            None  # Will be updated to an int *only* if the command is given
-        )
+        self.retry_after = 0
 
         # Total number of papers that will be searched for
         # Different to the length of the Corpus (though they should be equal at the end).
         self.total_papers = 0
 
         # Define the ssl_context and define a flag
-        self.ssl_context = None
+        self.ssl_context = ssl.create_default_context()
         self.cert_error_bool = False
 
     def http_errorcheck(self, error: urllib.error.HTTPError, attempt: int) -> None:
@@ -222,7 +225,7 @@ class ArxivClient:
                 + f"Updating certificate and retrying in {self.wait_time} seconds ..."
             )
 
-            # Try verifying
+            # Try updating the ssl_context to use the certifi cafile
             self.ssl_context = ssl.create_default_context(cafile=certifi.where())
 
             # Set the certification error flag to True
@@ -387,7 +390,7 @@ class ArxivClient:
                 raise
 
             # If there was a Retry-After command, replace the wait time
-            if self.retry_after is not None:
+            if self.retry_after != 0:
 
                 self.wait_time = self.retry_after
 
@@ -395,7 +398,7 @@ class ArxivClient:
             pretty_sleep(self.logger, self.wait_time)
 
             # If there was no retry after demand, increase the wait time for the next attempt
-            if self.retry_after is None:
+            if self.retry_after == 0:
 
                 self.wait_time *= self.BACKOFF
 
@@ -425,7 +428,7 @@ class ArxivClient:
             self.logger.info("Attempting to continue from the previous failed run.")
 
             # Load the file
-            xml_data = ET.parse(xml_path)
+            xml_data = ET.parse(xml_path).getroot()
 
             # if xml_data is None:
             #     self.logger.exception("Empty .xml.")
