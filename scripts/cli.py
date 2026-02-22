@@ -1,58 +1,125 @@
 """CLI class, for interactions with the CLI."""
 
 # fmt: off
+# Import libraries
+import logging
+import pathlib
+import sys
+
 # Import classes
-from .arxiv_client import ArxivConst
+from .arxiv_client import ArxivClient
 from .corpus       import Corpus
 
 # Import functions
-from .utils import cli_args
+from .utils import cli_args, delete_file
 # fmt: on
 
 
 class CLI:
     """Deals with all CLI tasks."""
 
-    def __init__(self):  # , cdir: str):
+    def __init__(self):
+        """Obtain the CLI arguments"""
 
         self.args = cli_args()
 
-    # # Determine how to display the results
-    def get_display_method(self, arxiv_const: ArxivConst, corpus: Corpus) -> None:
-        """Find the preferred method of displaying the results."""
+        # if -f is passed
+        if self.args.force_open:
+            self.open_in_brower = True
+        else:
+            self.open_in_brower = False
+
+        # if -w is passed
+        if self.args.write_to_file:
+            self.write_to_file = True
+        else:
+            self.write_to_file = False
+
+    def check_continue_status(
+        self,
+        logger: logging.Logger,
+        arxiv_client: ArxivClient,
+        xml_path: pathlib.Path,
+    ) -> None:
+        """Warns the user if the search will take a long time, or forces them to confirm.
+
+        inputs
+        ------
+        logger       : The logger object.
+        arxiv_client : The arXiv client object.
+        xml_path     : Path+filename to the search .xml file.
+        """
+
+        # Compute the time it will take to download all papers
+        time_to_search_minutes = (
+            arxiv_client.total_papers
+            * arxiv_client.SLEEP_SEARCH
+            / (arxiv_client.SEARCH_BLOCKSIZE * 60)
+        )
+
+        # Print a warning if it is going to take a long time
+        if 1 <= time_to_search_minutes < 5:
+
+            logger.warning(
+                "There are {total_papers:d} papers. "
+                + f"The search will take {time_to_search_minutes:.1f} minutes."
+            )
+
+        # Prompt the user if it is going to take a really long time.
+        elif time_to_search_minutes >= 5:
+
+            user_prompt = (
+                input(
+                    f"There are {arxiv_client.total_papers:d} papers. "
+                    + f"The search will take {time_to_search_minutes:.1f} minutes. "
+                    + "Continue? [y/N]: "
+                )
+                .strip()
+                .lower()
+            )
+
+            # If they want to continue, do nothing.
+            # If they do not want to continue, end the search
+            if user_prompt != "y":
+
+                # Delete the .xml file
+                delete_file(logger, xml_path)
+
+                # Exit
+                sys.exit(
+                    "Cancelling the search. Reduce search window to decrease the number of results."
+                )
+
+    def get_display_method(self, arxiv_client: ArxivClient, corpus: Corpus) -> None:
+        """Find the preferred method of displaying the results.
+
+        inputs
+        ------
+        arxiv_const : All constants related to arXiv connections.
+        corpus      : The entire corpus of results.
+        """
+
+        # If no papers were found, overwrite output bools with False
+        if len(corpus.papers_of_note) == 0:
+
+            # self.logger.warning("No papers of interest were found.")
+            self.write_to_file = False
+            self.open_in_brower = False
 
         # If there is at least one paper, open/prompt
-        if len(corpus.papers_of_note) > 0:
+        else:
 
-            # If both -f and -w are passed, both open and write the links
-            if self.args.force_open and self.args.write_to_file:
+            # If neither -f nor -w were passed, prompt the user for the behaviour they prefer
+            if not self.write_to_file and not self.open_in_brower:
 
-                self.open_in_brower = True
-                self.write_to_file = True
+                est_time = len(corpus.papers_of_note) * arxiv_client.SLEEP_OPENING
 
-            # If -f is passed and -w is not, only open the links
-            elif self.args.force_open and not self.args.write_to_file:
-
-                self.open_in_brower = True
-                self.write_to_file = False
-
-            # If -f is not passed and -w is, only write the links
-            elif not self.args.force_open and self.args.write_to_file:
-
-                self.open_in_brower = False
-                self.write_to_file = True
-
-            # If neither -f nor -w were passed, prompt the user to ask for the behaviour they prefer
-            else:
-
-                # Ask the user if they would like to open the links in the browser. Default is no
+                # Ask the user if they would like to open the links in the browser
                 print("")
                 user_prompt_browser = (
                     input(
-                        "There are {:} link(s). Open in the browser? It will take {:} seconds. [y/N]: ".format(
-                            len(corpus.papers_of_note),
-                            len(corpus.papers_of_note) * arxiv_const.sleep_opening,
-                        )
+                        f"There are {len(corpus.papers_of_note)} link(s). "
+                        + f"Open in the browser? It will take {est_time} seconds. [y/N]: "
                     )
                     .strip()
                     .lower()
@@ -62,17 +129,15 @@ class CLI:
                 if user_prompt_browser == "y":
 
                     self.open_in_brower = True
-                    self.write_to_file = False
 
                 # If they say no to opening in the browser
                 else:
 
-                    self.open_in_brower = False
-
-                    # Ask if they would like to save the links to a file or print to the terminal. Default is no
+                    # Ask the user if they would like to save the links to a file or the terminal.
                     user_prompt_file = (
                         input(
-                            "Save all links to a file? Otherwise they will be written to the terminal. [y/N]: "
+                            "Save all links to a file? "
+                            + "Otherwise they will be written to the terminal. [y/N]: "
                         )
                         .strip()
                         .lower()
@@ -86,16 +151,8 @@ class CLI:
                     # If they want the output in the terminal
                     else:
 
-                        self.write_to_file = False
-
                         print("\nPrinting all links to the terminal:\n")
                         for arxiv_id in corpus.papers_of_note:
 
-                            print(corpus.corpus[arxiv_id].paperInfo.link_abs)
+                            print(corpus.corpus[arxiv_id].paper_info.link_abs)
                         print("")
-
-        else:
-
-            # self.logger.warning("No papers of interest were found.")
-            self.write_to_file = False
-            self.open_in_brower = False

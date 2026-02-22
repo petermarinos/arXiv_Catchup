@@ -11,7 +11,6 @@ import argparse
 import pathlib
 
 # Import packages
-from scripts.arxiv_client import ArxivConst
 from scripts.file_io      import read_catchup
 from scripts.utils        import logger_setup, delete_catchup, set_filenames
 # fmt: on
@@ -56,22 +55,12 @@ ns = {
 # Define arXiv API courtesy limits
 # These are the values that arXiv asks we obey. Do not alter them.
 SLEEP_OPENING = 0.25  # 0.25 seconds between opening links
-SLEEP_SEARCH = 3  # 3 seconds per search
-SEARCH_BLOCKSIZE = 10  # Each search downloads only ten papers (max=2000)
-
-#
-arxiv_const = ArxivConst(
-    ns=ns,
-    sleep_opening=SLEEP_OPENING,
-    sleep_search=SLEEP_SEARCH,
-    search_blocksize=SEARCH_BLOCKSIZE,
-)
 
 # Setup logging
 logger = logger_setup(args, root_path)
 
 # Read the catchup file
-papers = read_catchup(logger, filenames["catchup"], arxiv_const.sleep_opening)
+papers = read_catchup(logger, filenames["catchup"], SLEEP_OPENING)
 
 # Ask the user if the file should be deleted
 delete_catchup(logger, filenames["catchup"], papers)

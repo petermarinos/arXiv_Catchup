@@ -42,31 +42,23 @@ def main():
 
     # # Load the dates
     search_params.get_dates(cli.args)
-    # search_parameters.get_dates()
 
     # # Check for errors with the dates
     search_params.date_error_check()
-    # search_parameters.date_error_check()
 
     # # Setup the API information
-    api = ArxivClient(
-        logger,
-        search_params.start_date,
-        search_params.end_date,
-        search_params.search_terms,
-        search_params.cat_urlstring,
-    )
+    api = ArxivClient(search_params)
 
     # # Obtain basic search information
-    api.get_search_info(api.arxiv_const, search_params.paths["searchxml"])
+    api.get_search_info(search_params.paths["searchxml"])
 
     # # Check for errors
-    api.arxiv_error_check(api.arxiv_const, search_params.paths["searchxml"])
+    api.arxiv_error_check()
+    cli.check_continue_status(logger, api, search_params.paths["searchxml"])
 
     # # Loop through the searches and obtain all papers
     corpus = Corpus(logger)
-    corpus.get_papers(api.arxiv_const, api, search_params.paths["papersxml"])
-    # corpus = get_papers(api, )
+    corpus.get_papers(api, search_params.paths["papersxml"])
 
     # # Find matches in the papers
     corpus.find_matches(search_params.search_terms)
@@ -76,7 +68,7 @@ def main():
     corpus.score_papers_matches()
     # # Score based on the ML model
     # # NOT YET IMPLEMENTED
-    # corpus.score_papers_ML()
+    # corpus.score_papers_ml()
 
     # # Filter the papers
     # # Filter based on matches
@@ -85,13 +77,13 @@ def main():
     corpus.filter_papers_score()
 
     # # Display the results
-    cli.get_display_method(api.arxiv_const, corpus)
+    cli.get_display_method(api, corpus)
     display(
         logger,
         cli.args,
         corpus.papers_of_note,
         cli.open_in_brower,
-        api.arxiv_const.sleep_opening,
+        api.SLEEP_OPENING,
         cli.write_to_file,
         search_params.paths["catchup"],
     )

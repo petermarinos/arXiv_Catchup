@@ -7,12 +7,7 @@ import argparse
 import platform
 import logging
 import pathlib
-import random
-import time
 import sys
-
-# Import non-standard libraries
-import numpy as np
 
 # Import version number
 from scripts import __version__
@@ -20,6 +15,12 @@ from scripts import __version__
 
 
 class FlushingStreamHandler(logging.StreamHandler):
+    """Sets up a logging handler that flushes the line before displaying the log message.
+
+    inputs
+    ------
+    : The stream handler object
+    """
 
     def emit(self, record):
         # Flush the current stream
@@ -71,20 +72,30 @@ def cli_args() -> argparse.Namespace:
         "-s",
         "--start-date",
         type=str,
-        help='Set the start date for the search.\nInput in ISO format, i.e. "YYYY-mm-dd".\nIgnores the date in the `prev_search.txt`.',
+        help=(
+            "Set the start date for the search.\n"
+            + "Input in ISO format, i.e. 'YYYY-mm-dd'.\n"
+            + "Ignores the date in the `prev_search.txt`."
+        ),
     )
     parser.add_argument(
         "-e",
         "--end-date",
         type=str,
-        help='Set the end date for the search.\nInput in ISO format, i.e. "YYYY-mm-dd".',
+        help='Set the end date for the search.\n"'
+        + "Input in ISO format, i.e. 'YYYY-mm-dd'.",
     )
     parser.add_argument(
         "-v",
         "--verbosity",
         type=int,
         default=3,
-        help="Set the verbosity level.\n0 => critical errors\n1 => ... and non-critical errors\n2 => ... and warnings\n3 => ... and info\n4 => ... and debug messages",
+        help="Set the verbosity level.\n"
+        + "0 => critical errors\n"
+        + "1 => ... and non-critical errors\n"
+        + "2 => ... and warnings\n"
+        + "3 => ... and info\n"
+        + "4 => ... and debug messages",
     )
 
     args = parser.parse_args()
@@ -93,12 +104,13 @@ def cli_args() -> argparse.Namespace:
 
 
 def logger_setup(args: argparse.Namespace, root_dir: pathlib.Path) -> logging.Logger:
-    """Set up the logger. Writes all messages to a log file, and takes the CLI argument for the terminal logs.
+    """Set up the logger.
+    Writes all messages to a log file, and takes the CLI argument for the terminal logs.
 
     inputs
     ------
-    args : command-line arguments
-    cdir : Path to the project
+    args     : Command-line arguments
+    root_dir : Path to the project
 
     outputs
     -------
@@ -114,7 +126,8 @@ def logger_setup(args: argparse.Namespace, root_dir: pathlib.Path) -> logging.Lo
     # Clear the logger handles. Not required, but is good practice
     logger.handlers.clear()
 
-    # Create a handler that will output *all* messages to a file. Will overwrite the file on each execution.
+    # Create a handler that will output *all* messages to a file.
+    # Will overwrite the file on each execution.
     handler_file = logging.FileHandler(root_dir / "catchup.log", mode="w")
     handler_file.setLevel(logging.DEBUG)
     handler_file.setFormatter(
@@ -145,22 +158,14 @@ def logger_setup(args: argparse.Namespace, root_dir: pathlib.Path) -> logging.Lo
 
     # Warn if a negative verbosity was entered on the CLI
     if args.verbosity < 0:
-        logger.warning(
-            "Input verbosity was negative. Defaulting to show debug.".format(
-                logger.level
-            )
-        )
+        logger.warning("Input verbosity was negative. Defaulting to show debug.")
 
     # State the verbosity level
     logger.debug(
-        "CLI verbosity level set to: {:}".format(
-            logging.getLevelName(handler_cli.level)
-        )
+        "Log file verbosity level set to: %s", logging.getLevelName(logger.level)
     )
     logger.debug(
-        "Log file verbosity level set to: {:}".format(
-            logging.getLevelName(logger.level)
-        )
+        "CLI verbosity level set to:      %s", logging.getLevelName(handler_cli.level)
     )
 
     logger.debug("===============================")
@@ -185,20 +190,18 @@ def log_environment(logger: logging.Logger) -> None:
 
     # Print system info
     logger.debug("=== Environment Information ===")
-    logger.debug("Python: {}".format(sys.version))
-    logger.debug("Platform: {}".format(platform.platform()))
+    logger.debug(f"Python: {sys.version}")
+    logger.debug(f"Platform: {platform.platform()}")
 
     # Print project info
-    logger.debug("arXiv_Catchup=={:}".format(__version__))
+    logger.debug(f"arXiv_Catchup=={__version__}")
 
     # Print package info
     for pkg in ["certifi", "numpy", "pylatexenc", "PyYAML"]:
         version = metadata.version(pkg)
-        logger.debug("{:}=={:}".format(pkg, version))
+        logger.debug(f"{pkg}=={version}")
 
     logger.debug("===============================")
-
-    return
 
 
 def log_args(logger: logging.Logger, args: argparse.Namespace) -> None:
@@ -214,100 +217,9 @@ def log_args(logger: logging.Logger, args: argparse.Namespace) -> None:
 
     for key, val in vars(args).items():
 
-        logger.debug("Argument '{:}' was set to: {:}".format(key, val))
+        logger.debug(f"Argument '{key}' was set to: {val}")
 
     logger.debug("===============================")
-
-    return
-
-
-def progress_bar(ii: int, total: int, time_estimate: float | None = None) -> None:
-    """Prints a progress bar that updates as the loop progresses.
-
-    inputs
-    ------
-    ii            : Current step in the loop.
-    total         : Final step in the loop.
-    time_estimate : Estimate of the remaining time of the loop.
-    """
-
-    percent_progress = 100 * ii / total
-
-    width = 50  # Width of the progress bar in characters
-    bar_string = "■" * int(np.floor(percent_progress * width / 100)) + "□" * int(
-        width - np.floor(percent_progress * width / 100)
-    )
-
-    if time_estimate is not None:
-        if time_estimate <= 60:
-            progress_message = "|{:s}|  {: >3}%  Remaining: {:.2f} seconds".format(
-                bar_string, int(np.ceil(percent_progress)), time_estimate
-            )
-        elif 60 < time_estimate <= 3600:
-            progress_message = "|{:s}|  {: >3}%  Remaining: {:.1f} minutes".format(
-                bar_string, int(np.ceil(percent_progress)), time_estimate / 60
-            )
-        else:
-            progress_message = "|{:s}|  {: >3}%  Remaining: {:.1f} hours".format(
-                bar_string, int(np.ceil(percent_progress)), time_estimate / 3600
-            )
-    else:
-        progress_message = "|{:s}|  {: >3}%".format(
-            bar_string, int(np.ceil(percent_progress))
-        )
-
-    # Compute the padding to overwrite all text with whitespace
-    # Maximum length of the message is width+33+{extra digits before the decimal on the remaining time}
-    pad = " " * (width + 33 + 3 - len(progress_message))
-
-    sys.stdout.write(
-        "\r" + progress_message + pad
-    )  # Move cursor to the start of the line and print the progress message
-    sys.stdout.flush()
-
-    # If it is the final call, print a blank line
-    if ii == total:
-        sys.stdout.write("\r\033[K")
-        sys.stdout.flush()
-
-    return
-
-
-def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
-    """Shows a progress bar if sleeping for a long time.
-    NOTE: Also adds jitter.
-
-    inputs
-    ------
-    logger     : The logger object
-    sleep_time : Time to sleep for
-    """
-
-    # Add jitter
-    sleep_time = sleep_time + random.uniform(0, 0.3)
-    logger.debug("Sleeping for {:.3f} seconds ...".format(sleep_time))
-
-    # If sleeping for a short time (under 5s), do a normal sleep
-    if sleep_time <= 5:
-        time.sleep(sleep_time)
-
-    # If sleeping for a long time, show a progress bar
-    else:
-        # Flush any already-existing progress bar
-        sys.stdout.write("\r\033[K")
-        sys.stdout.flush()
-
-        # Update the bar every 0.1s
-        # n_msecs = sleep_time * 1000
-        n_steps = int(np.ceil(sleep_time * 10))
-        for ii in range(0, n_steps):
-
-            progress_bar(ii, n_steps, 0.1 * (n_steps - ii))
-            time.sleep(0.1)
-
-        progress_bar(n_steps, n_steps)
-
-    return
 
 
 def set_filenames(root_dir: pathlib.Path) -> dict[str, pathlib.Path]:
@@ -315,27 +227,25 @@ def set_filenames(root_dir: pathlib.Path) -> dict[str, pathlib.Path]:
 
     inputs
     ------
-    cdir : str
-        Top directory of the project, i.e. `/path/to/arXiv_Catchup/`.
+    root_dir : Top directory of the project, i.e. `/path/to/arXiv_Catchup/`.
 
     outputs
     -------
-    filenames : dict
-        Contains the path+filename for the various auxiliary/temporary files the script requires/creates.
+    filenames : Contains the path+filename for the various aux./temp. files.
     """
 
     # Place filenames into a dictionary
     filenames = {
-        "prevsearch": root_dir
-        / "prev_search.txt",  # File that stores the date of the previous run
-        "searchterms": root_dir
-        / "search_terms.yaml",  # File that stores the search terms
-        "catchup": root_dir
-        / "catchup.txt",  # File that stores the links to the papers of interest (if writing to a file)
-        "searchxml": root_dir
-        / "search.xml",  # File that stores the .xml data of the initial arXiv query, i.e. the information on the search
-        "papersxml": root_dir
-        / "papers.xml",  # File that stores the .xml data for all downloaded papers
+        # File that stores the date of the previous run
+        "prevsearch": root_dir / "prev_search.txt",
+        # File that stores the search terms
+        "searchterms": root_dir / "search_terms.yaml",
+        # File that stores the links to the papers of interest (if writing to a file)
+        "catchup": root_dir / "catchup.txt",
+        # File that stores the .xml data of the initial arXiv query, i.e. critical search info
+        "searchxml": root_dir / "search.xml",
+        # File that stores the .xml data for all downloaded papers
+        "papersxml": root_dir / "papers.xml",
     }
 
     return filenames
@@ -344,8 +254,9 @@ def set_filenames(root_dir: pathlib.Path) -> dict[str, pathlib.Path]:
 def delete_catchup(
     logger: logging.Logger, filename: pathlib.Path, links: list[str]
 ) -> None:
-    """Deletes the `catchup.txt` file, which contains all links that have been saved over previous runs.
-    NOTE: This function checks to ensure the file is formatted correctly. This was done so that the `open_catchup.py` script can be run on the `catchup.txt` file safely, even after adding (potentially malformed) links manually. Also because there is an option to only output the ID numbers.
+    """Deletes the `catchup.txt` file (contains all links that have been saved over previous runs)
+    NOTE: This function checks to ensure the file is formatted correctly to prevent deletions when
+          users manually alter the file, or if the CLI option to only output the ID numbers is used.
 
     inputs
     ------
@@ -355,10 +266,11 @@ def delete_catchup(
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no
-    logger.warning("There are {:} links in {:}.".format(len(links), filename))
+    logger.warning(f"There are {len(links)} links in {filename}.")
     user_prompt = (
         input(
-            "         Delete all links? This action cannot be reversed. Only do so if the papers have been reviewed. [y/N]: "
+            "         Delete all links? This action cannot be reversed. "
+            + "Only do so if the papers have been reviewed. [y/N]: "
         )
         .strip()
         .lower()
@@ -369,7 +281,7 @@ def delete_catchup(
 
         # Check that the file is of the correct format to prevent deleting some other file
         # Loop through all lines, ensuring they begin with the correct text
-        with open(filename, "r") as f:
+        with open(filename, "r", encoding="utf8") as f:
 
             for line in f:
 
@@ -378,10 +290,11 @@ def delete_catchup(
                 if link[:21] != "http://arxiv.org/abs/":
 
                     print("")
-                    logger.critical(
-                        "The catchup file is not formatted correctly. Double check its contents manually.\n"
+                    logger.exception(
+                        "The catchup file is not formatted correctly. "
+                        + "Double check its contents manually.\n"
                     )
-                    raise
+                    raise ValueError("Malformed catchup file.")
 
         # If the file is of the correct format, delete it
         delete_file(logger, filename)
@@ -390,8 +303,6 @@ def delete_catchup(
     else:
 
         logger.info("Doing nothing.")
-
-    return
 
 
 def delete_file(logger: logging.Logger, filename: pathlib.Path) -> None:
@@ -403,8 +314,6 @@ def delete_file(logger: logging.Logger, filename: pathlib.Path) -> None:
     filename : Path+filename of the file being deleted.
     """
 
-    logger.info("Deleting file: {:}".format(filename))
+    logger.info(f"Deleting file: {filename}")
     file = pathlib.Path(filename)
     file.unlink()
-
-    return

@@ -4,32 +4,36 @@
 from .string_handling import split_initials, find_token
 
 
-def authors_match(a: str, b: str) -> bool:
+def authors_match(name_1: str, name_2: str) -> bool:
     """Check if two author strings match.
 
     inputs
     ------
-    a, b : The two authors that are being tested against one another.
+    name_1, name_2 : The two authors that are being tested against one another.
 
     outputs
     -------
-    : True if a matches b, False otherwise.
+    match : True if a matches b, False otherwise.
     """
 
+    # Initialise the output
+    # Assume true, then search for ways it could be false
+    match = False
+
     # Strip the two names
-    A = a.strip().split()
-    B = b.strip().split()
+    a = name_1.strip().split()
+    b = name_2.strip().split()
 
     # Ensure both stripped strings have an entry
-    if not A or not B:
-        return False
+    if not a or not b:
+        match = False
 
     # If the surnames are not exact matches
-    if A[-1] != B[-1]:
-        return False
+    if a[-1] != b[-1]:
+        match = False
 
     # Extract given names
-    givens_a, givens_b = A[:-1], B[:-1]
+    givens_a, givens_b = a[:-1], b[:-1]
 
     # Split initials (if they are initials without whitespace)
     givens_a = split_initials(givens_a)
@@ -48,17 +52,18 @@ def authors_match(a: str, b: str) -> bool:
         # # Check if the tokens and values don't match
         # If both tokens are full names but are not equal:
         if token_a == "full" and token_b == "full" and value_a != value_b:
-            return False
+            match = False
 
         # If both tokens are initials and are not equal
         if token_a == "initial" and token_b == "initial" and value_a != value_b:
-            return False
+            match = False
 
-        # If one is an initial and one is full, and the initial doesn't match the first letter of the full:
+        # If one is an initial and one is full,
+        #     and the initial doesn't match the first letter of the full:
         if token_a == "initial" and token_b == "full" and value_a != value_b[0]:
-            return False
+            match = False
         if token_a == "full" and token_b == "initial" and value_a[0] != value_b:
-            return False
+            match = False
 
-    # If passing all tests for all surnames and given names, it is a match!
-    return True
+    # If passing all tests for all surnames and given names, match will be True
+    return match

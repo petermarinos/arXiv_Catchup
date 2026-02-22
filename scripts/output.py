@@ -10,7 +10,7 @@ import time
 
 # Import functions
 from .file_io import write_links
-from .utils   import progress_bar
+from .ui      import progress_bar
 # fmt: on
 
 
@@ -23,7 +23,18 @@ def display(
     write_to_file: bool,
     filename: pathlib.Path,
 ) -> None:
-    """Displays the results to the user, based on their preference."""
+    """Displays the results to the user, based on their preference.
+
+    inputs
+    ------
+    logger          : The logger object.
+    args            : CLI arguments.
+    papers_of_note  : arXiv ID numbers for papers that passed filtering.
+    open_in_browser : Flag to open in browser (True) or not (False).
+    sleeptimer      : Time to sleep between commands to webbrowser.
+    write_to_file   : Flag to write results to a file (True) or not (False).
+    filename        : Path+filename of the output file.
+    """
 
     if write_to_file:
 
@@ -36,17 +47,14 @@ def display(
 
         # Loop through the list and open all in the web browser
         request_count = 0
-        # time_start = time.time()
-        logger.info(
-            "Opening the papers. Estimated time: {:.2f} seconds".format(
-                total * sleeptimer
-            )
-        )
+        est_time = total * sleeptimer
+        logger.info(f"Opening the papers. Estimated time: {est_time:.2f} seconds")
         for arxiv_id in papers_of_note:
 
             progress_bar(request_count, total, (total - request_count) * sleeptimer)
 
-            # # arXiv asks that you limit opening pages to four requests per second. They recommend burst of four papers, but I prefer one per every quarter second.
+            # # arXiv asks that you limit opening pages to four requests per second.
+            # They recommend burst of four papers, but I prefer one per every quarter second.
             if request_count > 0:
 
                 time.sleep(sleeptimer)

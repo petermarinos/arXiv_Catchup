@@ -9,7 +9,6 @@ import pathlib
 import os
 
 # Import non-standard libraries
-import numpy as np
 import yaml
 
 # Import functions
@@ -23,150 +22,153 @@ from .utils           import set_filenames, delete_file
 class Config:
     """Defines important parameters required for the search"""
 
-    # # Initialise the class
+    # Define some datetime objects
+    # Posting time of the daily list
+    POST_TIME = datetime.time(6, 0, tzinfo=datetime.timezone.utc)
+    # Time the searches will be bound by
+    SEARCH_TIME = datetime.time(19, 0, tzinfo=datetime.timezone.utc)
+
     def __init__(self, logger: logging.Logger, root_dir: pathlib.Path) -> None:
-        """Create the CatchupPipeline object, which will store important values used throughout the search, scoring, and filtering sections.
+        """
+        Create the CatchupPipeline object, which will store important values used throughout the
+        search, scoring, and filtering sections.
         - May want to break apart to separate pipelines in the future
 
         inputs
         ------
-        cdir : Absolute path, '/path/to/catchup.py'.
-        args : CLI arguments.
+        logger   : The logger object.
+        root_dir : Absolute path to the root directory.
         """
 
         # Define important variables
         self.logger = logger
         self.paths = set_filenames(root_dir)
 
-        # Define some datetime objects
-        self.post_time = datetime.time(
-            6, 0, tzinfo=datetime.timezone.utc
-        )  # Define the posting time of the daily list
-        self.search_time = datetime.time(
-            19, 0, tzinfo=datetime.timezone.utc
-        )  # Define the times that the daily list covers
-        self.current_time = datetime.datetime.now(
-            datetime.timezone.utc
-        )  # Obtain the current time, converted to the UTC timezone
+        # Obtain the current time, converted to the UTC timezone
+        self.current_time = datetime.datetime.now(datetime.timezone.utc)
 
-    # # Load search terms from the auxiliary file
+        self.start_time: datetime.datetime
+        self.start_date: datetime.date
+        self.end_time: datetime.datetime
+        self.end_date: datetime.date
+
+        self.search_terms: dict[str, list[str]]
+
+        self.cat_printstring = ""
+        self.cat_urlstring = ""
+
     def get_searchterms(self) -> None:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary."""
 
-        self.logger.info(
-            "Loading search terms from {:}.".format(self.paths["searchterms"])
-        )
+        self.logger.info(f"Loading search terms from {self.paths['searchterms']}.")
 
         # Load the .yaml into a dictionary
-        with open(self.paths["searchterms"], "r") as f:
+        with open(self.paths["searchterms"], "r", encoding="utf8") as f:
 
             self.search_terms = yaml.safe_load(f)
 
         # Normalise author strings and remove duplicates
         if self.search_terms["Authors"] is not None:
 
-            self.search_terms["Authors"] = np.unique(
-                [normalise_string(_) for _ in self.search_terms["Authors"]]
-            )
+            # Remove duplicates, but preserve order from the config file
+            authors = [normalise_string(a) for a in self.search_terms["Authors"]]
+            self.search_terms["Authors"] = list(dict.fromkeys(authors))
 
         # # Check the file
         # At least one category is required
         if self.search_terms["Categories"] is None:
 
             self.logger.critical(
-                "No search terms were found in the 'Categories' entry in the configuration file.\n          Please check the file and add at least one item.\n"
+                "No search terms were found in the 'Categories' entry in the configuration file.\n"
+                + "          Please check the file and add at least one item.\n"
             )
-            raise
+            raise RuntimeError("No search terms found. Add atleast one to the .yaml.")
+
+        # Remove duplicates, but preserve order from the config file
+        self.search_terms["Categories"] = list(
+            dict.fromkeys(self.search_terms["Categories"])
+        )
+
+        # Define category string for the urls/API calls
+        self.cat_urlstring = "+OR+".join(
+            f"cat:{cat}" for cat in self.search_terms["Categories"]
+        )
+
+        # Define category string to make nice print statements
+        if len(self.search_terms["Categories"]) == 2:
+
+            self.cat_printstring = " and ".join(
+                f"{c}" for c in self.search_terms["Categories"]
+            )
+
+        elif len(self.search_terms["Categories"]) > 2:
+
+            catstring_temp = ", ".join(
+                f"{c}" for c in self.search_terms["Categories"][:-1]
+            )
+            self.cat_printstring = ", and ".join(
+                [catstring_temp, self.search_terms["Categories"][-1]]
+            )
 
         else:
 
-            self.search_terms["Categories"] = np.unique(self.search_terms["Categories"])
-
-            # Define category string for the urls/API calls
-            self.cat_urlstring = "+OR+".join(
-                "cat:{:}".format(c) for c in self.search_terms["Categories"]
+            self.cat_printstring = ", ".join(
+                f"{c}" for c in self.search_terms["Categories"]
             )
 
-            # Define category string to make nice print statements
-            if len(self.search_terms["Categories"]) == 2:
+        # Print which categories are being searched over
+        self.logger.info(f"Searching the {self.cat_printstring} categories")
 
-                self.cat_printstring = " and ".join(
-                    "{:}".format(c) for c in self.search_terms["Categories"]
-                )
-
-            elif len(self.search_terms["Categories"]) > 2:
-
-                catstring_temp = ", ".join(
-                    "{:}".format(c) for c in self.search_terms["Categories"][:-1]
-                )
-                self.cat_printstring = ", and ".join(
-                    [catstring_temp, self.search_terms["Categories"][-1]]
-                )
-
-            else:
-
-                self.cat_printstring = ", ".join(
-                    "{:}".format(c) for c in self.search_terms["Categories"]
-                )
-
-            # Print which categories are being searched over
-            self.logger.info(
-                "Searching the {:} categories".format(self.cat_printstring)
-            )
-
-        # If a category with a wildcard (e.g. astro-ph*) is entered with other matching sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories
-        # No need to catch it here
+        # If a category with a wildcard (e.g. astro-ph*) is entered with other matching
+        #     sub-categories (e.g. astro-ph.HE), the API will ignore the sub-categories.
+        #     No need to catch it here
 
         # # Warn the user if no terms are found
         # If no authors are found, warn the user
         if self.search_terms["Authors"] is None:
 
-            self.logger.warning(
-                "No search terms were found in the 'Authors' entry in the configuration file."
-            )
+            self.logger.warning("No 'Authors' found in the configuration file.")
 
         # Otherwise, log all authors that were extracted
         else:
 
             for author in self.search_terms["Authors"]:
 
-                self.logger.debug("Found author: {:}".format(author))
+                self.logger.debug(f"Found author: {author}")
 
         # If no included words are found, warn the user
         if self.search_terms["Included Words"] is None:
 
-            self.logger.warning(
-                "No search terms were found in the 'Included Words' entry in the configuration file."
-            )
+            self.logger.warning("No 'Included Words' found in the configuration file.")
 
         # Otherwise, remove duplicates and log all found included words
         else:
 
-            self.search_terms["Included Words"] = np.unique(
-                self.search_terms["Included Words"]
-            )
+            # Remove duplicates and sort
+            inc_words = list(self.search_terms["Included Words"])
+            self.search_terms["Included Words"] = sorted(set(inc_words))
 
             for included_word in self.search_terms["Included Words"]:
 
-                self.logger.debug("Found included word: {:}".format(included_word))
+                self.logger.debug(f"Found included word: {included_word}")
 
         # If no excluded words are found, warn the user
         if self.search_terms["Excluded Words"] is None:
 
             self.logger.warning(
-                "No search terms were found in the 'Excluded Words' entry in the configuration file."
+                "No 'Excluded Words' were found in the configuration file."
             )
 
         # Otherwise, remove duplicates and log all found excluded words
         else:
 
-            self.search_terms["Excluded Words"] = np.unique(
-                self.search_terms["Excluded Words"]
-            )
+            # Remove duplicates and sort
+            exc_words = list(self.search_terms["Excluded Words"])
+            self.search_terms["Excluded Words"] = sorted(set(exc_words))
 
             for excluded_word in self.search_terms["Excluded Words"]:
 
-                self.logger.debug("Found excluded word: {:}".format(excluded_word))
+                self.logger.debug(f"Found excluded word: {excluded_word}")
 
         # Check to see if any word is in both the 'included' and 'excluded fields
         for inc_word in self.search_terms["Included Words"]:
@@ -174,28 +176,28 @@ class Config:
             if inc_word in self.search_terms["Excluded Words"]:
 
                 self.logger.warning(
-                    "The term '{:}' appears in both the Included and Excluded word fields.".format(
-                        inc_word
-                    )
+                    f"The term '{inc_word}' appears in both the Included and Excluded word fields."
                 )
 
-    # # Load and check dates
     def get_dates(self, cli_args: argparse.Namespace) -> None:
-        """Set up the dates that the script uses for the arXiv API calls."""
+        """Set up the dates that the script uses for the arXiv API calls.
+
+        inputs
+        ------
+        cli_args : CLI arguments.
+        """
 
         # If the end_date was passed on the command line, use it
         if cli_args.end_date:
 
-            self.logger.debug(
-                "Attempting to use the end_date: {:}".format(cli_args.end_date)
-            )
+            self.logger.debug(f"Attempting to use the end_date: {cli_args.end_date}")
 
             self.end_time, self.end_date = parse_date(
                 self.logger,
                 cli_args.end_date,
                 "end-date",
-                self.search_time,
-                self.post_time,
+                self.SEARCH_TIME,
+                self.POST_TIME,
             )
 
         # If the end_date was not passed in the command line, compute it
@@ -206,7 +208,7 @@ class Config:
             )
 
             self.end_time = calc_search_endtime(
-                self.current_time, self.search_time, self.post_time
+                self.current_time, self.SEARCH_TIME, self.POST_TIME
             )
             self.end_date = self.end_time.date()
 
@@ -214,18 +216,18 @@ class Config:
         if cli_args.start_date:
 
             self.logger.debug(
-                "Attempting to use the start_date: {:}".format(cli_args.start_date)
+                f"Attempting to use the start_date: {cli_args.start_date}"
             )
 
             self.start_time, self.start_date = parse_date(
                 self.logger,
                 cli_args.start_date,
                 "start-date",
-                self.search_time,
-                self.post_time,
+                self.SEARCH_TIME,
+                self.POST_TIME,
             )
 
-        # If the start_date was not passed on the command line, attempt to load it from the previous run file
+        # If the start_date was not passed on the command line, attempt to load it
         if not cli_args.start_date:
 
             self.logger.debug("No start date was input.")
@@ -237,10 +239,10 @@ class Config:
                     "No previous search file found. Setting to the day prior to the end_date."
                 )
 
-                # Compute the list time before the previous
-                # This can be done by passing the end_time found above into the calc_search_endtime() function
+                # Compute the list time before the previous by passing the end_time found above
+                #     into the calc_search_endtime() function
                 prev_end_time = calc_search_endtime(
-                    self.end_time, self.search_time, self.post_time
+                    self.end_time, self.SEARCH_TIME, self.POST_TIME
                 )
 
                 write_date(self.logger, self.paths["prevsearch"], prev_end_time.date())
@@ -249,22 +251,20 @@ class Config:
             with open(self.paths["prevsearch"], "r", encoding="utf-8") as f:
 
                 self.start_time, self.start_date = parse_date(
-                    self.logger, next(f), "start-date", self.search_time, self.post_time
+                    self.logger, next(f), "start-date", self.SEARCH_TIME, self.POST_TIME
                 )
 
-        # Print some information. Useful to do it before error checks so that all information is visible
+        # Log the dates
+        s_yyyy = self.start_date.year
+        s_mm = self.start_date.month
+        s_dd = self.start_date.day
+        e_yyyy = self.end_date.year
+        e_mm = self.end_date.month
+        e_dd = self.end_date.day
         self.logger.info(
-            "Searching from {:}/{:}/{:} 19:00 UTC to {:}/{:}/{:} 19:00 UTC".format(
-                self.start_date.year,
-                self.start_date.month,
-                self.start_date.day,
-                self.end_date.year,
-                self.end_date.month,
-                self.end_date.day,
-            )
+            f"Searching from {s_yyyy}/{s_mm}/{s_dd} 19:00 UTC to {e_yyyy}/{e_mm}/{e_dd} 19:00 UTC"
         )
 
-    # # Error check the dates
     def date_error_check(self) -> None:
         """Check for errors with the dates."""
 
@@ -272,7 +272,7 @@ class Config:
         prev_run = self.end_date - self.start_date
 
         # Compute the time that the next list will be posted
-        nextlist_time = calc_next_posttime(self.current_time, self.post_time)
+        nextlist_time = calc_next_posttime(self.current_time, self.POST_TIME)
         time_until_next = nextlist_time - self.current_time
 
         t_days = time_until_next.days
@@ -281,13 +281,10 @@ class Config:
 
         next_post_string = (
             "\n          "
-            + "If looking for the next list, it will be posted at {:%Y-%m-%d %H:%M (%Z)},".format(
-                nextlist_time
-            )
+            + "If looking for the next list, it will be posted at "
+            + f"{nextlist_time:%Y-%m-%d %H:%M (%Z)},"
             + "\n          "
-            + "which is {:} days, {:} hours, and {:} minutes from now.".format(
-                t_days, t_hours, t_minutes
-            )
+            + f"which is {t_days} days, {t_hours} hours, and {t_minutes} minutes from now."
         )
 
         # Compute number of days between now and the start of the search
@@ -303,43 +300,40 @@ class Config:
         # Raise some errors
         # If the search start date is in the future:
         if deltadays_now_to_search < 0:
-            self.logger.critical("Search start date is in the future.\n")
-            raise
+            self.logger.exception("Search start date is in the future.\n")
+            raise ValueError("Search start date is in the future.")
 
         # If the search end date is in the future:
-        elif (self.current_time.date() - self.end_date).days < 0:
-            self.logger.critical("Search end date is in the future.\n")
-            raise
+        if (self.current_time.date() - self.end_date).days < 0:
+            self.logger.exception("Search end date is in the future.\n")
+            raise ValueError("Search end date is in the future.")
 
         # If the end date is equal to the start date, tell the user to wait
-        elif prev_run.days == 0:
-            self.logger.critical(
-                "Search start/end dates are equal.{:}\n".format(next_post_string)
+        if prev_run.days == 0:
+            self.logger.exception(
+                f"Search start/end dates are equal.{next_post_string}\n"
             )
-            raise
+            raise ValueError("Search start/end dates are equal.")
 
         # If the end date is before the start date
-        elif prev_run.days < 0:
-            self.logger.critical(
-                "Search start date is after the end date. Check for timezone issues.\n"
+        if prev_run.days < 0:
+            self.logger.exception("Search start date is after the end date.\n")
+            raise ValueError(
+                "Search start date is after the end date. Check for timezone issues."
             )
-            raise
 
         # If the search period doesn't cover any searching days, tell the user to wait
-        # Typically one of the previous errors will occur before this one if the entire search period is invalid
-        elif deltadays_now_to_search < 7 and valid_search_days == 0:
-            self.logger.critical(
-                "No valid search dates are included.{:}\n".format(next_post_string)
+        # Typically one of the previous errors will occur before this one if the entire search
+        #     period is invalid
+        if deltadays_now_to_search < 7 and valid_search_days == 0:
+            self.logger.exception(
+                f"No valid search dates are included.{next_post_string}\n"
             )
-            raise
+            raise ValueError(f"No valid search dates are included.{next_post_string}")
 
         # If there are no issues, let the user know how many days we are searching over
-        else:
-            self.logger.info(
-                "Days since the previous search: {:}".format(prev_run.days)
-            )
+        self.logger.info(f"Days since the previous search: {prev_run.days}")
 
-    # # Delete the temporarly files
     def clear_temp_files(self) -> None:
         """Clear the temporary files created by the script."""
 

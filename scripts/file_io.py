@@ -11,7 +11,7 @@ import time
 import os
 
 # Import functions
-from .utils import progress_bar
+from .ui import progress_bar
 
 
 def read_catchup(
@@ -32,7 +32,7 @@ def read_catchup(
 
     links = []
 
-    with open(filename, "r") as f:
+    with open(filename, "r", encoding="utf8") as f:
 
         for line in f:
 
@@ -41,12 +41,10 @@ def read_catchup(
             if link[:21] != "http://arxiv.org/abs/":
 
                 print("")
-                logger.critical(
-                    "One or more links in the catchup file is malformed.\n          Found    {:}\n          Expected http://arxiv.org/abs/0123.45678v9 format\n".format(
-                        link
-                    )
+                logger.exception(
+                    f"Found:    {link}\nExpected: http://arxiv.org/abs/0123.45678v9 format\n"
                 )
-                raise
+                raise ValueError("One or more links in the catchup file is malformed.")
 
             links.append(link)
 
@@ -80,7 +78,15 @@ def write_aux_files(
     filename: pathlib.Path,
     end_date: datetime.date,
     n_papers: int,
-):
+) -> None:
+    """Write the auxiliary files.
+    The only file currently written is for the previous search date.
+
+    logger   : The root logger object..
+    filename : Filename+path for the auxiliary file.
+    end_date : The end_date of the current search.
+    n_papers : The number of papers found in the search.
+    """
 
     # Check if any papers were found
     if n_papers == 0:
@@ -104,14 +110,13 @@ def write_links(
 
     inputs
     ------
-    args           : CLI arguments.
     logger         : The logger object.
-    filename       : Path+filename of the `catchup.txt` file.
-    corpus         : Contains all papers and their information.
+    args           : CLI arguments.
     papers_of_note : Contains the arxiv IDs of all interesting papers.
+    filename       : Path+filename of the `catchup.txt` file.
     """
 
-    logger.info("Writing all links to the end of the file: {:}".format(filename))
+    logger.info("Writing all links to the end of the file: {filename}")
 
     with open(filename, "a+", encoding="utf-8") as f:
 
@@ -119,15 +124,13 @@ def write_links(
 
             if args.only_ids:
 
-                f.write("{:}\n".format(arxiv_id))
+                f.write(f"{arxiv_id}\n")
 
             else:
 
                 link = "https://arxiv.org/abs/" + arxiv_id
 
-                f.write("{:}\n".format(link))
-
-    return
+                f.write(f"{link}\n")
 
 
 def write_xml(
@@ -148,11 +151,12 @@ def write_xml(
     overwrite : File will be overwritten if True.
     """
 
-    # As these files are not meant to be touched by the user, and are deleted at the end, logging messages are set to debug
+    # Logging messages set to debug in this function
+    # The files are not meant to be touched by the user and are deleted at the end
 
     if overwrite:
 
-        logger.debug("Saving xml to file: {:}".format(filename))
+        logger.debug(f"Saving xml to file: {filename}")
         tree = ET.ElementTree(xml_data)
         tree.write(filename, encoding="utf-8")
 
@@ -166,31 +170,29 @@ def write_xml(
 
             return
 
-        else:
+        logger.debug(f"Appending xml to file {filename}")
 
-            logger.debug("Appending xml to file {:}".format(filename))
+        # Load the file
+        master_tree = ET.parse(filename)
+        master_root = master_tree.getroot()
 
-            # Load the file
-            master_tree = ET.parse(filename)
-            master_root = master_tree.getroot()
+        new_tree = ET.ElementTree(xml_data)
+        new_root = new_tree.getroot()
 
-            new_tree = ET.ElementTree(xml_data)
-            new_root = new_tree.getroot()
-
-            # Obtain each entry and append to the file
-            if new_root is None:
-                logger.critical(
-                    "Malformed or corrupted .xml from arXiv. It returned None.\n"
-                )
-                raise
-            for entry in new_root.findall("atom:entry", ns):
-                master_root.append(entry)
-
-            # Write the new file
-            master_tree.write(
-                filename,
-                encoding="utf-8",
+        # Obtain each entry and append to the file
+        if new_root is None:
+            logger.exception(
+                "Malformed or corrupted .xml from arXiv. It returned None."
             )
+            raise TypeError("Malformed or corrupted .xml from arXiv. It returned None.")
+        for entry in new_root.findall("atom:entry", ns):
+            master_root.append(entry)
+
+        # Write the new file
+        master_tree.write(
+            filename,
+            encoding="utf-8",
+        )
 
     return
 
@@ -199,7 +201,6 @@ def write_date(
     logger: logging.Logger, filename: pathlib.Path, date: datetime.date
 ) -> None:
     """Write a datetime.date object to a file.
-    While the current implementation only uses this to write Papers.start_date to Papers.paths['prevsearch'], this function is left as-is.
 
     inputs
     ------
@@ -208,10 +209,8 @@ def write_date(
     date     : Date that is being written
     """
 
-    logger.info("Writing the date {:} to the file: {:}.".format(date, filename))
+    logger.info(f"Writing the date {date} to the file: {filename}.")
 
-    with open(filename, "w") as f:
+    with open(filename, "w", encoding="utf8") as f:
 
         f.write(date.isoformat())
-
-    return

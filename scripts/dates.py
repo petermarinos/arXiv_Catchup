@@ -156,7 +156,7 @@ def parse_date(
     inputs
     ------
     logger      : The logger object.
-    date_iso    : sISO representation of the date.
+    date_iso    : ISO representation of the date.
     date_name   : Name of the date (e.g. start_time, end_time).
     search_time : Time of the arXiv search start/end points.
     post_time   : Time of the arXiv daily postings.
@@ -175,26 +175,24 @@ def parse_date(
         parsed_date = raw_datetime.date()
         parsed_time = raw_datetime.timetz()
 
-        logger.debug("Attempting to set {:} to {:}".format(date_name, date_iso))
+        logger.debug(f"Attempting to set {date_name} to {date_iso}")
 
-        # If the date is not a valid search date, warn the user and roll the day back to the previous valid day
+        # If the date is not a valid search date, roll back to the previous valid day
         if not is_searching_day_bool(parsed_date):
 
             logger.warning(
-                "{:} is not a valid date. Rolling back to the previous valid day".format(
-                    date_name
-                )
+                f"{date_name} is not a valid date. Rolling back to the previous valid day"
             )
 
             parsed_date = calc_search_endtime(
                 raw_datetime, search_time, post_time
             ).date()
 
-        logger.debug("Set {:} to {:}".format(date_name, parsed_date))
+        logger.debug(f"Set {date_name} to {parsed_date}")
 
         return datetime.datetime.combine(parsed_date, parsed_time), parsed_date
 
     except ValueError:
 
-        logger.critical("{:} must be in the YYYY-mm-dd format.\n".format(date_name))
+        logger.critical(f"{date_name} must be in the YYYY-mm-dd format.\n")
         raise

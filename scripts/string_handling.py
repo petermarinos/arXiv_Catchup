@@ -9,7 +9,7 @@ from pylatexenc.latex2text import LatexNodes2Text
 
 
 def normalise_string(s: str) -> str:
-    """First removes LaTeX commands/etc., then normalises the string (i.e. ensures a consisted unicode encoding), then converts to ASCII.
+    """First removes LaTeX commands, then normalises the string, then converts to ASCII.
 
     inputs
     ------
@@ -46,7 +46,8 @@ def normalise_string(s: str) -> str:
 
 
 def split_initials(name: list[str]) -> list[str]:
-    """Splits initials that are not separated by whitespace. Does nothing if there are no initials or the initials were already split.
+    """Splits initials that are not separated by whitespace.
+    Does nothing if there are no initials or the initials were already split.
 
     inputs
     ------
@@ -68,7 +69,7 @@ def split_initials(name: list[str]) -> list[str]:
         return name
 
     # Join names in the case a list is passed
-    joined_name = " ".join([_ for _ in name])
+    joined_name = " ".join(name)
 
     # Split at the whitespace, and take the first block
     split_name = joined_name.split()[0]
@@ -79,7 +80,7 @@ def split_initials(name: list[str]) -> list[str]:
     if len(re.findall(token, split_name)) >= 1:
 
         initial_list = re.findall(r"[A-Z]\.", split_name)
-        name = [_ for _ in initial_list]
+        name = list(initial_list)
 
     return name
 
@@ -112,5 +113,4 @@ def find_token(name: str) -> tuple[str, str]:
         return ("initial", name[0])
 
     # Else it is a full name
-    else:
-        return ("full", name)
+    return ("full", name)

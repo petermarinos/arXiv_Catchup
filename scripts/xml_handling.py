@@ -28,40 +28,50 @@ def extract_paper_info(
     int,
     int,
 ]:
+    """Extract all information from the xml Element returned by the arXiv servers.
+    Performs error checks on all components, repalcing with default values where appropriate.
+    If the field is *mandatory*, then an error will be raised for a corrupted .xml.
+
+    inouts
+    ------
+    logger : The logger object.
+    ns     : XML namespaces used by arXiv.
+    entry  : The XML returned by the servers.
+    """
+
+    # Put each of the checks into their own mini-functions?
+    # Could then import the link function in corpus.py when checking the links
 
     # Extract the arXiv ID number
-    arXiv_ID = entry.find("atom:id", ns)
-    if arXiv_ID is None or arXiv_ID.text is None:
-        logger.critical("Could not extract the arXiv ID number.\n")
-        raise
-    else:
-        id_num = arXiv_ID.text.split("/")[-1][:10]
-        version = int(arXiv_ID.text.split("/")[-1][11:])
-        logger.debug("arXiv ID: {:}, version: {:}".format(id_num, version))
+    arxiv_id = entry.find("atom:id", ns)
+    if arxiv_id is None or arxiv_id.text is None:
+        logger.exception("Could not extract the arXiv ID number.\n")
+        raise TypeError("Malformed arXiv ID number.")
+    id_num = arxiv_id.text.split("/")[-1][:10]
+    version = int(arxiv_id.text.split("/")[-1][11:])
+    logger.debug(f"arXiv ID: {id_num}, version: {version}")
 
     # Extract the title
-    title = entry.find("atom:title", ns)
-    if title is None or title.text is None:
-        logger.critical("Could not extract the title.\n")
-        raise
-    else:
-        title = title.text.strip()
-        logger.debug("Title: {:}".format(title))
+    raw_title = entry.find("atom:title", ns)
+    if raw_title is None or raw_title.text is None:
+        logger.exception("Could not extract the title.\n")
+        raise TypeError("Malformed title.")
+    title = raw_title.text.strip()
+    logger.debug(f"Title: {title}")
 
     # Extract the updated datetime
-    updated = entry.find("atom:updated", ns)
-    if updated is None or updated.text is None:
-        logger.critical("Could not extract the updated date.\n")
-        raise
-    else:
-        updated = updated.text
-        logger.debug("Updated on: {:}".format(updated))
+    raw_updated = entry.find("atom:updated", ns)
+    if raw_updated is None or raw_updated.text is None:
+        logger.exception("Could not extract the updated date.\n")
+        raise TypeError("Malformed updated date")
+    updated = raw_updated.text
+    logger.debug(f"Updated on: {updated}")
 
     # Extract the link to the pdf page
     links = entry.findall("atom:link", ns)
     if len(links) < 2:
-        logger.critical("Could not find all urls.\n")
-        raise
+        logger.exception("Could not find all urls.\n")
+        raise ValueError("Malformed urls (could not find required urls).")
     link_abs = None  # ensure type checkers know they are strings
     link_pdf = None  # ensure type checkers know they are strings
     for link in links:
@@ -75,84 +85,75 @@ def extract_paper_info(
         ):
             link_pdf = attrs.get("href")
     if link_abs is None:
-        logger.critical("Could not find the abstract url.\n")
-        raise
+        logger.exception("Could not find the abstract url.\n")
+        raise TypeError("Malformed abs url")
     if link_pdf is None:  #
-        logger.critical("Could not find the .pdf url.\n")
-        raise
-    else:
-        logger.debug("Main page: {:}".format(link_abs))
-        logger.debug(".pdf page: {:}".format(link_pdf))
+        logger.exception("Could not find the .pdf url.\n")
+        raise TypeError("Malformed pdf url")
+    logger.debug(f"Main page: {link_abs}")
+    logger.debug(f".pdf page: {link_pdf}")
 
     # Extract the abstract
-    abstract = entry.find("atom:summary", ns)
-    if abstract is None or abstract.text is None:
-        logger.critical("Could not extract the abstract.\n")
-        raise
-    else:
-        abstract = abstract.text.strip()
-        logger.debug("Abstract was found")
-        # self.logger.debug("Abstract: {:}".format(self.abstract))
+    raw_abstract = entry.find("atom:summary", ns)
+    if raw_abstract is None or raw_abstract.text is None:
+        logger.exception("Could not extract the abstract.\n")
+        raise TypeError("Malformed abstract.")
+    abstract = raw_abstract.text.strip()
+    logger.debug("Abstract was found")
+    # logger.debug(f"Abstract: {abstract}")
 
     # Extract the category
-    category = entry.findall("atom:category", ns)
-    if len(category) == 0:
-        logger.critical("Could not extract the category.\n")
-        raise
-    else:
-        category = [cat.attrib["term"] for cat in category]
-        logger.debug("Category: {:}".format(category))
+    raw_category = entry.findall("atom:category", ns)
+    if len(raw_category) == 0:
+        logger.exception("Could not extract the category.\n")
+        raise ValueError("Malformed categories (could not find any).")
+    category = [cat.attrib["term"] for cat in raw_category]
+    logger.debug(f"Category: {category}")
 
     # Extract the published datetime
-    published = entry.find("atom:published", ns)
-    if published is None or published.text is None:
-        logger.critical("Could not extract the published date.\n")
-        raise
-    else:
-        published = published.text
-        logger.debug("Published on: {:}".format(published))
+    raw_published = entry.find("atom:published", ns)
+    if raw_published is None or raw_published.text is None:
+        logger.exception("Could not extract the published date.\n")
+        raise TypeError("Malformed published date.")
+    published = raw_published.text
+    logger.debug(f"Published on: {published}")
 
-    # Extract the comment
-    comment = entry.find("arxiv:comment", ns)
-    if comment is None or comment.text is None:
+    # Extract the comment. Replace with an empty string if it isn't found.
+    raw_comment = entry.find("arxiv:comment", ns)
+    if raw_comment is None or raw_comment.text is None:
         logger.debug("No comment found.")
         comment = ""
     else:
-        comment = comment.text.strip()
-        logger.debug("Comment: {:}".format(comment))
+        comment = raw_comment.text.strip()
+    logger.debug(f"Comment: {comment}")
 
     # Extract the author list
     author_list = []
     authors = entry.findall("atom:author", ns)
     if len(authors) == 0:
-        logger.critical("Count not find author list.\n")
-        raise
-    else:
-        for author in authors:
-            name = author.find("atom:name", ns)
-            if name is None or name.text is None:
-                logger.critical("Could not extract the author list.\n")
-                raise
-            else:
-                normalised_name = normalise_string(name.text)
-                author_list.append(normalised_name)
-        authors = author_list
-        logger.debug("Found Authors: {:}".format(author_list))
-        n_authors = len(authors)
-
-    # Place additional information into this object
-    revised = (updated > published) or (version > 1)
+        logger.exception("Count not find author list.\n")
+        raise ValueError("Malformed authors (could not find any).")
+    for author in authors:
+        name = author.find("atom:name", ns)
+        if name is None or name.text is None:
+            logger.exception("Could not extract an author from the list.\n")
+            raise TypeError("Malformed author name. Could not extract.")
+        normalised_name = normalise_string(name.text)
+        author_list.append(normalised_name)
+    authors = author_list
+    logger.debug(f"Found Authors: {author_list}")
     n_authors = len(authors)
+
+    # Derive some additional information
+    revised = (updated > published) or (version > 1)
+    logger.debug(f"Revised: {revised}")
+
+    n_authors = len(authors)
+    logger.debug(f"Number of authors: {n_authors}")
+
     n_words_title = len(re.findall(r"\w+", title))
     n_words_abstract = len(re.findall(r"\w+", abstract))
-
-    logger.debug("Revised: {:}".format(revised))
-    logger.debug("Number of authors: {:}".format(n_authors))
-    logger.debug(
-        "Wordcount: Title = {:} | Abstract = {:}".format(
-            n_words_title, n_words_abstract
-        )
-    )
+    logger.debug(f"Wordcount: Title = {n_words_title} | Abstract = {n_words_abstract}")
 
     logger.debug("Paper successfully extracted from xml.")
 
