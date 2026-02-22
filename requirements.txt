@@ -20,3 +20,5 @@ PyYAML==6.0.2
 # urllib
 # webbrowser
 # xml
+# # Usefull for typechecking with mypy:
+# types-PyYAML
