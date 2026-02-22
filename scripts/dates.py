@@ -69,13 +69,11 @@ def is_searching_day_bool(dt: datetime.date) -> bool:
 
         return True
 
-    elif 0 <= dt.weekday() <= 3:
+    if 0 <= dt.weekday() <= 3:
 
         return True
 
-    else:
-
-        return False
+    return False
 
 
 def calc_search_endtime(
