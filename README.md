@@ -143,7 +143,6 @@ Thank you to arXiv for use of its open access interoperability.
 
 In addition to the python standard library, we make use of the following packages:
 - `pylatexenc` - [homepage](https://github.com/phfaist/pylatexenc)
-- `numpy` - [homepage](https://numpy.org/citing-numpy/)
 - `yaml` - [homepage](https://pyyaml.org/)
 
 ## Future Improvements
