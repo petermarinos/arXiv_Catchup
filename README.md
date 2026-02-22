@@ -14,12 +14,13 @@ It then computes an 'interest' score for every paper based on the search terms y
 > This project is still in development.
 > If you encounter any issues or have ideas for improvements, please send me a message or post an issue.
 
-<center>
+<p align="center">
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 ![lint: Pylint](https://img.shields.io/badge/lint-pylint-yellowgreen)
+![type checking: mypy](https://img.shields.io/badge/type%20checking-mypy-blue)
 
-</center>
+</p>
 
 ## Usage
 
