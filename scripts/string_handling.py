@@ -2,13 +2,14 @@
 
 # Import standard libraries
 from unicodedata import normalize as normalise  # Fix a spelling error
+from typing import cast
 import re
 
 # Import non-standard libraries
-from pylatexenc.latex2text import LatexNodes2Text
+from pylatexenc.latex2text import LatexNodes2Text  # type: ignore[import-untyped]
 
 
-def normalise_string(s: str) -> str:
+def normalise_string(s: str | None) -> str:
     """First removes LaTeX commands, then normalises the string, then converts to ASCII.
 
     inputs
@@ -31,10 +32,13 @@ def normalise_string(s: str) -> str:
         return ""
 
     # Convert any latex commands to unicode
-    s_unicode = LatexNodes2Text().latex_to_text(s)
+    # pylatexenc doesn't have type hints.
+    # Explicity cast the result to a string and ignore type hinting.
+    # If the input is not a string then pylatexenc will raise an error.
+    s_unicode = cast(str, LatexNodes2Text().latex_to_text(s))  # type: ignore
 
     # Normalise the string
-    # Use "compatibility deecomposition"
+    # Use "compatibility decomposition"
     s_normalised = normalise("NFKD", s_unicode)  # Function from unicodedata
 
     # Convert the string to ASCII

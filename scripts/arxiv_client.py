@@ -113,10 +113,17 @@ class ArxivClient:
         )
 
         # Format the API url
-        if len(config.search_terms["Categories"]) == 1:
+        cats = config.search_terms.get("Categories")
+        # Ensure there is at least one category to search
+        # Should be handled while loading the .yaml, but double-check here
+        if cats is None or len(cats) == 0:
+            raise ValueError("Empty set of categories to search.")
+        # If only one category, change nothing
+        if len(cats) == 1:
             api_catstring = config.cat_urlstring
+        # If multiple categories, surround with parentheses
         else:
-            api_catstring = "(" + config.cat_urlstring + ")"
+            api_catstring = f"({config.cat_urlstring})"
 
         self.apiquery = apiquery.format(
             start_year=config.start_date.year,
@@ -158,12 +165,13 @@ class ArxivClient:
 
             # Obtain some additional information from the error headers
 
-            # If there are no headers
-            if error.headers is None:
+            # If the error header is empty
+            # Probably unnecessary, but good to check
+            if not error.headers:
 
-                self.logger.debug("No header found.")
+                self.logger.debug("HTTP error header was empty.")
 
-            # Else, if there are headers
+            # Else, if the header isn't empty
             else:
 
                 for key, value in error.headers.items():
@@ -421,6 +429,10 @@ class ArxivClient:
         xml_path : Path to searchxml
         """
 
+        # Initialise the xml data
+        # This is just to ensure the type checker understands
+        xml_data: ET.Element | None = None
+
         # Search for xml file. If found, load it
         if os.path.exists(xml_path):
 
@@ -452,6 +464,7 @@ class ArxivClient:
                 )
                 self.logger.debug(f"Expected: {expected_url}")
                 self.logger.debug(f"Found:    {returned_url}")
+
                 # Clear the .xml file
                 delete_file(self.logger, xml_path)
             else:
@@ -477,6 +490,12 @@ class ArxivClient:
             self.logger.info(
                 "Search information successfully obtained from the arXiv servers!"
             )
+
+        # Confirm that the xml data was loaded
+        # This *should* never activate, but is needed for safety
+        if xml_data is None:
+            self.logger.exception("Issue with the xml data. Did not load correctly.\n")
+            raise TypeError("XML data was None")
 
         # Extract the total number of papers that were found
         max_num_temp = xml_data.find("opensearch:totalResults", self.NS)

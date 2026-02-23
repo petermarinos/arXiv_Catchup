@@ -14,7 +14,7 @@ from scripts import __version__
 # fmt: on
 
 
-class FlushingStreamHandler(logging.StreamHandler):
+class FlushingStreamHandler(logging.StreamHandler):  # type: ignore
     """Sets up a logging handler that flushes the line before displaying the log message.
 
     inputs
@@ -22,7 +22,12 @@ class FlushingStreamHandler(logging.StreamHandler):
     : The stream handler object
     """
 
-    def emit(self, record):
+    # Want the default behaviour, except for flushing the line first.
+    # Hence, no other methods required.
+    # pylint: disable=R0903
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Do whatever it takes to actually log the specified logging record."""
         # Flush the current stream
         sys.stdout.write("\r\033[K")
         sys.stdout.flush()
@@ -197,7 +202,7 @@ def log_environment(logger: logging.Logger) -> None:
     logger.debug(f"arXiv_Catchup=={__version__}")
 
     # Print package info
-    for pkg in ["certifi", "numpy", "pylatexenc", "PyYAML"]:
+    for pkg in ["certifi", "pylatexenc", "PyYAML"]:
         version = metadata.version(pkg)
         logger.debug(f"{pkg}=={version}")
 

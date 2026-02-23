@@ -86,7 +86,9 @@ class Config:
                 "No search terms were found in the 'Categories' entry in the configuration file.\n"
                 + "          Please check the file and add at least one item.\n"
             )
-            raise RuntimeError("No search terms found. Add atleast one to the .yaml.")
+            raise RuntimeError(
+                "No search categories found. Add atleast one to the .yaml."
+            )
 
         # Remove duplicates, but preserve order from the config file
         self.search_terms["Categories"] = list(

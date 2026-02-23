@@ -330,7 +330,7 @@ class Corpus:
 
         self.logger.debug(f"Dropped {num_dropped} revised entries.")
 
-    def find_matches(self, search_terms: dict[str, list[str]]) -> None:
+    def find_matches(self, search_terms: dict[str, list[str] | None]) -> None:
         """Find search_term matches within each Paper in the Corpus.
 
         inputs
