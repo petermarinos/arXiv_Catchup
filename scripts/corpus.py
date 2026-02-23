@@ -134,7 +134,6 @@ class Corpus:
 
             # Print how many were found
             # Compute the length of the corpus
-            n_papers = self.length
             self.logger.info(
                 f"Found {self.length} of {arxiv_client.total_papers} papers in the .xml file."
             )
@@ -150,7 +149,7 @@ class Corpus:
                 self.logger.critical(
                     "arXiv data did not include a search link. It is corrupted (returned None).\n"
                 )
-                raise TypeError("Malformed search link.")
+                raise ValueError("Malformed search link.")
             returned_url = returned_urlblock.attrib["href"]
 
             url_missmatch = expected_url != returned_url
@@ -165,35 +164,29 @@ class Corpus:
                 self.logger.debug(f"Expected: {expected_url}")
                 self.logger.debug(f"Found:    {returned_url}")
 
-                # # Clear the entries from the list.
-                # entries = []
+                # Clear the entries from the list.
                 self.clear_corpus()
 
                 # Clear the .xml file
                 delete_file(self.logger, xml_path)
 
             # If the urls match AND the number of papers was less than the total:
-            elif (not url_missmatch) and (n_papers < arxiv_client.total_papers):
+            elif (not url_missmatch) and (self.length < arxiv_client.total_papers):
                 self.logger.debug(
                     "The .xml file information matches the current search. Continuing."
                 )
 
             # If less than the total, provide info that we are continuing the search
-            elif n_papers >= arxiv_client.total_papers:
+            elif self.length >= arxiv_client.total_papers:
 
                 self.logger.info(
                     "All information found in the .xml file. Skipping the search."
                 )
 
-        # Compute the length of the corpus
-        n_papers = self.length
-        # If the number of papers is less that the total, connect to arXiv
-        if n_papers < arxiv_client.total_papers:
+        # If the number of papers is still less that the total, connect to arXiv
+        if self.length < arxiv_client.total_papers:
 
-            # Set the starting number
-            start_num = n_papers
-
-            self.logger.debug(f"The number of papers found so far is: {start_num}")
+            self.logger.debug(f"The number of papers found so far is: {self.length}")
 
             # # Compute the estimated time for the search
             # The time to complete depends almost entirely on the number of connections to arXiv
@@ -205,7 +198,7 @@ class Corpus:
             #     during the loop is pointless. Just use the fudge_timer
             fudge_timer = 0.7 + 0.15
             est_time = -(arxiv_client.SLEEP_SEARCH + fudge_timer) * (
-                (arxiv_client.total_papers - start_num)
+                (arxiv_client.total_papers - self.length)
                 // -arxiv_client.SEARCH_BLOCKSIZE
             )
 
@@ -219,8 +212,11 @@ class Corpus:
             self.logger.info(
                 f"Searching for papers. Estimated time: {est_time:.0f} seconds"
             )
+            start_index = (
+                self.length
+            )  # self.length updates when adding papers. Need a constant
             for ii in range(
-                start_num, arxiv_client.total_papers, arxiv_client.SEARCH_BLOCKSIZE
+                start_index, arxiv_client.total_papers, arxiv_client.SEARCH_BLOCKSIZE
             ):
 
                 # Compute the progress of the loop
@@ -251,9 +247,8 @@ class Corpus:
                 # Sleep before the query so that there is no dead time on the last query.
                 # Also need to sleep here as we do not wait after the initial API call
                 # Add jitter to the sleep timer
-                current_sleep_time = arxiv_client.SLEEP_SEARCH
-                progress_bar(ii, num_steps, remaining_steps * current_sleep_time)
-                pretty_sleep(self.logger, current_sleep_time)
+                progress_bar(ii, num_steps, remaining_steps * arxiv_client.SLEEP_SEARCH)
+                pretty_sleep(self.logger, arxiv_client.SLEEP_SEARCH)
 
                 # Query the API
                 parsed_xml = arxiv_client.arxiv_query(
@@ -276,12 +271,10 @@ class Corpus:
             )
 
         # Double check that we found the correct number of papers
-        self.update_corpus_length()
-        n_papers = self.length
-        if n_papers != arxiv_client.total_papers:
+        if self.length != arxiv_client.total_papers:
 
             self.logger.error(
-                f"Found {n_papers} papers (expected {arxiv_client.total_papers})."
+                f"Found {self.length} papers (expected {arxiv_client.total_papers})."
             )
 
         else:
@@ -292,11 +285,6 @@ class Corpus:
 
         # Remove revised papers
         self.drop_revisions()
-
-    def update_corpus_length(self) -> None:
-        """Compute the length of the Corpus, i.e. how many papers are contained within."""
-
-        self.length = len(self.corpus)
 
     def drop_revisions(self) -> None:
         """Drop revised papers from the Corpus."""
@@ -322,8 +310,8 @@ class Corpus:
         # Replace the Corpus with the temp dictionary
         self.corpus = temp_dict
 
-        # Update the number of papers
-        self.update_corpus_length()
+        # Recompute the length
+        self.length = len(self.corpus)
 
         # Compute the number of papers that were dropped
         num_dropped = n - self.length
