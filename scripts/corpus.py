@@ -132,11 +132,13 @@ class Corpus:
             # Extract the papers from the xml
             self.extract_papers(arxiv_client.NS, xml_tree)
 
+        # If all papers were found, log a message and continue
         if self.length == arxiv_client.total_papers:
 
             self.logger.info("All papers found in the .xml file!")
 
-        # If less than the total, provide info that we are continuing the search
+        # If the xml file had more papers than expected, discard and redownload
+        # Only possible if the temp xml file is altered manually
         elif self.length > arxiv_client.total_papers:
 
             self.logger.info("Too many papers found in the .xml file. Redownloading")
@@ -144,7 +146,8 @@ class Corpus:
             # Clear the entries from the list.
             self.clear_corpus()
 
-        # If the number of papers is still less that the total, connect to arXiv
+        # If there were fewer papers in the xml than we expected, connect to arXiv
+        # NOTE: Not an elif in the case that the above statement clears the corpus
         if self.length < arxiv_client.total_papers:
 
             self.logger.debug(f"The number of papers found so far is: {self.length}")
