@@ -15,10 +15,6 @@ from .file_io import write_aux_files
 from .utils   import logger_setup
 # fmt: on
 
-# # TO-DO:
-#
-# # Current branch will fix issues #32, #33, #34, and #35
-
 
 # The main script
 # Performs the entire pipeline
@@ -89,9 +85,9 @@ def main():
         logger, search_params.paths.prevsearch, search_params.end_date, corpus.length
     )
 
-    print("Not deleting temp. files.")
+    # print("Not deleting temp. files.")
     # # Delete xmls/other supplemental files if successfull
-    # pipeline.clear_temp_files()
+    search_params.clear_temp_files()
 
     # # Print a summary
     corpus.summary()
