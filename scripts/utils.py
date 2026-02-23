@@ -79,8 +79,8 @@ def cli_args() -> argparse.Namespace:
         type=str,
         help=(
             "Set the start date for the search.\n"
-            + "Input in ISO format, i.e. 'YYYY-mm-dd'.\n"
-            + "Ignores the date in the `prev_search.txt`."
+            "Input in ISO format, i.e. 'YYYY-mm-dd'.\n"
+            "Ignores the date in the `prev_search.txt`."
         ),
     )
     parser.add_argument(
@@ -88,7 +88,7 @@ def cli_args() -> argparse.Namespace:
         "--end-date",
         type=str,
         help='Set the end date for the search.\n"'
-        + "Input in ISO format, i.e. 'YYYY-mm-dd'.",
+        "Input in ISO format, i.e. 'YYYY-mm-dd'.",
     )
     parser.add_argument(
         "-v",
@@ -96,11 +96,11 @@ def cli_args() -> argparse.Namespace:
         type=int,
         default=3,
         help="Set the verbosity level.\n"
-        + "0 => critical errors\n"
-        + "1 => ... and non-critical errors\n"
-        + "2 => ... and warnings\n"
-        + "3 => ... and info\n"
-        + "4 => ... and debug messages",
+        "    0 => critical errors\n"
+        "    1 => ... and non-critical errors\n"
+        "    2 => ... and warnings\n"
+        "    3 => ... and info\n"
+        "    4 => ... and debug messages",
     )
 
     args = parser.parse_args()
@@ -275,7 +275,7 @@ def delete_catchup(
     user_prompt = (
         input(
             "         Delete all links? This action cannot be reversed. "
-            + "Only do so if the papers have been reviewed. [y/N]: "
+            "Only do so if the papers have been reviewed. [y/N]: "
         )
         .strip()
         .lower()
@@ -297,7 +297,7 @@ def delete_catchup(
                     print("")
                     logger.exception(
                         "The catchup file is not formatted correctly. "
-                        + "Double check its contents manually.\n"
+                        "Double check its contents manually.\n"
                     )
                     raise ValueError("Malformed catchup file.")
 

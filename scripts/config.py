@@ -84,7 +84,7 @@ class Config:
 
             self.logger.critical(
                 "No search terms were found in the 'Categories' entry in the configuration file.\n"
-                + "          Please check the file and add at least one item.\n"
+                "          Please check the file and add at least one item.\n"
             )
             raise RuntimeError(
                 "No search categories found. Add atleast one to the .yaml."
@@ -292,10 +292,10 @@ class Config:
 
         next_post_string = (
             "\n          "
-            + "If looking for the next list, it will be posted at "
-            + f"{nextlist_time:%Y-%m-%d %H:%M (%Z)},"
-            + "\n          "
-            + f"which is {t_days} days, {t_hours} hours, and {t_minutes} minutes from now."
+            "If looking for the next list, it will be posted at "
+            f"{nextlist_time:%Y-%m-%d %H:%M (%Z)},"
+            "\n          "
+            f"which is {t_days} days, {t_hours} hours, and {t_minutes} minutes from now."
         )
 
         # Compute number of days between now and the start of the search

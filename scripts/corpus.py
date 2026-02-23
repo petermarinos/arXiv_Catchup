@@ -75,7 +75,7 @@ class Corpus:
 
         # Add the paper to the corpus dictionary
         # Include the version number to ensure each key is unique. We will drop revisions later
-        key = paper.paper_info.id_num + "v{paper.paper_info.version:d}"
+        key = f"{paper.paper_info.id_num}v{paper.paper_info.version:d}"
         value = paper
         self.corpus[key] = value
 
@@ -160,7 +160,7 @@ class Corpus:
 
                 self.logger.warning(
                     "The .xml file information does not match the current search. "
-                    + "Discarding the file and re-connecting."
+                    "Discarding the file and re-connecting."
                 )
                 self.logger.debug(f"Expected: {expected_url}")
                 self.logger.debug(f"Found:    {returned_url}")
@@ -407,7 +407,7 @@ class Corpus:
 
         self.logger.error(
             "Attempting to use ML model to score papers. This has not been implemented yet. "
-            + "Returning no results.\n"
+            "Returning no results.\n"
         )
         raise NotImplementedError("Machine-learning algorithm not yet implemented.")
 
@@ -489,7 +489,7 @@ class Corpus:
         print("")
         self.logger.info(
             f"There were {self.length:>{max_digits}} papers submitted to the categories of interest"
-            + " within the search window."
+            " within the search window."
         )
         self.logger.info(
             f" of these, {len(self.papers_of_note):>{max_digits}} papers were interesting."

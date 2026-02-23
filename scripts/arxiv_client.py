@@ -83,22 +83,22 @@ class ArxivClient:
         # Double braces, {{}}, used for fields that change on each search
         url = (
             "https://export.arxiv.org/api/query?search_query="
-            + "submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20"
-            + "TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+"
-            + "AND+{cats:s}&"
-            + "sortBy=submittedDate&"
-            + "start={{start_num:d}}&"
-            + "max_results={{blocksize:d}}"
+            "submittedDate:[{start_year:d}{start_month:02d}{start_day:02d}1900%20"
+            "TO%20{end_year:d}{end_month:02d}{end_day:02d}1900]+"
+            "AND+{cats:s}&"
+            "sortBy=submittedDate&"
+            "start={{start_num:d}}&"
+            "max_results={{blocksize:d}}"
         )
 
         apiquery = (
             "https://arxiv.org/api/query?search_query="
-            + "submittedDate:%22{start_year:d}{start_month:02d}{start_day:02d}1900+"
-            + "TO+{end_year:d}{end_month:02d}{end_day:02d}1900%22+"
-            + "AND+{cats:s}&"
-            + "start={{start_num:d}}&"
-            + "max_results={{blocksize:d}}&"
-            + "id_list="
+            "submittedDate:%22{start_year:d}{start_month:02d}{start_day:02d}1900+"
+            "TO+{end_year:d}{end_month:02d}{end_day:02d}1900%22+"
+            "AND+{cats:s}&"
+            "start={{start_num:d}}&"
+            "max_results={{blocksize:d}}&"
+            "id_list="
         )
 
         # Format the url
@@ -197,7 +197,7 @@ class ArxivClient:
                     self.retry_after = 90 * attempt
                     self.logger.warning(
                         "Did not find a Retry-After command despite being a 429 error. "
-                        + "Increasing wait time to {retry_after} seconds ..."
+                        f"Increasing wait time to {self.retry_after} seconds ..."
                     )
 
                 # Else, if there are headers but no retry-after header
@@ -249,7 +249,7 @@ class ArxivClient:
             self.logger.warning("Verification still failed.")
             self.logger.warning(
                 "This could potentially be an issue with your OS and its trust store, or the "
-                + "certifi package version, or a wifi proxy."
+                "certifi package version, or a wifi proxy."
             )
             self.logger.info(
                 f"Current certifi version: {certifi.__version__}. Recommended: >2026.01.04."
@@ -413,7 +413,7 @@ class ArxivClient:
         # If the loop completes and no data was downloaded, raise an error.
         self.logger.exception(
             "Maximum retries attempted. arXiv query failed.\n          "
-            + "Review connection error codes before trying again.\n"
+            "Review connection error codes before trying again.\n"
         )
         raise RuntimeError("Cancelling arXiv connection. Too many attempts.")
 
@@ -460,7 +460,7 @@ class ArxivClient:
             if url_missmatch:
                 self.logger.warning(
                     "The .xml file information does not match the current search."
-                    + "Discarding the file and re-connecting."
+                    "Discarding the file and re-connecting."
                 )
                 self.logger.debug(f"Expected: {expected_url}")
                 self.logger.debug(f"Found:    {returned_url}")
@@ -525,8 +525,8 @@ class ArxivClient:
         if self.total_papers == 0:
             self.logger.exception(
                 "There were no papers submitted to the arXiv.\n          "
-                + "Refine search dates/categories and check for deferred mailings:\n          "
-                + "https://info.arxiv.org/help/availability.html\n"
+                "Refine search dates/categories and check for deferred mailings:\n          "
+                "https://info.arxiv.org/help/availability.html\n"
             )
             raise RuntimeError("No papers were submitted to the arXiv.")
 

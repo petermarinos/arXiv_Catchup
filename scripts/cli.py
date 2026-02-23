@@ -71,8 +71,8 @@ class CLI:
             user_prompt = (
                 input(
                     f"There are {arxiv_client.total_papers:d} papers. "
-                    + f"The search will take {time_to_search_minutes:.1f} minutes. "
-                    + "Continue? [y/N]: "
+                    f"The search will take {time_to_search_minutes:.1f} minutes. "
+                    "Continue? [y/N]: "
                 )
                 .strip()
                 .lower()
@@ -137,7 +137,7 @@ class CLI:
                     user_prompt_file = (
                         input(
                             "Save all links to a file? "
-                            + "Otherwise they will be written to the terminal. [y/N]: "
+                            "Otherwise they will be written to the terminal. [y/N]: "
                         )
                         .strip()
                         .lower()
