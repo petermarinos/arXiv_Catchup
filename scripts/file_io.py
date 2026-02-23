@@ -1,5 +1,6 @@
 """Functions for file I/O operations."""
 
+# fmt: off
 # Import standard libraries
 import xml.etree.ElementTree as ET
 import webbrowser
@@ -7,11 +8,15 @@ import argparse
 import datetime
 import logging
 import pathlib
+import typing
 import time
 import os
 
 # Import functions
-from .ui import progress_bar
+from .utils import delete_file
+from .ui    import progress_bar
+
+# fmt: on
 
 
 def read_catchup(
@@ -71,6 +76,63 @@ def read_catchup(
     progress_bar(total, total)
 
     return links
+
+
+def read_xml(
+    logger: logging.Logger,
+    filename: pathlib.Path,
+    ns: dict[str, str],
+    expected_url: str,
+) -> ET.ElementTree:
+    """Read an .xml file and check to ensure it matches the current expected search parameters.
+
+    inputs
+    ------
+    logger       : The logging object.
+    filename     : Path+filename of the xml file.
+    ns           : arXiv namespaces for the xml file.
+    expected_url : The url that we expect in the xml file given the search parameters
+    """
+
+    # Load the file
+    try:
+        xml_tree = typing.cast(ET.ElementTree, ET.parse(filename))
+    except ET.ParseError as e:
+        logger.critical("Could not parse XML: %s", e)
+        raise
+
+    # Check the url from the loaded xml matches the current search url
+    # Extract the url from the xml. It will *always* be the first link
+    returned_urlblock = xml_tree.find("atom:link", ns)
+    if returned_urlblock is None:
+        logger.critical(
+            "arXiv data did not include a search link. It is corrupted (returned None).\n"
+        )
+        raise ValueError("Malformed search link.")
+    returned_url = returned_urlblock.attrib["href"]
+
+    url_missmatch = expected_url != returned_url
+
+    # If the urls do not match, discard and restart the search
+    if url_missmatch:
+
+        logger.warning(
+            "The .xml file information does not match the current search. "
+            "Discarding the file and re-connecting."
+        )
+        logger.debug(f"Expected: {expected_url}")
+        logger.debug(f"Found:    {returned_url}")
+
+        # Clear the .xml file
+        delete_file(logger, filename)
+
+    else:
+
+        logger.debug(
+            "The .xml file information matches the current search. Continuing."
+        )
+
+    return xml_tree
 
 
 def write_aux_files(
@@ -136,7 +198,7 @@ def write_links(
 def write_xml(
     logger: logging.Logger,
     filename: pathlib.Path,
-    xml_data: ET.Element,
+    xml_root: ET.Element,
     ns: dict[str, str],
     overwrite: bool = False,
 ) -> None:
@@ -157,7 +219,7 @@ def write_xml(
     if overwrite:
 
         logger.debug(f"Saving xml to file: {filename}")
-        tree = ET.ElementTree(xml_data)
+        tree = ET.ElementTree(xml_root)
         tree.write(filename, encoding="utf-8")
 
     else:
@@ -166,7 +228,7 @@ def write_xml(
         if not os.path.exists(filename):
 
             # Write the xml
-            write_xml(logger, filename, xml_data, ns, overwrite=True)
+            write_xml(logger, filename, xml_root, ns, overwrite=True)
 
             return
 
@@ -176,7 +238,7 @@ def write_xml(
         master_tree = ET.parse(filename)
         master_root = master_tree.getroot()
 
-        new_tree = ET.ElementTree(xml_data)
+        new_tree = ET.ElementTree(xml_root)
         new_root = new_tree.getroot()
 
         # Obtain each entry and append to the file

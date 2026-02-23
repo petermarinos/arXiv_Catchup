@@ -20,8 +20,7 @@ import certifi
 from .config import Config
 
 # Import functions
-from .file_io import write_xml
-from .utils   import delete_file
+from .file_io import read_xml, write_xml
 from .ui      import pretty_sleep
 # fmt: on
 
@@ -45,7 +44,8 @@ class ArxivClient:
     SLEEP_SEARCH = 3  # 3 seconds per search
     SEARCH_BLOCKSIZE = 10  # Each search downloads only ten papers (max=2000)
 
-    # Define the 'sleep_fudge'. Used to overestimate remaining times to account for jitter and server response times.
+    # Define the 'sleep_fudge'.
+    # Used to overestimate remaining times to account for jitter and server response times.
     # Superficial number and not important
     SLEEP_FUDGE = 0.70 + 0.15
 
@@ -440,7 +440,7 @@ class ArxivClient:
 
         # Initialise the xml data
         # This is just to ensure the type checker understands
-        xml_data: ET.Element | None = None
+        xml_root: ET.Element | None = None
 
         # Search for xml file. If found, load it
         if os.path.exists(xml_path):
@@ -448,38 +448,17 @@ class ArxivClient:
             self.logger.info(f"Found a .xml file: {xml_path}")
             self.logger.info("Attempting to continue from the previous failed run.")
 
-            # Load the file
-            xml_data = ET.parse(xml_path).getroot()
-
-            # if xml_data is None:
-            #     self.logger.exception("Empty .xml.")
-            #     raise TypeError(".xml data was returned as None.")
-
-            # Check the url from the loaded xml matches the current search url
+            # Define the url we expect from the file
             expected_url = self.apiquery.format(start_num=0, blocksize=1)
-            returned_urlblock = xml_data.find("atom:link", self.NS)
-            if returned_urlblock is None:
-                self.logger.exception("No arXiv link (returned None).\n")
-                raise TypeError(
-                    "arXiv data did not include a link. It is corrupted (returned None)."
-                )
-            returned_url = returned_urlblock.attrib["href"]
 
-            url_missmatch = expected_url != returned_url
-            if url_missmatch:
-                self.logger.warning(
-                    "The .xml file information does not match the current search."
-                    "Discarding the file and re-connecting."
-                )
-                self.logger.debug(f"Expected: {expected_url}")
-                self.logger.debug(f"Found:    {returned_url}")
-
-                # Clear the .xml file
-                delete_file(self.logger, xml_path)
-            else:
-                self.logger.debug(
-                    "The .xml file information matches the current search. Continuing"
-                )
+            # Load the file
+            xml_tree = read_xml(
+                self.logger,
+                xml_path,
+                self.NS,
+                expected_url,
+            )
+            xml_root = xml_tree.getroot()
 
         # If there is no file, perform the search
         # NOTE: This is not an elif as the above if statement can delete the file.
@@ -491,10 +470,10 @@ class ArxivClient:
             self.logger.info("Obtaining search information from the servers.")
 
             # Perform the query
-            xml_data = self.arxiv_query(0, 1)
+            xml_root = self.arxiv_query(0, 1)
 
             # Write the extracted xml to a file
-            write_xml(self.logger, xml_path, xml_data, self.NS, overwrite=True)
+            write_xml(self.logger, xml_path, xml_root, self.NS, overwrite=True)
 
             self.logger.info(
                 "Search information successfully obtained from the arXiv servers!"
@@ -502,12 +481,12 @@ class ArxivClient:
 
         # Confirm that the xml data was loaded
         # This *should* never activate, but is needed for safety
-        if xml_data is None:
+        if xml_root is None:
             self.logger.exception("Issue with the xml data. Did not load correctly.\n")
             raise TypeError("XML data was None")
 
         # Extract the total number of papers that were found
-        max_num_temp = xml_data.find("opensearch:totalResults", self.NS)
+        max_num_temp = xml_root.find("opensearch:totalResults", self.NS)
         if max_num_temp is None:
             self.logger.exception(
                 "arXiv data did not include a number of papers. It is corrupted.\n"

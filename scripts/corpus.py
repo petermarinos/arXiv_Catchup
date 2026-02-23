@@ -5,13 +5,12 @@
 import xml.etree.ElementTree as ET
 import logging
 import pathlib
-import typing
+# import typing
 import math
 import os
 
 # Import function
-from .file_io     import write_xml
-from .utils       import delete_file
+from .file_io     import read_xml, write_xml
 from .ui          import progress_bar, pretty_sleep
 
 # Import classes
@@ -90,7 +89,7 @@ class Corpus:
         inputs
         ------
         ns       : XML namespaces that arXiv uses.
-        xml_data : XML data from the arXiv query.
+        xml_data : XML data from the arXiv query. Can be a ET tree or root.
         """
 
         # Loop over the entries (papers) within the current search
@@ -120,68 +119,30 @@ class Corpus:
         if os.path.exists(xml_path):
 
             self.logger.info(f"Found an .xml file: {xml_path}")
-            self.logger.info("Continuing from the previous failed run.")
+            self.logger.info("Attempting to continue a the previous failed run.")
+
+            # Define the url we expect from the file
+            expected_url = arxiv_client.apiquery.format(
+                start_num=0, blocksize=arxiv_client.SEARCH_BLOCKSIZE
+            )
 
             # Load the file
-            try:
-                xml_tree = typing.cast(ET.ElementTree, ET.parse(xml_path))
-            except ET.ParseError as e:
-                self.logger.critical("Could not parse XML: %s", e)
-                raise
+            xml_tree = read_xml(self.logger, xml_path, arxiv_client.NS, expected_url)
 
             # Extract the papers from the xml
             self.extract_papers(arxiv_client.NS, xml_tree)
 
-            # Print how many were found
-            # Compute the length of the corpus
-            self.logger.info(
-                f"Found {self.length} of {arxiv_client.total_papers} papers in the .xml file."
-            )
+        if self.length == arxiv_client.total_papers:
 
-            # Check the url from the loaded xml matches the current search url
-            # Compute the expected url
-            expected_url = arxiv_client.apiquery.format(
-                start_num=0, blocksize=arxiv_client.SEARCH_BLOCKSIZE
-            )
-            # Extract the url from the xml. It will *always* be the first link
-            returned_urlblock = xml_tree.find("atom:link", arxiv_client.NS)
-            if returned_urlblock is None:
-                self.logger.critical(
-                    "arXiv data did not include a search link. It is corrupted (returned None).\n"
-                )
-                raise ValueError("Malformed search link.")
-            returned_url = returned_urlblock.attrib["href"]
+            self.logger.info("All papers found in the .xml file!")
 
-            url_missmatch = expected_url != returned_url
+        # If less than the total, provide info that we are continuing the search
+        elif self.length > arxiv_client.total_papers:
 
-            # If the urls do not match, discard and restart the search
-            if url_missmatch:
+            self.logger.info("Too many papers found in the .xml file. Redownloading")
 
-                self.logger.warning(
-                    "The .xml file information does not match the current search. "
-                    "Discarding the file and re-connecting."
-                )
-                self.logger.debug(f"Expected: {expected_url}")
-                self.logger.debug(f"Found:    {returned_url}")
-
-                # Clear the entries from the list.
-                self.clear_corpus()
-
-                # Clear the .xml file
-                delete_file(self.logger, xml_path)
-
-            # If the urls match AND the number of papers was less than the total:
-            elif (not url_missmatch) and (self.length < arxiv_client.total_papers):
-                self.logger.debug(
-                    "The .xml file information matches the current search. Continuing."
-                )
-
-            # If less than the total, provide info that we are continuing the search
-            elif self.length >= arxiv_client.total_papers:
-
-                self.logger.info(
-                    "All information found in the .xml file. Skipping the search."
-                )
+            # Clear the entries from the list.
+            self.clear_corpus()
 
         # If the number of papers is still less that the total, connect to arXiv
         if self.length < arxiv_client.total_papers:
@@ -244,17 +205,16 @@ class Corpus:
                 pretty_sleep(self.logger, arxiv_client.SLEEP_SEARCH)
 
                 # Query the API
-                parsed_xml = arxiv_client.arxiv_query(
+                xml_root = arxiv_client.arxiv_query(
                     ii,
                     search_interval,
                 )
 
                 # Write the xml to a file
-                # logger, filename, xml_data, ns, overwrite=False
-                write_xml(self.logger, xml_path, parsed_xml, arxiv_client.NS)
+                write_xml(self.logger, xml_path, xml_root, arxiv_client.NS)
 
                 # Extract the paper from the xml
-                self.extract_papers(arxiv_client.NS, parsed_xml)
+                self.extract_papers(arxiv_client.NS, xml_root)
 
             # Close the progress bar
             progress_bar(arxiv_client.total_papers, arxiv_client.total_papers)
