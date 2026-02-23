@@ -12,7 +12,6 @@ from .cli          import CLI
 
 # Import functions
 from .file_io import write_aux_files
-from .output  import display
 from .utils   import logger_setup
 # fmt: on
 
@@ -78,13 +77,10 @@ def main():
 
     # # Display the results
     cli.get_display_method(api, corpus)
-    display(
+    cli.display(
         logger,
-        cli.args,
         corpus.papers_of_note,
-        cli.open_in_brower,
         api.SLEEP_OPENING,
-        cli.write_to_file,
         search_params.paths.catchup,
     )
 

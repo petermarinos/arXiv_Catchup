@@ -2,8 +2,10 @@
 
 # fmt: off
 # Import libraries
+import webbrowser
 import logging
 import pathlib
+import time
 import sys
 
 # Import classes
@@ -11,8 +13,13 @@ from .arxiv_client import ArxivClient
 from .corpus       import Corpus
 
 # Import functions
-from .utils import cli_args, delete_file
+from .file_io import write_links
+from .utils   import cli_args, delete_file
+from .ui      import progress_bar
 # fmt: on
+
+
+# Import functions
 
 
 class CLI:
@@ -25,9 +32,9 @@ class CLI:
 
         # if -f is passed
         if self.args.force_open:
-            self.open_in_brower = True
+            self.open_in_browser = True
         else:
-            self.open_in_brower = False
+            self.open_in_browser = False
 
         # if -w is passed
         if self.args.write_to_file:
@@ -104,13 +111,13 @@ class CLI:
 
             # self.logger.warning("No papers of interest were found.")
             self.write_to_file = False
-            self.open_in_brower = False
+            self.open_in_browser = False
 
         # If there is at least one paper, open/prompt
         else:
 
             # If neither -f nor -w were passed, prompt the user for the behaviour they prefer
-            if not self.write_to_file and not self.open_in_brower:
+            if not self.write_to_file and not self.open_in_browser:
 
                 est_time = len(corpus.papers_of_note) * arxiv_client.SLEEP_OPENING
 
@@ -128,7 +135,7 @@ class CLI:
                 # If they say yes to opening in the browser
                 if user_prompt_browser == "y":
 
-                    self.open_in_brower = True
+                    self.open_in_browser = True
 
                 # If they say no to opening in the browser
                 else:
@@ -156,3 +163,72 @@ class CLI:
 
                             print(corpus.corpus[arxiv_id].paper_info.link_abs)
                         print("")
+
+    def display(
+        self,
+        logger: logging.Logger,
+        papers_of_note: list[str],
+        sleeptimer: float,
+        filename: pathlib.Path,
+    ) -> None:
+        """Displays the results to the user, based on their preference.
+
+        inputs
+        ------
+        logger          : The logger object.
+        args            : CLI arguments.
+        papers_of_note  : arXiv ID numbers for papers that passed filtering.
+        open_in_browser : Flag to open in browser (True) or not (False).
+        sleeptimer      : Time to sleep between commands to webbrowser.
+        write_to_file   : Flag to write results to a file (True) or not (False).
+        filename        : Path+filename of the output file.
+        """
+
+        if self.write_to_file:
+
+            write_links(logger, self.args, papers_of_note, filename)
+
+        if self.open_in_browser:
+
+            # Calculate the number of links
+            total = len(papers_of_note)
+
+            # Loop through the list and open all in the web browser
+            request_count = 0
+            est_time = total * sleeptimer
+            logger.info(f"Opening the papers. Estimated time: {est_time:.2f} seconds")
+            for arxiv_id in papers_of_note:
+
+                progress_bar(request_count, total, (total - request_count) * sleeptimer)
+
+                # # arXiv asks that you limit opening pages to four requests per second.
+                # They recommend burst of four papers, but I prefer one per every quarter second.
+                if request_count > 0:
+
+                    time.sleep(sleeptimer)
+
+                link = f"https://arxiv.org/abs/{arxiv_id}"
+
+                # Open in new window if flag is set
+                if self.args.new_window:
+
+                    if request_count == 0:
+
+                        webbrowser.open(
+                            link, new=1
+                        )  # new=1: open in a new browser window
+
+                    else:
+
+                        webbrowser.open(link, new=2)  # new=2: open in a new tab
+
+                # Otherwise, open in the current window
+                else:
+
+                    webbrowser.open(
+                        link
+                    )  # Default behavior, just opens everything in the current window
+
+                request_count += 1
+
+            progress_bar(total, total)
