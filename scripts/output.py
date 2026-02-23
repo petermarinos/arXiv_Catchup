@@ -59,7 +59,7 @@ def display(
 
                 time.sleep(sleeptimer)
 
-            link = "https://arxiv.org/abs/" + arxiv_id
+            link = f"https://arxiv.org/abs/{arxiv_id}"
 
             # Open in new window if flag is set
             if args.new_window:

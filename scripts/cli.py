@@ -61,8 +61,8 @@ class CLI:
         if 1 <= time_to_search_minutes < 5:
 
             logger.warning(
-                "There are {total_papers:d} papers. "
-                + f"The search will take {time_to_search_minutes:.1f} minutes."
+                f"There are {arxiv_client.total_papers:d} papers. "
+                f"The search will take {time_to_search_minutes:.1f} minutes."
             )
 
         # Prompt the user if it is going to take a really long time.
@@ -119,7 +119,7 @@ class CLI:
                 user_prompt_browser = (
                     input(
                         f"There are {len(corpus.papers_of_note)} link(s). "
-                        + f"Open in the browser? It will take {est_time} seconds. [y/N]: "
+                        f"Open in the browser? It will take {est_time} seconds. [y/N]: "
                     )
                     .strip()
                     .lower()

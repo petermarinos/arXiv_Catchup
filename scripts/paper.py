@@ -260,7 +260,7 @@ class Paper:
                     )
 
                     self.logger.debug(
-                        "Found '{word:s}' {num_abstract_matches:d} time(s) in the abstract."
+                        f"Found '{word:s}' {num_abstract_matches:d} time(s) in the abstract."
                     )
 
                     self.paper_scores.matches[match_type][
@@ -275,8 +275,8 @@ class Paper:
 
         self.logger.debug(
             "Matches | "
-            + f"Title {self.paper_scores.matches[match_type]['Title']} | "
-            + f"Abstract {self.paper_scores.matches[match_type]['Abstract']} |"
+            f"Title {self.paper_scores.matches[match_type]['Title']} | "
+            f"Abstract {self.paper_scores.matches[match_type]['Abstract']} |"
         )
 
         # If no matches were found:
@@ -320,8 +320,8 @@ class Paper:
         title_penalty = self.TITLE_REQ_DENSITY / self.paper_info.n_words_title
         abstract_penalty = self.ABSTRACT_REQ_DENSITY / self.paper_info.n_words_abstract
         self.logger.debug(
-            "| Title Penalty = {title_penalty:.2f} | "
-            + f"Abstract Penalty = {abstract_penalty:.2f} |"
+            f"| Title Penalty = {title_penalty:.2f} "
+            f"| Abstract Penalty = {abstract_penalty:.2f} |"
         )
 
         # Compute the Included Word scores:
@@ -344,12 +344,12 @@ class Paper:
         self.paper_scores.scores[match_type]["Total"] = inc_total_score
 
         self.logger.debug(
-            f"| Title Matches = {inc_title_count:d} | "
-            + f"Title Score = {inc_title_score:.2f} |"
+            f"| Title Matches = {inc_title_count:d} "
+            f"| Title Score = {inc_title_score:.2f} |"
         )
         self.logger.debug(
-            f"| Abstract Matches = {inc_abstract_count:d} | "
-            + f"Abstract Score = {inc_abstract_score:.2f} |"
+            f"| Abstract Matches = {inc_abstract_count:d} "
+            f"| Abstract Score = {inc_abstract_score:.2f} |"
         )
 
         self.logger.debug(f"| {match_type:} Score = {inc_total_score:.2f} |")

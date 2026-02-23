@@ -136,8 +136,8 @@ class ArxivClient:
         )
 
         # Initialise wait times. Values will be modified if connection errors occur
-        self.wait_time = 3
-        self.retry_after = 0
+        self.wait_time = 3.0
+        self.retry_after = 0.0
 
         # Total number of papers that will be searched for
         # Different to the length of the Corpus (though they should be equal at the end).
@@ -184,17 +184,18 @@ class ArxivClient:
                 if retry is not None:
 
                     self.logger.debug("Found Retry-After header.")
-                    retry_after = float(retry)
+
+                    self.retry_after = float(retry)
 
                     self.logger.warning(
                         "---> Received a wait command from the server. "
-                        + f"Increasing wait time to the recommended {retry_after} seconds ..."
+                        f"Increasing wait time to the recommended {self.retry_after} seconds ..."
                     )
 
                 # Catch 429 error codes that do not have a Retry-after header
                 elif (retry is None) and (error.code == 429):
 
-                    self.retry_after = 90 * attempt
+                    self.retry_after = 90.0 * attempt
                     self.logger.warning(
                         "Did not find a Retry-After command despite being a 429 error. "
                         f"Increasing wait time to {self.retry_after} seconds ..."
@@ -230,7 +231,7 @@ class ArxivClient:
             # Warn the user that verification failed
             self.logger.warning(
                 f"Connection error: {error.reason}. "
-                + f"Updating certificate and retrying in {self.wait_time} seconds ..."
+                f"Updating certificate and retrying in {self.wait_time} seconds ..."
             )
 
             # Try updating the ssl_context to use the certifi cafile
@@ -286,6 +287,10 @@ class ArxivClient:
 
         # Format the last two fields in the url
         formatted_url = self.url.format(start_num=start_num, blocksize=blocksize)
+
+        self.logger.debug(
+            f"Searching for papers {start_num} to {start_num+blocksize-1} ..."
+        )
 
         # Query the server
         for attempt in range(
@@ -376,7 +381,7 @@ class ArxivClient:
             # If there is a timeout error:
             except TimeoutError:
 
-                self.retry_after = 60
+                self.retry_after = 60.0
 
                 self.logger.warning(
                     f"Timeout Error. Retrying in {self.retry_after} seconds ..."
@@ -398,7 +403,7 @@ class ArxivClient:
                 raise
 
             # If there was a Retry-After command, replace the wait time
-            if self.retry_after != 0:
+            if self.retry_after != 0.0:
 
                 self.wait_time = self.retry_after
 
@@ -406,7 +411,7 @@ class ArxivClient:
             pretty_sleep(self.logger, self.wait_time)
 
             # If there was no retry after demand, increase the wait time for the next attempt
-            if self.retry_after == 0:
+            if self.retry_after == 0.0:
 
                 self.wait_time *= self.BACKOFF
 

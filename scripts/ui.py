@@ -54,7 +54,7 @@ def progress_bar(ii: int, total: int, time_estimate: float | None = None) -> Non
     pad = " " * (WIDTH + 34 - len(progress_message))
 
     sys.stdout.write(
-        "\r" + progress_message + pad
+        f"\r{progress_message}{pad}"
     )  # Move cursor to the start of the line and print the progress message
     sys.stdout.flush()
 

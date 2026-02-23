@@ -128,7 +128,7 @@ def write_links(
 
             else:
 
-                link = "https://arxiv.org/abs/" + arxiv_id
+                link = f"https://arxiv.org/abs/{arxiv_id}"
 
                 f.write(f"{link}\n")
 
