@@ -189,15 +189,7 @@ class Corpus:
             self.logger.debug(f"The number of papers found so far is: {self.length}")
 
             # # Compute the estimated time for the search
-            # The time to complete depends almost entirely on the number of connections to arXiv
-            #     and the number of sleeps. There is some extra slowdown due to connecting to the
-            #     arXiv servers and waiting for a response. It is typically 0.7s per connection,
-            #     though it varies *wildly*. We also add jitter to the timers with
-            #     random.uniform(0, 0.3) (average slowdown of 0.15 seconds).
-            # Because of how wildly it varies, computing the remaining search time accurately
-            #     during the loop is pointless. Just use the fudge_timer
-            fudge_timer = 0.7 + 0.15
-            est_time = -(arxiv_client.SLEEP_SEARCH + fudge_timer) * (
+            est_time = -(arxiv_client.SLEEP_SEARCH + arxiv_client.SLEEP_FUDGE) * (
                 (arxiv_client.total_papers - self.length)
                 // -arxiv_client.SEARCH_BLOCKSIZE
             )
@@ -236,7 +228,8 @@ class Corpus:
                 progress_bar(
                     ii,
                     num_steps,
-                    remaining_steps * (arxiv_client.SLEEP_SEARCH + fudge_timer),
+                    remaining_steps
+                    * (arxiv_client.SLEEP_SEARCH + arxiv_client.SLEEP_FUDGE),
                 )
 
                 # Debug messages

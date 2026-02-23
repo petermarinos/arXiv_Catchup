@@ -45,6 +45,10 @@ class ArxivClient:
     SLEEP_SEARCH = 3  # 3 seconds per search
     SEARCH_BLOCKSIZE = 10  # Each search downloads only ten papers (max=2000)
 
+    # Define the 'sleep_fudge'. Used to overestimate remaining times to account for jitter and server response times.
+    # Superficial number and not important
+    SLEEP_FUDGE = 0.70 + 0.15
+
     # Define some values for retry attempts. These are magic values and kept from the users.
     # These can be altered as arXiv does not specify values.
     # However, these values are pretty typical so it is best to leave them.
