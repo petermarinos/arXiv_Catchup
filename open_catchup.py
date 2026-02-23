@@ -10,9 +10,12 @@ CLI Arguments
 import argparse
 import pathlib
 
+# Import classes
+from scripts.config import Paths
+
 # Import packages
 from scripts.file_io import read_catchup
-from scripts.utils   import logger_setup, delete_catchup, set_filenames
+from scripts.utils   import logger_setup, delete_catchup
 # fmt: on
 
 # The goal of this script is to save the link opening for later if the user chooses
@@ -27,7 +30,7 @@ from scripts.utils   import logger_setup, delete_catchup, set_filenames
 # If you rarely want to open all papers, this is the recommended method.
 
 # Find the directory of this file
-root_path = pathlib.Path(__file__).resolve().parent.parent
+root_dir = pathlib.Path(__file__).resolve().parent.parent
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -44,7 +47,13 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Extract some of the required constants
-filenames = set_filenames(root_path)
+filenames = Paths(
+    prevsearch=root_dir / "prev_search.txt",
+    searchterms=root_dir / "search_terms.yaml",
+    catchup=root_dir / "catchup.txt",
+    searchxml=root_dir / "search.xml",
+    papersxml=root_dir / "papers.xml",
+)
 
 # XML namespaces used by arXiv
 ns = {
@@ -57,10 +66,10 @@ ns = {
 SLEEP_OPENING = 0.25  # 0.25 seconds between opening links
 
 # Setup logging
-logger = logger_setup(args, root_path)
+logger = logger_setup(args, root_dir)
 
 # Read the catchup file
-papers = read_catchup(logger, filenames["catchup"], SLEEP_OPENING)
+papers = read_catchup(logger, filenames.catchup, SLEEP_OPENING)
 
 # Ask the user if the file should be deleted
-delete_catchup(logger, filenames["catchup"], papers)
+delete_catchup(logger, filenames.catchup, papers)

@@ -2,6 +2,7 @@
 
 # fmt: off
 # Import standard libraries
+from dataclasses import dataclass
 import argparse
 import datetime
 import logging
@@ -15,8 +16,19 @@ import yaml
 from .string_handling import normalise_string
 from .file_io         import write_date
 from .dates           import parse_date, calc_search_endtime, calc_next_posttime
-from .utils           import set_filenames, delete_file
+from .utils           import delete_file
 # fmt: on
+
+
+@dataclass
+class Paths:
+    """Holds all paths"""
+
+    prevsearch: pathlib.Path
+    searchterms: pathlib.Path
+    catchup: pathlib.Path
+    searchxml: pathlib.Path
+    papersxml: pathlib.Path
 
 
 class Config:
@@ -44,9 +56,17 @@ class Config:
         root_dir : Absolute path to the root directory.
         """
 
-        # Define important variables
+        # logger
         self.logger = logger
-        self.paths = set_filenames(root_dir)
+
+        # paths
+        self.paths = Paths(
+            prevsearch=root_dir / "prev_search.txt",
+            searchterms=root_dir / "search_terms.yaml",
+            catchup=root_dir / "catchup.txt",
+            searchxml=root_dir / "search.xml",
+            papersxml=root_dir / "papers.xml",
+        )
 
         # Obtain the current time, converted to the UTC timezone
         self.current_time = datetime.datetime.now(datetime.timezone.utc)
@@ -64,10 +84,10 @@ class Config:
     def get_searchterms(self) -> None:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary."""
 
-        self.logger.info(f"Loading search terms from {self.paths['searchterms']}.")
+        self.logger.info(f"Loading search terms from {self.paths.searchterms}.")
 
         # Load the .yaml into a dictionary
-        with open(self.paths["searchterms"], "r", encoding="utf8") as f:
+        with open(self.paths.searchterms, "r", encoding="utf8") as f:
 
             self.search_terms = yaml.safe_load(f)
 
@@ -244,7 +264,7 @@ class Config:
             self.logger.debug("No start date was input.")
 
             # If the file doesn't exist:
-            if not os.path.exists(self.paths["prevsearch"]):
+            if not os.path.exists(self.paths.prevsearch):
 
                 self.logger.debug(
                     "No previous search file found. Setting to the day prior to the end_date."
@@ -256,10 +276,10 @@ class Config:
                     self.end_time, self.SEARCH_TIME, self.POST_TIME
                 )
 
-                write_date(self.logger, self.paths["prevsearch"], prev_end_time.date())
+                write_date(self.logger, self.paths.prevsearch, prev_end_time.date())
 
             # If the file does exist, load it and extract the previous runtime
-            with open(self.paths["prevsearch"], "r", encoding="utf-8") as f:
+            with open(self.paths.prevsearch, "r", encoding="utf-8") as f:
 
                 self.start_time, self.start_date = parse_date(
                     self.logger, next(f), "start-date", self.SEARCH_TIME, self.POST_TIME
@@ -348,5 +368,5 @@ class Config:
     def clear_temp_files(self) -> None:
         """Clear the temporary files created by the script."""
 
-        delete_file(self.logger, self.paths["searchxml"])
-        delete_file(self.logger, self.paths["papersxml"])
+        delete_file(self.logger, self.paths.searchxml)
+        delete_file(self.logger, self.paths.papersxml)

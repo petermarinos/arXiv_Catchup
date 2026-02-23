@@ -227,35 +227,6 @@ def log_args(logger: logging.Logger, args: argparse.Namespace) -> None:
     logger.debug("===============================")
 
 
-def set_filenames(root_dir: pathlib.Path) -> dict[str, pathlib.Path]:
-    """Compute the filenames of various auxiliary files that may or may not be used.
-
-    inputs
-    ------
-    root_dir : Top directory of the project, i.e. `/path/to/arXiv_Catchup/`.
-
-    outputs
-    -------
-    filenames : Contains the path+filename for the various aux./temp. files.
-    """
-
-    # Place filenames into a dictionary
-    filenames = {
-        # File that stores the date of the previous run
-        "prevsearch": root_dir / "prev_search.txt",
-        # File that stores the search terms
-        "searchterms": root_dir / "search_terms.yaml",
-        # File that stores the links to the papers of interest (if writing to a file)
-        "catchup": root_dir / "catchup.txt",
-        # File that stores the .xml data of the initial arXiv query, i.e. critical search info
-        "searchxml": root_dir / "search.xml",
-        # File that stores the .xml data for all downloaded papers
-        "papersxml": root_dir / "papers.xml",
-    }
-
-    return filenames
-
-
 def delete_catchup(
     logger: logging.Logger, filename: pathlib.Path, links: list[str]
 ) -> None:

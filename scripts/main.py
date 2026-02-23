@@ -50,15 +50,15 @@ def main():
     api = ArxivClient(search_params)
 
     # # Obtain basic search information
-    api.get_search_info(search_params.paths["searchxml"])
+    api.get_search_info(search_params.paths.searchxml)
 
     # # Check for errors
     api.arxiv_error_check()
-    cli.check_continue_status(logger, api, search_params.paths["searchxml"])
+    cli.check_continue_status(logger, api, search_params.paths.searchxml)
 
     # # Loop through the searches and obtain all papers
     corpus = Corpus(logger)
-    corpus.get_papers(api, search_params.paths["papersxml"])
+    corpus.get_papers(api, search_params.paths.papersxml)
 
     # # Find matches in the papers
     corpus.find_matches(search_params.search_terms)
@@ -85,12 +85,12 @@ def main():
         cli.open_in_brower,
         api.SLEEP_OPENING,
         cli.write_to_file,
-        search_params.paths["catchup"],
+        search_params.paths.catchup,
     )
 
     # # Write some auxiliary file(s) for the next run
     write_aux_files(
-        logger, search_params.paths["prevsearch"], search_params.end_date, corpus.length
+        logger, search_params.paths.prevsearch, search_params.end_date, corpus.length
     )
 
     print("Not deleting temp. files.")
