@@ -222,7 +222,7 @@ class Paper:
         for word in words:
 
             # Define the pattern to search for
-            pattern = rf"(?<!\w){word}(?!\w)"
+            pattern = rf"(?<!\w){re.escape(word)}(?!\w)"
 
             # Define the text to search through
             title = self.paper_info.title  # DO NOT ESCAPE
