@@ -13,12 +13,13 @@ def authors_match(name_1: str, name_2: str) -> bool:
 
     outputs
     -------
-    match : True if a matches b, False otherwise.
+    : True if a matches b, False otherwise.
     """
 
-    # Initialise the output
-    # Assume true, then search for ways it could be false
-    match = False
+    # If any of the if statements hits -> not a match and can return False
+    # If reaching the end without any hits -> names match so return True
+    # Slight performance benefit to return as soon as *any* of these statements hit
+    # pylint: disable=R0911
 
     # Strip the two names
     a = name_1.strip().split()
@@ -26,11 +27,11 @@ def authors_match(name_1: str, name_2: str) -> bool:
 
     # Ensure both stripped strings have an entry
     if not a or not b:
-        match = False
+        return False
 
     # If the surnames are not exact matches
     if a[-1] != b[-1]:
-        match = False
+        return False
 
     # Extract given names
     givens_a, givens_b = a[:-1], b[:-1]
@@ -52,18 +53,18 @@ def authors_match(name_1: str, name_2: str) -> bool:
         # # Check if the tokens and values don't match
         # If both tokens are full names but are not equal:
         if token_a == "full" and token_b == "full" and value_a != value_b:
-            match = False
+            return False
 
         # If both tokens are initials and are not equal
         if token_a == "initial" and token_b == "initial" and value_a != value_b:
-            match = False
+            return False
 
         # If one is an initial and one is full,
         #     and the initial doesn't match the first letter of the full:
         if token_a == "initial" and token_b == "full" and value_a != value_b[0]:
-            match = False
+            return False
         if token_a == "full" and token_b == "initial" and value_a[0] != value_b:
-            match = False
+            return False
 
     # If passing all tests for all surnames and given names, match will be True
-    return match
+    return True
