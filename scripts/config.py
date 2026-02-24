@@ -199,24 +199,24 @@ class Config:
         # Raise some errors
         # If the search start date is in the future:
         if deltadays_now_to_search < 0:
-            self.logger.exception("Search start date is in the future.\n")
+            self.logger.critical("Search start date is in the future.\n")
             raise ValueError("Search start date is in the future.")
 
         # If the search end date is in the future:
         if (self.current_time.date() - self.end_date).days < 0:
-            self.logger.exception("Search end date is in the future.\n")
+            self.logger.critical("Search end date is in the future.\n")
             raise ValueError("Search end date is in the future.")
 
         # If the end date is equal to the start date, tell the user to wait
         if prev_run.days == 0:
-            self.logger.exception(
+            self.logger.critical(
                 f"Search start/end dates are equal.{next_post_string}\n"
             )
             raise ValueError("Search start/end dates are equal.")
 
         # If the end date is before the start date
         if prev_run.days < 0:
-            self.logger.exception("Search start date is after the end date.\n")
+            self.logger.critical("Search start date is after the end date.\n")
             raise ValueError(
                 "Search start date is after the end date. Check for timezone issues."
             )
@@ -225,7 +225,7 @@ class Config:
         # Typically one of the previous errors will occur before this one if the entire search
         #     period is invalid
         if deltadays_now_to_search < 7 and valid_search_days == 0:
-            self.logger.exception(
+            self.logger.critical(
                 f"No valid search dates are included.{next_post_string}\n"
             )
             raise ValueError(f"No valid search dates are included.{next_post_string}")

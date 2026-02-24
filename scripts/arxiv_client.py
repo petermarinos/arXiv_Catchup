@@ -417,7 +417,7 @@ class ArxivClient:
                 self.wait_time *= self.BACKOFF
 
         # If the loop completes and no data was downloaded, raise an error.
-        self.logger.exception(
+        self.logger.critical(
             "Maximum retries attempted. arXiv query failed.\n          "
             "Review connection error codes before trying again.\n"
         )
@@ -474,19 +474,19 @@ class ArxivClient:
         # Confirm that the xml data was loaded
         # This *should* never activate, but is needed for safety
         if xml_root is None:
-            self.logger.exception("Issue with the xml data. Did not load correctly.\n")
+            self.logger.critical("Issue with the xml data. Did not load correctly.\n")
             raise TypeError("XML data was None")
 
         # Extract the total number of papers that were found
         max_num_temp = xml_root.find("opensearch:totalResults", self.NS)
         if max_num_temp is None:
-            self.logger.exception(
+            self.logger.critical(
                 "arXiv data did not include a number of papers. It is corrupted.\n"
             )
             raise RuntimeError("The arXiv results are missing critical data...?")
         max_num_str = max_num_temp.text
         if max_num_str is None:
-            self.logger.exception(
+            self.logger.critical(
                 "The number of papers is corrupted (couldn't convert from Element).\n"
             )
             raise AttributeError("Could not extract number of papers from the data...?")
@@ -503,7 +503,7 @@ class ArxivClient:
         # If no papers were found in the search, raise an error
         # This should catch deferred mailings
         if self.total_papers == 0:
-            self.logger.exception(
+            self.logger.critical(
                 "There were no papers submitted to the arXiv.\n          "
                 "Refine search dates/categories and check for deferred mailings:\n          "
                 "https://info.arxiv.org/help/availability.html\n"
@@ -514,7 +514,7 @@ class ArxivClient:
         # While the API will likely return an error, catch it here as well just in case
         if self.total_papers >= 30000:
 
-            self.logger.exception(
+            self.logger.critical(
                 "Number of papers is too large. Refine search dates and/or categories.\n"
             )
             raise RuntimeError("Too many papers were submitted to the arXiv.")

@@ -27,7 +27,7 @@ def extract_paper_id_version(
 
     if arxiv_id is None or arxiv_id.text is None:
 
-        logger.exception("Could not extract the arXiv ID number.\n")
+        logger.critical("Could not extract the arXiv ID number.\n")
 
         raise TypeError("Malformed arXiv ID number.")
 
@@ -41,7 +41,7 @@ def extract_paper_id_version(
 
     if raw_updated is None or raw_updated.text is None:
 
-        logger.exception("Could not extract the updated date.\n")
+        logger.critical("Could not extract the updated date.\n")
 
         raise TypeError("Malformed updated date")
 
@@ -54,7 +54,7 @@ def extract_paper_id_version(
 
     if raw_published is None or raw_published.text is None:
 
-        logger.exception("Could not extract the published date.\n")
+        logger.critical("Could not extract the published date.\n")
 
         raise TypeError("Malformed published date.")
 
@@ -87,7 +87,7 @@ def extract_paper_links(
 
     if len(links) < 2:
 
-        logger.exception("Could not find all urls.\n")
+        logger.critical("Could not find all urls.\n")
 
         raise ValueError("Malformed urls (could not find required urls).")
 
@@ -112,13 +112,13 @@ def extract_paper_links(
 
     if link_abs is None:
 
-        logger.exception("Could not find the abstract url.\n")
+        logger.critical("Could not find the abstract url.\n")
 
         raise TypeError("Malformed abs url")
 
     if link_pdf is None:
 
-        logger.exception("Could not find the .pdf url.\n")
+        logger.critical("Could not find the .pdf url.\n")
 
         raise TypeError("Malformed pdf url")
 
@@ -146,7 +146,7 @@ def extract_paper_textfields(
 
     if raw_title is None or raw_title.text is None:
 
-        logger.exception("Could not extract the title.\n")
+        logger.critical("Could not extract the title.\n")
 
         raise TypeError("Malformed title.")
 
@@ -159,7 +159,7 @@ def extract_paper_textfields(
 
     if raw_abstract is None or raw_abstract.text is None:
 
-        logger.exception("Could not extract the abstract.\n")
+        logger.critical("Could not extract the abstract.\n")
 
         raise TypeError("Malformed abstract.")
 
@@ -208,7 +208,7 @@ def extract_paper_cats(
 
     if len(raw_category) == 0:
 
-        logger.exception("Could not extract the category.\n")
+        logger.critical("Could not extract the category.\n")
 
         raise ValueError("Malformed categories (could not find any).")
 
@@ -238,7 +238,7 @@ def extract_paper_authors(
 
     if len(authors) == 0:
 
-        logger.exception("Count not find author list.\n")
+        logger.critical("Count not find author list.\n")
 
         raise ValueError("Malformed authors (could not find any).")
 
@@ -248,7 +248,7 @@ def extract_paper_authors(
 
         if name is None or name.text is None:
 
-            logger.exception("Could not extract an author from the list.\n")
+            logger.critical("Could not extract an author from the list.\n")
 
             raise TypeError("Malformed author name. Could not extract.")
 
