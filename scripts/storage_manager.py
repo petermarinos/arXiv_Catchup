@@ -57,6 +57,10 @@ class Storage:
     def read_search_term_file(self) -> dict[str, list[str] | None]:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
         Performs some basic checks on the data.
+
+        outputs
+        -------
+        search_terms : The terms that will be searched for in the matching/scoring algorithms.
         """
 
         self.logger.info(f"Loading search terms from {self.paths.search_terms}.")
@@ -145,13 +149,7 @@ class Storage:
         return search_terms
 
     def read_catchup_file(self) -> list[str]:
-        """Read the `catchup.txt` file and open all links in the browser.
-
-        inputs
-        ------
-        logger     : The logger object.
-        filename   : Path_filename of the `catchup.txt` file.
-        sleep_time : Wait time between opening links in the browser.
+        """Read the catchup file.
 
         outputs
         -------
@@ -189,10 +187,9 @@ class Storage:
 
         inputs
         ------
-        logger       : The logging object.
-        filename     : Path+filename of the xml file.
         ns           : arXiv namespaces for the xml file.
         expected_url : The url that we expect in the xml file given the search parameters
+        search       : Flag, True if for the search xml, False for the papers xml.
         """
 
         # If we are operating on the search XML
@@ -250,7 +247,14 @@ class Storage:
         search_time: datetime.time,
         post_time: datetime.time,
     ) -> tuple[datetime.datetime, datetime.date]:
-        """docstring needed"""
+        """Read the previous search date from a file.
+
+        inputs
+        ------
+        end_time    : End date+time for the previous search.
+        search_time : Time that the searches start/end at.
+        post_time   : Time that the daily lists are posted.
+        """
 
         self.logger.debug("No start date was input.")
 
@@ -310,9 +314,15 @@ class Storage:
     def write_xml_file(
         self, xml_root: ET.Element, ns: dict[str, str], search: bool
     ) -> None:
-        """docstring needed
+        """Write the xml data to a file.
         NOTE: We always want to overwrite the search XML.
               We always want to append to the papers XML if it exists, else create it.
+
+        inputs
+        ------
+        xml_root : The root of the xml data to write to a file.
+        ns       : arXiv XML namespaces.
+        search   : Flag, True if for the search xml, False for the papers xml.
         """
 
         # If we are operating on the search XML
@@ -359,8 +369,6 @@ class Storage:
 
         inputs
         ------
-        logger   : The logger object.
-        filename : Path+filename of the `prev_search.txt` file.
         date     : Date that is being written
         """
 
@@ -376,8 +384,6 @@ class Storage:
         """Write the auxiliary files.
         The only file currently written is for the previous search date.
 
-        logger   : The root logger object..
-        filename : Filename+path for the auxiliary file.
         end_date : The end_date of the current search.
         n_papers : The number of papers found in the search.
         """
