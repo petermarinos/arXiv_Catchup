@@ -35,6 +35,9 @@ class Storage:
 
     def __init__(self, root_dir: pathlib.Path) -> None:
 
+        if not root_dir.is_dir():
+            raise ValueError(f"root_dir must be a valid directory: {root_dir}")
+
         self.logger: logging.Logger
 
         self.paths = Paths(
