@@ -190,7 +190,7 @@ def parse_date(
 
         return datetime.datetime.combine(parsed_date, parsed_time), parsed_date
 
-    except ValueError:
+    except ValueError as exc:
 
         logger.critical(f"{date_name} must be in the YYYY-mm-dd format.\n")
-        raise
+        raise ValueError("Malformed date.") from exc

@@ -203,7 +203,7 @@ class Storage:
                 xml_tree = typing.cast(ET.ElementTree, ET.parse(self.paths.search_xml))
             except ET.ParseError as e:
                 self.logger.critical("Could not parse XML: %s", e)
-                raise
+                raise ValueError(f"Malformed XML file: {self.paths.search_xml}") from e
 
         else:
 
@@ -212,7 +212,7 @@ class Storage:
                 xml_tree = typing.cast(ET.ElementTree, ET.parse(self.paths.papers_xml))
             except ET.ParseError as e:
                 self.logger.critical("Could not parse XML: %s", e)
-                raise
+                raise ValueError(f"Malformed XML file: {self.paths.search_xml}") from e
 
         # Check the url from the loaded xml matches the current search url
         # Extract the url from the xml. It will *always* be the first link

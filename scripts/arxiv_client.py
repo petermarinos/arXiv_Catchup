@@ -399,7 +399,9 @@ class ArxivClient:
                     "XML parsing error. Please upload log file to github.\n"
                 )
                 self.logger.debug(error)
-                raise
+                raise ValueError(
+                    "Failed to parse the XML data from the servers."
+                ) from error
 
             # If there was a Retry-After command, replace the wait time
             if self.retry_after != 0.0:
