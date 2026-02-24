@@ -1,6 +1,5 @@
 """Utily functions."""
 
-# fmt: off
 # Import libraries
 from importlib import metadata
 import argparse
@@ -11,7 +10,9 @@ import sys
 
 # Import version number
 from scripts import __version__
-# fmt: on
+
+# Import classes
+from .storage_manager import Storage
 
 
 class FlushingStreamHandler(logging.StreamHandler):  # type: ignore
@@ -108,14 +109,14 @@ def cli_args() -> argparse.Namespace:
     return args
 
 
-def logger_setup(args: argparse.Namespace, root_dir: pathlib.Path) -> logging.Logger:
+def logger_setup(args: argparse.Namespace, filename: pathlib.Path) -> logging.Logger:
     """Set up the logger.
     Writes all messages to a log file, and takes the CLI argument for the terminal logs.
 
     inputs
     ------
     args     : Command-line arguments
-    root_dir : Path to the project
+    filename : Path+filename of the log file
 
     outputs
     -------
@@ -133,7 +134,7 @@ def logger_setup(args: argparse.Namespace, root_dir: pathlib.Path) -> logging.Lo
 
     # Create a handler that will output *all* messages to a file.
     # Will overwrite the file on each execution.
-    handler_file = logging.FileHandler(root_dir / "catchup.log", mode="w")
+    handler_file = logging.FileHandler(filename, mode="w")
     handler_file.setLevel(logging.DEBUG)
     handler_file.setFormatter(
         logging.Formatter(
@@ -227,10 +228,9 @@ def log_args(logger: logging.Logger, args: argparse.Namespace) -> None:
     logger.debug("===============================")
 
 
-def delete_catchup(
-    logger: logging.Logger, filename: pathlib.Path, links: list[str]
-) -> None:
-    """Deletes the `catchup.txt` file (contains all links that have been saved over previous runs)
+def delete_catchup(storage: Storage, filename: pathlib.Path, links: list[str]) -> None:
+    """Deletes the `catchup.txt` file (contains all links that have been saved over previous runs).
+    Only used by the auxiliary script `open_catchup.py`.
     NOTE: This function checks to ensure the file is formatted correctly to prevent deletions when
           users manually alter the file, or if the CLI option to only output the ID numbers is used.
 
@@ -242,7 +242,7 @@ def delete_catchup(
     """
 
     # Ask the user if they would like to open the links in the browser. Default is no
-    logger.warning(f"There are {len(links)} links in {filename}.")
+    storage.logger.warning(f"There are {len(links)} links in {filename}.")
     user_prompt = (
         input(
             "         Delete all links? This action cannot be reversed. "
@@ -266,30 +266,16 @@ def delete_catchup(
                 if link[:21] != "http://arxiv.org/abs/":
 
                     print("")
-                    logger.exception(
+                    storage.logger.exception(
                         "The catchup file is not formatted correctly. "
                         "Double check its contents manually.\n"
                     )
                     raise ValueError("Malformed catchup file.")
 
         # If the file is of the correct format, delete it
-        delete_file(logger, filename)
+        storage.delete_file(filename)
 
     # Else, do nothing
     else:
 
-        logger.info("Doing nothing.")
-
-
-def delete_file(logger: logging.Logger, filename: pathlib.Path) -> None:
-    """Deletes a file.
-
-    inputs
-    ------
-    logger   : The logger object.
-    filename : Path+filename of the file being deleted.
-    """
-
-    logger.info(f"Deleting file: {filename}")
-    file = pathlib.Path(filename)
-    file.unlink()
+        storage.logger.info("Doing nothing.")

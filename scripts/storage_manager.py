@@ -1,0 +1,416 @@
+"""Storage manager."""
+
+# Import standard libraries
+from dataclasses import dataclass
+import xml.etree.ElementTree as ET
+import argparse
+import datetime
+import logging
+import pathlib
+import typing
+import os
+
+# Import non-standard libraries
+import yaml
+
+# Import functions
+from .string_handling import normalise_string
+from .dates import calc_search_endtime, parse_date
+
+
+@dataclass
+class Paths:
+    """Holds all paths."""
+
+    log: pathlib.Path
+    previous_date: pathlib.Path
+    search_terms: pathlib.Path
+    catchup: pathlib.Path
+    search_xml: pathlib.Path
+    papers_xml: pathlib.Path
+
+
+class Storage:
+    """Storage manager to perform all file I/O."""
+
+    def __init__(self, root_dir: pathlib.Path) -> None:
+
+        self.logger: logging.Logger
+
+        self.paths = Paths(
+            log=root_dir / "catchup.log",
+            previous_date=root_dir / "prev_search.txt",
+            search_terms=root_dir / "search_terms.yaml",
+            catchup=root_dir / "catchup.txt",
+            search_xml=root_dir / "search.xml",
+            papers_xml=root_dir / "papers.xml",
+        )
+
+    def add_logger(self, logger: logging.Logger) -> None:
+        """
+        Setting up the logger requires knowlegde of this Storage manager.
+        Add the logger object to this class for future log messages.
+        """
+
+        self.logger = logger
+
+    def read_search_terms(self) -> dict[str, list[str] | None]:
+        """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
+        Performs some basic checks on the data.
+        """
+
+        self.logger.info(f"Loading search terms from {self.paths.search_terms}.")
+
+        # Load the .yaml into a dictionary
+        with open(self.paths.search_terms, "r", encoding="utf8") as f:
+
+            search_terms = yaml.safe_load(f)
+
+        # # CATEGORIES
+
+        # Remove duplicates, but preserve order from the config file
+        search_terms["Categories"] = list(dict.fromkeys(search_terms["Categories"]))
+
+        # # AUTHORS
+
+        # If no authors, warn the use
+        if search_terms["Authors"] is None:
+
+            self.logger.warning("No 'Authors' found in the configuration file.")
+
+        # Normalise author strings and remove duplicates
+        if search_terms["Authors"] is not None:
+
+            # Remove duplicates, but preserve order from the config file
+            authors = [normalise_string(a) for a in search_terms["Authors"]]
+            search_terms["Authors"] = list(dict.fromkeys(authors))
+
+            # Print debug info
+            for author in search_terms["Authors"]:
+
+                self.logger.debug(f"Found author: {author}")
+
+        # # INCLUDED WORDS
+
+        # If no included words are found, warn the user
+        if search_terms["Included Words"] is None:
+
+            self.logger.warning("No 'Included Words' found in the configuration file.")
+
+        # Otherwise, remove duplicates and log all found included words
+        else:
+
+            # Remove duplicates and sort
+            inc_words = list(search_terms["Included Words"])
+            search_terms["Included Words"] = sorted(set(inc_words))
+
+            for included_word in search_terms["Included Words"]:
+
+                self.logger.debug(f"Found included word: {included_word}")
+
+        # # EXCLUDED WORDS
+
+        # If no excluded words are found, warn the user
+        if search_terms["Excluded Words"] is None:
+
+            self.logger.warning(
+                "No 'Excluded Words' were found in the configuration file."
+            )
+
+        # Otherwise, remove duplicates and log all found excluded words
+        else:
+
+            # Remove duplicates and sort
+            exc_words = list(search_terms["Excluded Words"])
+            search_terms["Excluded Words"] = sorted(set(exc_words))
+
+            for excluded_word in search_terms["Excluded Words"]:
+
+                self.logger.debug(f"Found excluded word: {excluded_word}")
+
+        # Check to see if any word is in both the 'included' and 'excluded fields
+        if (
+            search_terms["Included Words"] is not None
+            and search_terms["Excluded Words"] is not None
+        ):
+
+            for inc_word in search_terms["Included Words"]:
+
+                if inc_word in search_terms["Excluded Words"]:
+
+                    self.logger.warning(
+                        f"The term '{inc_word}' appears in both the Included and Excluded fields."
+                    )
+
+        return search_terms
+
+    def read_catchup(self) -> list[str]:
+        """Read the `catchup.txt` file and open all links in the browser.
+
+        inputs
+        ------
+        logger     : The logger object.
+        filename   : Path_filename of the `catchup.txt` file.
+        sleep_time : Wait time between opening links in the browser.
+
+        outputs
+        -------
+        links : Contains all arXiv paper links from the `catchup.txt` file.
+        """
+
+        links: list[str] = []
+
+        with open(self.paths.catchup, "r", encoding="utf8") as f:
+
+            for line in f:
+
+                link = line.strip()
+
+                if link[:21] != "http://arxiv.org/abs/":
+
+                    print("")
+                    self.logger.exception(
+                        f"Found:    {link}\nExpected: http://arxiv.org/abs/0123.45678v9 format\n"
+                    )
+                    raise ValueError(
+                        "One or more links in the catchup file is malformed."
+                    )
+
+                links.append(link)
+
+        return links
+
+    def read_xml(
+        self,
+        ns: dict[str, str],
+        expected_url: str,
+        search: bool,
+    ) -> ET.ElementTree:
+        """Read an .xml file and check to ensure it matches the current expected search parameters.
+
+        inputs
+        ------
+        logger       : The logging object.
+        filename     : Path+filename of the xml file.
+        ns           : arXiv namespaces for the xml file.
+        expected_url : The url that we expect in the xml file given the search parameters
+        """
+
+        # If we are operating on the search XML
+        if search:
+
+            try:
+                xml_tree = typing.cast(ET.ElementTree, ET.parse(self.paths.search_xml))
+            except ET.ParseError as e:
+                self.logger.critical("Could not parse XML: %s", e)
+                raise
+
+        else:
+
+            # Load the file
+            try:
+                xml_tree = typing.cast(ET.ElementTree, ET.parse(self.paths.papers_xml))
+            except ET.ParseError as e:
+                self.logger.critical("Could not parse XML: %s", e)
+                raise
+
+        # Check the url from the loaded xml matches the current search url
+        # Extract the url from the xml. It will *always* be the first link
+        returned_urlblock = xml_tree.find("atom:link", ns)
+        if returned_urlblock is None:
+            self.logger.critical(
+                "arXiv data did not include a search link. It is corrupted (returned None).\n"
+            )
+            raise ValueError("Malformed search link.")
+        returned_url = returned_urlblock.attrib["href"]
+
+        url_missmatch = expected_url != returned_url
+
+        # If the urls do not match, discard and restart the search
+        if url_missmatch:
+
+            self.logger.warning(
+                "The .xml file information does not match the current search. "
+                "Discarding the file and re-connecting."
+            )
+            self.logger.debug(f"Expected: {expected_url}")
+            self.logger.debug(f"Found:    {returned_url}")
+
+            # Clear the .xml file
+            self.delete_file(self.paths.papers_xml)
+
+        else:
+
+            self.logger.debug(
+                "The .xml file information matches the current search. Continuing."
+            )
+
+        return xml_tree
+
+    def read_date(
+        self,
+        end_time: datetime.datetime,
+        search_time: datetime.time,
+        post_time: datetime.time,
+    ) -> tuple[datetime.datetime, datetime.date]:
+        """docstring needed"""
+
+        self.logger.debug("No start date was input.")
+
+        # If the file doesn't exist:
+        if not os.path.exists(self.paths.previous_date):
+
+            self.logger.debug(
+                "No previous search file found. Setting to the day prior to the end_date."
+            )
+
+            # Compute the list time before the previous by passing the end_time found above
+            #     into the calc_search_endtime() function
+            prev_end_time = calc_search_endtime(end_time, search_time, post_time)
+
+            self.write_date(prev_end_time.date())
+
+        # The file is now guaranteed to exist. Load it and extract the previous runtime
+        with open(self.paths.previous_date, "r", encoding="utf-8") as f:
+
+            start_time, start_date = parse_date(
+                self.logger, next(f), "start-date", search_time, post_time
+            )
+
+        return start_time, start_date
+
+    def write_catchup(
+        self,
+        args: argparse.Namespace,
+        papers_of_note: list[str],
+    ) -> None:
+        """Write all links to the `catchup.txt` file.
+
+        inputs
+        ------
+        args           : CLI arguments.
+        papers_of_note : Contains the arxiv IDs of all interesting papers.
+        """
+
+        self.logger.info(
+            f"Writing all links to the end of the file: {self.paths.catchup}"
+        )
+
+        with open(self.paths.catchup, "a+", encoding="utf-8") as f:
+
+            for arxiv_id in papers_of_note:
+
+                if args.only_ids:
+
+                    f.write(f"{arxiv_id}\n")
+
+                else:
+
+                    link = f"https://arxiv.org/abs/{arxiv_id}"
+
+                    f.write(f"{link}\n")
+
+    def write_xml(self, xml_root: ET.Element, ns: dict[str, str], search: bool) -> None:
+        """docstring needed
+        NOTE: We always want to overwrite the search XML.
+              We always want to append to the papers XML if it exists, else create it.
+        """
+
+        # If we are operating on the search XML
+        if search:
+
+            self.logger.debug(f"Saving xml to file: {self.paths.search_xml}")
+            tree = ET.ElementTree(xml_root)
+            tree.write(self.paths.search_xml, encoding="utf-8")
+
+        # If we are operating on the papers XML
+        else:
+
+            # check if the file exists
+            if not os.path.exists(self.paths.papers_xml):
+
+                self.logger.debug(f"Saving xml to file: {self.paths.papers_xml}")
+                tree = ET.ElementTree(xml_root)
+                tree.write(self.paths.papers_xml, encoding="utf-8")
+
+            else:
+
+                self.logger.debug(f"Appending xml to file {self.paths.papers_xml}")
+
+                # Load the contents of the file
+                master_tree = ET.parse(self.paths.papers_xml)
+                master_root = master_tree.getroot()
+
+                # Append each new entry to the file
+                for entry in xml_root.findall("atom:entry", ns):
+
+                    # Append each entry from the input onto the master_root (i.e. the xml loaded
+                    #     from the file). Note that master_root is a reference to master_tree, so
+                    #     appending an entry to master_root also appends it to master_tree.
+                    master_root.append(entry)
+
+                # Write the new file
+                master_tree.write(
+                    self.paths.papers_xml,
+                    encoding="utf-8",
+                )
+
+    def write_date(self, date: datetime.date) -> None:
+        """Write the previous search date to a file.
+
+        inputs
+        ------
+        logger   : The logger object.
+        filename : Path+filename of the `prev_search.txt` file.
+        date     : Date that is being written
+        """
+
+        self.logger.info(
+            f"Writing the date {date} to the file: {self.paths.previous_date}."
+        )
+
+        with open(self.paths.previous_date, "w", encoding="utf8") as f:
+
+            f.write(date.isoformat())
+
+    def write_aux(self, end_date: datetime.date, n_papers: int) -> None:
+        """Write the auxiliary files.
+        The only file currently written is for the previous search date.
+
+        logger   : The root logger object..
+        filename : Filename+path for the auxiliary file.
+        end_date : The end_date of the current search.
+        n_papers : The number of papers found in the search.
+        """
+
+        # Check if any papers were found
+        if n_papers == 0:
+
+            self.logger.warning(
+                "As no papers were found, the date file was not updated"
+            )
+
+        # If papers were found, update the date file
+        else:
+
+            # Write the end date of the search to a file for the next run
+            self.write_date(end_date)
+
+    def delete_file(self, filename: pathlib.Path) -> None:
+        """Deletes a file.
+
+        inputs
+        ------
+        logger   : The logger object.
+        filename : Path+filename of the file being deleted.
+        """
+
+        self.logger.info(f"Deleting file: {filename}")
+        file = pathlib.Path(filename)
+        file.unlink()
+
+    def clear_temp_files(self) -> None:
+        """Clear the temporary files created by the script."""
+
+        self.delete_file(self.paths.search_xml)
+        self.delete_file(self.paths.papers_xml)

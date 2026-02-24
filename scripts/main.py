@@ -1,19 +1,17 @@
 """The main script."""
 
-# fmt: off
 # Import standard libraries
 import pathlib
 
 # Import classes
+from .storage_manager import Storage
 from .arxiv_client import ArxivClient
-from .config       import Config
-from .corpus       import Corpus
-from .cli          import CLI
+from .config import Config
+from .corpus import Corpus
+from .cli import CLI
 
 # Import functions
-from .file_io import write_aux_files
-from .utils   import logger_setup
-# fmt: on
+from .utils import logger_setup
 
 
 # The main script
@@ -21,22 +19,30 @@ from .utils   import logger_setup
 def main():
     """Pipeline that runs from start to finish."""
 
-    root_path = pathlib.Path(__file__).resolve().parent.parent
-
-    # # # Parse command-line arguments
+    # # Parse command-line arguments
     cli = CLI()
 
+    # Find the root path
+    root_path = pathlib.Path(__file__).resolve().parent.parent
+
+    # # Set up the storage manager
+    storage = Storage(root_path)
+
     # # Set up the logger
-    logger = logger_setup(cli.args, root_path)
+    logger = logger_setup(cli.args, storage.paths.log)
+
+    # # Add the logger to the CLI and storage objects
+    cli.add_logger(logger)
+    storage.add_logger(logger)
 
     # # Set up the papers class
-    search_params = Config(logger, root_path)
+    search_params = Config(logger)
 
     # # Load search terms from the auxiliary file
-    search_params.get_searchterms()
+    search_params.get_searchterms(storage)
 
     # # Load the dates
-    search_params.get_dates(cli.args)
+    search_params.get_dates(storage, cli.args)
 
     # # Check for errors with the dates
     search_params.date_error_check()
@@ -45,15 +51,15 @@ def main():
     api = ArxivClient(search_params)
 
     # # Obtain basic search information
-    api.get_search_info(search_params.paths.searchxml)
+    api.get_search_info(storage)
 
     # # Check for errors
     api.arxiv_error_check()
-    cli.check_continue_status(logger, api, search_params.paths.searchxml)
+    cli.check_continue_status(api, storage, storage.paths.search_xml)
 
     # # Loop through the searches and obtain all papers
     corpus = Corpus(logger)
-    corpus.get_papers(api, search_params.paths.papersxml)
+    corpus.get_papers(storage, api)
 
     # # Find matches in the papers
     corpus.find_matches(search_params.search_terms)
@@ -74,20 +80,17 @@ def main():
     # # Display the results
     cli.get_display_method(api, corpus)
     cli.display(
-        logger,
+        storage,
         corpus.papers_of_note,
         api.SLEEP_OPENING,
-        search_params.paths.catchup,
     )
 
     # # Write some auxiliary file(s) for the next run
-    write_aux_files(
-        logger, search_params.paths.prevsearch, search_params.end_date, corpus.length
-    )
+    storage.write_aux(search_params.end_date, corpus.length)
 
     # print("Not deleting temp. files.")
     # # Delete xmls/other supplemental files if successfull
-    search_params.clear_temp_files()
+    storage.clear_temp_files()
 
     # # Print a summary
     corpus.summary()

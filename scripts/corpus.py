@@ -1,22 +1,18 @@
 """Corpus class."""
 
-# fmt: off
 # Import standard libraries
 import xml.etree.ElementTree as ET
 import logging
-import pathlib
-# import typing
 import math
 import os
 
 # Import function
-from .file_io     import read_xml, write_xml
-from .ui          import progress_bar, pretty_sleep
+from .ui import progress_bar, pretty_sleep
 
 # Import classes
+from .storage_manager import Storage
 from .arxiv_client import ArxivClient
-from .paper        import Paper
-# fmt: on
+from .paper import Paper
 
 
 class Corpus:
@@ -102,7 +98,7 @@ class Corpus:
 
         self.logger.debug(f"Found {count:d} papers in this search block.")
 
-    def get_papers(self, arxiv_client: ArxivClient, xml_path: pathlib.Path) -> None:
+    def get_papers(self, storage: Storage, arxiv_client: ArxivClient) -> None:
         """Obtains all Papers and places them in the Corpus.
         Will attempt to load the Corpus from an .xml file.
         Will fall back to connecting to the arXiv servers if:
@@ -116,9 +112,9 @@ class Corpus:
         """
 
         # Search for xml file. If found, load it
-        if os.path.exists(xml_path):
+        if os.path.exists(storage.paths.papers_xml):
 
-            self.logger.info(f"Found an .xml file: {xml_path}")
+            self.logger.info(f"Found an .xml file: {storage.paths.papers_xml}")
             self.logger.info("Attempting to continue a the previous failed run.")
 
             # Define the url we expect from the file
@@ -127,7 +123,7 @@ class Corpus:
             )
 
             # Load the file
-            xml_tree = read_xml(self.logger, xml_path, arxiv_client.NS, expected_url)
+            xml_tree = storage.read_xml(arxiv_client.NS, expected_url, False)
 
             # Extract the papers from the xml
             self.extract_papers(arxiv_client.NS, xml_tree)
@@ -214,7 +210,7 @@ class Corpus:
                 )
 
                 # Write the xml to a file
-                write_xml(self.logger, xml_path, xml_root, arxiv_client.NS)
+                storage.write_xml(xml_root, arxiv_client.NS, False)
 
                 # Extract the paper from the xml
                 self.extract_papers(arxiv_client.NS, xml_root)

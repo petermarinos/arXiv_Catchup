@@ -1,32 +1,27 @@
 """CLI class, for interactions with the CLI."""
 
-# fmt: off
 # Import libraries
-import webbrowser
 import logging
 import pathlib
-import time
 import sys
 
 # Import classes
+from .storage_manager import Storage
 from .arxiv_client import ArxivClient
-from .corpus       import Corpus
+from .corpus import Corpus
 
 # Import functions
-from .file_io import write_links
-from .utils   import cli_args, delete_file
-from .ui      import progress_bar
-# fmt: on
-
-
-# Import functions
+from .utils import cli_args
+from .ui import open_links
 
 
 class CLI:
     """Deals with all CLI tasks."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Obtain the CLI arguments"""
+
+        self.logger: logging.Logger
 
         self.args = cli_args()
 
@@ -42,10 +37,18 @@ class CLI:
         else:
             self.write_to_file = False
 
+    def add_logger(self, logger: logging.Logger) -> None:
+        """
+        Setting up the logger requires knowlegde of this Storage manager.
+        Add the logger object to this class for future log messages.
+        """
+
+        self.logger = logger
+
     def check_continue_status(
         self,
-        logger: logging.Logger,
         arxiv_client: ArxivClient,
+        storage: Storage,
         xml_path: pathlib.Path,
     ) -> None:
         """Warns the user if the search will take a long time, or forces them to confirm.
@@ -67,7 +70,7 @@ class CLI:
         # Print a warning if it is going to take a long time
         if 1 <= time_to_search_minutes < 5:
 
-            logger.warning(
+            self.logger.warning(
                 f"There are {arxiv_client.total_papers:d} papers. "
                 f"The search will take {time_to_search_minutes:.1f} minutes."
             )
@@ -90,7 +93,7 @@ class CLI:
             if user_prompt != "y":
 
                 # Delete the .xml file
-                delete_file(logger, xml_path)
+                storage.delete_file(xml_path)
 
                 # Exit
                 sys.exit(
@@ -166,10 +169,9 @@ class CLI:
 
     def display(
         self,
-        logger: logging.Logger,
+        storage: Storage,
         papers_of_note: list[str],
         sleeptimer: float,
-        filename: pathlib.Path,
     ) -> None:
         """Displays the results to the user, based on their preference.
 
@@ -186,49 +188,14 @@ class CLI:
 
         if self.write_to_file:
 
-            write_links(logger, self.args, papers_of_note, filename)
+            storage.write_catchup(self.args, papers_of_note)
 
         if self.open_in_browser:
 
-            # Calculate the number of links
-            total = len(papers_of_note)
+            # Print a time estimate
+            est_time = len(papers_of_note) * sleeptimer
+            self.logger.info(
+                f"Opening the papers. Estimated time: {est_time:.2f} seconds"
+            )
 
-            # Loop through the list and open all in the web browser
-            request_count = 0
-            est_time = total * sleeptimer
-            logger.info(f"Opening the papers. Estimated time: {est_time:.2f} seconds")
-            for arxiv_id in papers_of_note:
-
-                progress_bar(request_count, total, (total - request_count) * sleeptimer)
-
-                # # arXiv asks that you limit opening pages to four requests per second.
-                # They recommend burst of four papers, but I prefer one per every quarter second.
-                if request_count > 0:
-
-                    time.sleep(sleeptimer)
-
-                link = f"https://arxiv.org/abs/{arxiv_id}"
-
-                # Open in new window if flag is set
-                if self.args.new_window:
-
-                    if request_count == 0:
-
-                        webbrowser.open(
-                            link, new=1
-                        )  # new=1: open in a new browser window
-
-                    else:
-
-                        webbrowser.open(link, new=2)  # new=2: open in a new tab
-
-                # Otherwise, open in the current window
-                else:
-
-                    webbrowser.open(
-                        link
-                    )  # Default behavior, just opens everything in the current window
-
-                request_count += 1
-
-            progress_bar(total, total)
+            open_links(papers_of_note, sleeptimer)

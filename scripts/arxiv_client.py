@@ -1,11 +1,9 @@
 """arXiv client class, which controls connections to the API."""
 
-# fmt: off
 # Import standard libraries
 import xml.etree.ElementTree as ET
 import urllib.request
 import urllib.error
-import pathlib
 import ssl
 import os
 
@@ -20,9 +18,8 @@ import certifi
 from .config import Config
 
 # Import functions
-from .file_io import read_xml, write_xml
-from .ui      import pretty_sleep
-# fmt: on
+from .storage_manager import Storage
+from .ui import pretty_sleep
 
 
 class ArxivClient:
@@ -426,7 +423,7 @@ class ArxivClient:
         )
         raise RuntimeError("Cancelling arXiv connection. Too many attempts.")
 
-    def get_search_info(self, xml_path: pathlib.Path) -> None:
+    def get_search_info(self, storage: Storage) -> None:
         """Obtain the information on how we will obtain all papers within the search period.
         Will attempt to load from an .xml file.
         Will fall back to connecting to the arXiv servers if:
@@ -443,21 +440,16 @@ class ArxivClient:
         xml_root: ET.Element | None = None
 
         # Search for xml file. If found, load it
-        if os.path.exists(xml_path):
+        if os.path.exists(storage.paths.search_xml):
 
-            self.logger.info(f"Found a .xml file: {xml_path}")
+            self.logger.info(f"Found a .xml file: {storage.paths.search_xml}")
             self.logger.info("Attempting to continue from the previous failed run.")
 
             # Define the url we expect from the file
             expected_url = self.apiquery.format(start_num=0, blocksize=1)
 
             # Load the file
-            xml_tree = read_xml(
-                self.logger,
-                xml_path,
-                self.NS,
-                expected_url,
-            )
+            xml_tree = storage.read_xml(self.NS, expected_url, True)
             xml_root = xml_tree.getroot()
 
         # If there is no file, perform the search
@@ -465,7 +457,7 @@ class ArxivClient:
         #       If the file is deleted, we want to be redownloaded.
         #       If the file never existed, we want to download.
         #       If the file existed and had the correct information, then skip below
-        if not os.path.exists(xml_path):
+        if not os.path.exists(storage.paths.search_xml):
 
             self.logger.info("Obtaining search information from the servers.")
 
@@ -473,7 +465,7 @@ class ArxivClient:
             xml_root = self.arxiv_query(0, 1)
 
             # Write the extracted xml to a file
-            write_xml(self.logger, xml_path, xml_root, self.NS, overwrite=True)
+            storage.write_xml(xml_root, self.NS, True)
 
             self.logger.info(
                 "Search information successfully obtained from the arXiv servers!"

@@ -5,18 +5,16 @@ CLI Arguments
 -v: int -> verbosity level
 """
 
-# fmt: off
 # Import standard libraries
 import argparse
 import pathlib
 
 # Import classes
-from scripts.config import Paths
+from scripts.storage_manager import Storage
 
 # Import packages
-from scripts.file_io import read_catchup
-from scripts.utils   import logger_setup, delete_catchup
-# fmt: on
+from scripts.utils import logger_setup, delete_catchup
+from scripts.ui import open_links
 
 # The goal of this script is to save the link opening for later if the user chooses
 # However, it can also be used to automate the searches.
@@ -47,13 +45,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Extract some of the required constants
-filenames = Paths(
-    prevsearch=root_dir / "prev_search.txt",
-    searchterms=root_dir / "search_terms.yaml",
-    catchup=root_dir / "catchup.txt",
-    searchxml=root_dir / "search.xml",
-    papersxml=root_dir / "papers.xml",
-)
+storage = Storage(root_dir)
 
 # XML namespaces used by arXiv
 ns = {
@@ -69,7 +61,10 @@ SLEEP_OPENING = 0.25  # 0.25 seconds between opening links
 logger = logger_setup(args, root_dir)
 
 # Read the catchup file
-papers = read_catchup(logger, filenames.catchup, SLEEP_OPENING)
+papers = storage.read_catchup()
+
+# Open the links
+open_links(papers, SLEEP_OPENING)
 
 # Ask the user if the file should be deleted
-delete_catchup(logger, filenames.catchup, papers)
+delete_catchup(storage, storage.paths.catchup, papers)

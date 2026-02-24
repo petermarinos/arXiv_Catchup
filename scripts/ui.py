@@ -1,13 +1,12 @@
 """Functions relating to the UI"""
 
-# fmt: off
 # Import libraries
+import webbrowser
 import logging
 import random
 import math
 import time
 import sys
-# fmt: on
 
 # # Define constants
 # Width of the progress bar (in characters)
@@ -97,3 +96,29 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
             time.sleep(0.1)
 
         progress_bar(n_steps, n_steps)
+
+
+def open_links(links: list[str], sleep_time: float):
+    """Open all links in the webbrowser."""
+
+    total = len(links)
+
+    request_count = 0
+    for link in links:
+
+        progress_bar(request_count, total, (total - request_count) * sleep_time)
+
+        if request_count > 0:
+            time.sleep(sleep_time)
+
+        if request_count == 0:
+
+            webbrowser.open(link, new=1)  # new=1: open in a new browser window
+
+        else:
+
+            webbrowser.open(link, new=2)  # new=2: open in a new tab
+
+        request_count += 1
+
+    progress_bar(total, total)
