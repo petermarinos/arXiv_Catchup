@@ -45,6 +45,8 @@ class Corpus:
         self.papers_of_note: list[str] = []
         self.scores: list[float] = []
 
+        self.author_summary = "Found Author(s):\n"
+
     def clear_corpus(self) -> None:
         """Delete all entries in the Corpus"""
 
@@ -115,7 +117,7 @@ class Corpus:
         if os.path.exists(storage.paths.papers_xml):
 
             self.logger.info(f"Found an .xml file: {storage.paths.papers_xml}")
-            self.logger.info("Attempting to continue a the previous failed run.")
+            self.logger.info("Attempting to continue a previous failed run.")
 
             # Define the url we expect from the file
             expected_url = arxiv_client.apiquery.format(
@@ -303,6 +305,47 @@ class Corpus:
 
         progress_bar(self.length, self.length)
 
+    def calc_author_summary(self) -> None:
+        """Compute a summary string for the found authors.
+        NOTE: Currently does not consider the penalties for collaboration papers! Add CLI args as
+              an input and only add if the score is above the threshold? Would also require the
+              algorithm (matching versus scoring) to be a CLI argument first.
+        """
+
+        # Loop through all the papers.
+        # Find the longest name in the first position
+        found_authors: list[str] = []
+        for _, paper in self.corpus.items():
+
+            # If the paper had one match:
+            if paper.paper_scores.n_author_matches == 1:
+
+                # Take the name of the author ealiest in the author list
+                found_authors.append(paper.paper_scores.found_authors[0])
+
+            # If the paper had more than one match:
+            elif paper.paper_scores.n_author_matches > 1:
+
+                # Take the name of the author ealiest in the author list
+                found_authors.append(paper.paper_scores.found_authors[0] + ", et al.")
+
+        fill = len(max(found_authors, key=len))
+
+        # Loop through the papers again to create the summary text
+        for _, paper in self.corpus.items():
+
+            if paper.paper_scores.n_author_matches == 1:
+                self.author_summary += (
+                    f"    {paper.paper_scores.found_authors[0]: >{fill}}: "
+                    f"{paper.paper_info.link_abs}\n"
+                )
+            # If more than one author, fill with +8 to account for ', et al.'
+            elif paper.paper_scores.n_author_matches > 1:
+                self.author_summary += (
+                    f"    {paper.paper_scores.found_authors[0]: >{fill-8}}, et al.: "
+                    f"{paper.paper_info.link_abs}\n"
+                )
+
     def score_papers_matches(self) -> None:
         """Scores all Papers in the Corpus based on the number of matches found.
         NOTE: This function also counts the number of matches.
@@ -419,11 +462,24 @@ class Corpus:
     def summary(self) -> None:
         """Summarise the results."""
 
+        # Compute the author summary
+        self.calc_author_summary()
+
+        # If *any* text has been added to the summary string
+        if len(self.author_summary) > len("Found Author(s):\n"):
+
+            # Print the summary. This is integral output, keep out of the logger.
+            print(f"\n{self.author_summary}")
+
+        else:
+
+            # Print a blank space to make the output prettier
+            print("")
+
         # Compute the number of digits in the number of papers found
         max_digits = len(str(self.length))
 
         # Print a summary
-        print("")  # Print a blank space for prettier output
         self.logger.info(
             f"There were {self.length:>{max_digits}} papers submitted to the categories of "
             "interest within the search window."
