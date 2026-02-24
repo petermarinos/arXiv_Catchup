@@ -8,7 +8,13 @@ import logging
 import re
 
 # Import functions
-from .xml_handling import extract_paper_info
+from .xml_handling import (
+    extract_paper_id_version,
+    extract_paper_links,
+    extract_paper_textfields,
+    extract_paper_cats,
+    extract_paper_authors,
+)
 from .filtering import authors_match
 
 # Define some literals. Bounds the expected values.
@@ -20,6 +26,7 @@ Section = Literal["Title", "Abstract", "Total"]
 class PaperInfo:
     """Holds all information for a paper.
     Stores all data from the arXiv query, plus a few derived values.
+
     """
 
     # 11 attributes from the .xml
@@ -27,6 +34,7 @@ class PaperInfo:
     # Want to store *all* data. Disable linting warning for >7 attributes
     # pylint: disable=R0902
 
+    # Values in order they are found in the .xml data
     id_num: str
     version: int
     title: str
@@ -38,10 +46,12 @@ class PaperInfo:
     date_published: str
     comment: str | None
     authors: list[str]
-    n_authors: int
+
+    # Derived values, in ~ the same order
     revised: bool
     n_words_title: int
     n_words_abstract: int
+    n_authors: int
 
 
 @dataclass
@@ -95,24 +105,16 @@ class Paper:
         # # Extract values, and perform some error checking
         self.logger.debug("Attempting to extract a paper from an xml ...")
 
-        # Compute all values
-        (
-            id_num,
-            version,
-            title,
-            updated,
-            link_abs,
-            link_pdf,
-            abstract,
-            category,
-            published,
-            comment,
-            authors,
-            n_authors,
-            revised,
-            n_words_title,
-            n_words_abstract,
-        ) = extract_paper_info(self.logger, ns, entry)
+        # Extract values from the paper
+        id_num, version, updated, published, revised = extract_paper_id_version(
+            self.logger, ns, entry
+        )
+        link_abs, link_pdf = extract_paper_links(self.logger, ns, entry)
+        title, abstract, comment, n_words_title, n_words_abstract = (
+            extract_paper_textfields(self.logger, ns, entry)
+        )
+        category = extract_paper_cats(self.logger, ns, entry)
+        authors, n_authors = extract_paper_authors(self.logger, ns, entry)
 
         # Place values into the dataclass
         self.paper_info = PaperInfo(
@@ -127,10 +129,10 @@ class Paper:
             date_published=published,
             comment=comment,
             authors=authors,
-            n_authors=n_authors,
             revised=revised,
             n_words_title=n_words_title,
             n_words_abstract=n_words_abstract,
+            n_authors=n_authors,
         )
 
         # Initialise the scores. Will set them all to zero

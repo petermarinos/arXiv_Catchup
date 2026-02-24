@@ -9,34 +9,17 @@ import re
 from .string_handling import normalise_string
 
 
-def extract_paper_info(
+def extract_paper_id_version(
     logger: logging.Logger, ns: dict[str, str], entry: ET.Element
-) -> tuple[
-    str,
-    int,
-    str,
-    str,
-    str,
-    str,
-    str,
-    list[str],
-    str,
-    str,
-    list[str],
-    int,
-    bool,
-    int,
-    int,
-]:
-    """Extract all information from the xml Element returned by the arXiv servers.
-    Performs error checks on all components, repalcing with default values where appropriate.
-    If the field is *mandatory*, then an error will be raised for a corrupted .xml.
+) -> tuple[str, int, str, str, bool]:
+    """Extract the arXiv ID and version numbers, updated/published dates, and compute if the paper
+    is a revision.
 
     inouts
     ------
     logger : The logger object.
     ns     : XML namespaces used by arXiv.
-    entry  : The XML returned by the servers.
+    entry  : The paper's entry in the .xml data.
     """
 
     # Put each of the checks into their own mini-functions?
@@ -51,14 +34,6 @@ def extract_paper_info(
     version = int(arxiv_id.text.split("/")[-1][11:])
     logger.debug(f"arXiv ID: {id_num}, version: {version}")
 
-    # Extract the title
-    raw_title = entry.find("atom:title", ns)
-    if raw_title is None or raw_title.text is None:
-        logger.exception("Could not extract the title.\n")
-        raise TypeError("Malformed title.")
-    title = raw_title.text.strip()
-    logger.debug(f"Title: {title}")
-
     # Extract the updated datetime
     raw_updated = entry.find("atom:updated", ns)
     if raw_updated is None or raw_updated.text is None:
@@ -66,6 +41,33 @@ def extract_paper_info(
         raise TypeError("Malformed updated date")
     updated = raw_updated.text
     logger.debug(f"Updated on: {updated}")
+
+    # Extract the published datetime
+    raw_published = entry.find("atom:published", ns)
+    if raw_published is None or raw_published.text is None:
+        logger.exception("Could not extract the published date.\n")
+        raise TypeError("Malformed published date.")
+    published = raw_published.text
+    logger.debug(f"Published on: {published}")
+
+    # Derive the revised flag
+    revised = (updated > published) or (version > 1)
+    logger.debug(f"Revised: {revised}")
+
+    return id_num, version, updated, published, revised
+
+
+def extract_paper_links(
+    logger: logging.Logger, ns: dict[str, str], entry: ET.Element
+) -> tuple[str, str]:
+    """Extract the arXiv abs/pdf links.
+
+    inouts
+    ------
+    logger : The logger object.
+    ns     : XML namespaces used by arXiv.
+    entry  : The paper's entry in the .xml data.
+    """
 
     # Extract the link to the pdf page
     links = entry.findall("atom:link", ns)
@@ -93,6 +95,30 @@ def extract_paper_info(
     logger.debug(f"Main page: {link_abs}")
     logger.debug(f".pdf page: {link_pdf}")
 
+    return link_abs, link_pdf
+
+
+def extract_paper_textfields(
+    logger: logging.Logger, ns: dict[str, str], entry: ET.Element
+) -> tuple[str, str, str, int, int]:
+    """Extract the title, abstract, and comment fields. Also compute the number of words in the
+    title and abstract fields.
+
+    inouts
+    ------
+    logger : The logger object.
+    ns     : XML namespaces used by arXiv.
+    entry  : The paper's entry in the .xml data.
+    """
+
+    # Extract the title
+    raw_title = entry.find("atom:title", ns)
+    if raw_title is None or raw_title.text is None:
+        logger.exception("Could not extract the title.\n")
+        raise TypeError("Malformed title.")
+    title = raw_title.text.strip()
+    logger.debug(f"Title: {title}")
+
     # Extract the abstract
     raw_abstract = entry.find("atom:summary", ns)
     if raw_abstract is None or raw_abstract.text is None:
@@ -102,21 +128,9 @@ def extract_paper_info(
     logger.debug("Abstract was found")
     # logger.debug(f"Abstract: {abstract}")
 
-    # Extract the category
-    raw_category = entry.findall("atom:category", ns)
-    if len(raw_category) == 0:
-        logger.exception("Could not extract the category.\n")
-        raise ValueError("Malformed categories (could not find any).")
-    category = [cat.attrib["term"] for cat in raw_category]
-    logger.debug(f"Category: {category}")
-
-    # Extract the published datetime
-    raw_published = entry.find("atom:published", ns)
-    if raw_published is None or raw_published.text is None:
-        logger.exception("Could not extract the published date.\n")
-        raise TypeError("Malformed published date.")
-    published = raw_published.text
-    logger.debug(f"Published on: {published}")
+    n_words_title = len(re.findall(r"\w+", title))
+    n_words_abstract = len(re.findall(r"\w+", abstract))
+    logger.debug(f"Wordcount: Title = {n_words_title} | Abstract = {n_words_abstract}")
 
     # Extract the comment. Replace with an empty string if it isn't found.
     raw_comment = entry.find("arxiv:comment", ns)
@@ -126,6 +140,44 @@ def extract_paper_info(
     else:
         comment = raw_comment.text.strip()
     logger.debug(f"Comment: {comment}")
+
+    return title, abstract, comment, n_words_title, n_words_abstract
+
+
+def extract_paper_cats(
+    logger: logging.Logger, ns: dict[str, str], entry: ET.Element
+) -> list[str]:
+    """Extract all categories the paper was submitted to.
+
+    inouts
+    ------
+    logger : The logger object.
+    ns     : XML namespaces used by arXiv.
+    entry  : The paper's entry in the .xml data.
+    """
+
+    # Extract the category
+    raw_category = entry.findall("atom:category", ns)
+    if len(raw_category) == 0:
+        logger.exception("Could not extract the category.\n")
+        raise ValueError("Malformed categories (could not find any).")
+    category = [cat.attrib["term"] for cat in raw_category]
+    logger.debug(f"Category: {category}")
+
+    return category
+
+
+def extract_paper_authors(
+    logger: logging.Logger, ns: dict[str, str], entry: ET.Element
+) -> tuple[list[str], int]:
+    """Extract all authors from the paper entry.
+
+    inouts
+    ------
+    logger : The logger object.
+    ns     : XML namespaces used by arXiv.
+    entry  : The paper's entry in the .xml data.
+    """
 
     # Extract the author list
     author_list: list[str] = []
@@ -141,34 +193,7 @@ def extract_paper_info(
         normalised_name = normalise_string(name.text)
         author_list.append(normalised_name)
     logger.debug(f"Found Authors: {author_list}")
-
-    # Derive some additional information
-    revised = (updated > published) or (version > 1)
-    logger.debug(f"Revised: {revised}")
-
     n_authors = len(author_list)
     logger.debug(f"Number of authors: {n_authors}")
 
-    n_words_title = len(re.findall(r"\w+", title))
-    n_words_abstract = len(re.findall(r"\w+", abstract))
-    logger.debug(f"Wordcount: Title = {n_words_title} | Abstract = {n_words_abstract}")
-
-    logger.debug("Paper successfully extracted from xml.")
-
-    return (
-        id_num,
-        version,
-        title,
-        updated,
-        link_abs,
-        link_pdf,
-        abstract,
-        category,
-        published,
-        comment,
-        author_list,
-        n_authors,
-        revised,
-        n_words_title,
-        n_words_abstract,
-    )
+    return author_list, n_authors
