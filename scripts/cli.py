@@ -124,10 +124,9 @@ class CLI:
                 est_time = len(corpus.papers_of_note) * arxiv_client.SLEEP_OPENING
 
                 # Ask the user if they would like to open the links in the browser
-                print("")
                 user_prompt_browser = (
                     input(
-                        f"There are {len(corpus.papers_of_note)} link(s). "
+                        f"\nThere are {len(corpus.papers_of_note)} link(s). "
                         f"Open in the browser? It will take {est_time} seconds. [y/N]: "
                     )
                     .strip()
@@ -160,11 +159,11 @@ class CLI:
                     # If they want the output in the terminal
                     else:
 
-                        print("\nPrinting all links to the terminal:\n")
+                        self.logger.info("\nPrinting all links to the terminal:\n")
                         for arxiv_id in corpus.papers_of_note:
 
+                            # Show *regardless* of logging level. Critical output.
                             print(corpus.corpus[arxiv_id].paper_info.link_abs)
-                        print("")
 
     def display(
         self,

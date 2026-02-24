@@ -423,12 +423,10 @@ class Corpus:
         max_digits = len(str(self.length))
 
         # Print a summary
-        print("")
         self.logger.info(
-            f"There were {self.length:>{max_digits}} papers submitted to the categories of interest"
+            f"\nThere were {self.length:>{max_digits}} papers submitted to the categories of interest"
             " within the search window."
         )
         self.logger.info(
-            f" of these, {len(self.papers_of_note):>{max_digits}} papers were interesting."
+            f" of these, {len(self.papers_of_note):>{max_digits}} papers were interesting.\n"
         )
-        print("")

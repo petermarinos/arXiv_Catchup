@@ -265,7 +265,6 @@ def delete_catchup(storage: Storage, filename: pathlib.Path, links: list[str]) -
 
                 if link[:21] != "http://arxiv.org/abs/":
 
-                    print("")
                     storage.logger.exception(
                         "The catchup file is not formatted correctly. "
                         "Double check its contents manually.\n"

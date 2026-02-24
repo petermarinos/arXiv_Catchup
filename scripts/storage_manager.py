@@ -168,7 +168,6 @@ class Storage:
 
                 if link[:21] != "http://arxiv.org/abs/":
 
-                    print("")
                     self.logger.exception(
                         f"Found:    {link}\nExpected: http://arxiv.org/abs/0123.45678v9 format\n"
                     )
