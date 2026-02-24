@@ -24,9 +24,9 @@ It then computes an 'interest' score for every paper based on the search terms y
 
 ### Requirements
 
-Four of the required packages are not part of the default python3 standard library: `numpy`, `pylatexenc`, and `yaml`.
+Two of the required packages are not part of the default python3 standard library: `pylatexenc` and `yaml`.
 An up-to-date version of `certifi` is also required to connect to the arXiv servers.
-Use the included `requirements.txt` file to create an environment.
+An environment can be created using the included `requirements.txt` file.
 
 ### Running
 
@@ -34,7 +34,7 @@ The script can be executed from any directory by running:
 
 `$ python3 /path/to/arXiv_Catchup/catchup.py`
 
-For frequent execution, add the following to your bash script:
+For frequent execution, add the following to your bash file:
 
 `alias arxiv='python3 /path/to/arXiv_Catchup/catchup.py'`
 
@@ -88,11 +88,10 @@ Examples of the format required for each can be found in the provided file.
 ##### Notes on Author Names
 
 The script will search for all matches between the names found in the `search_terms.yaml` file and the author list for all found papers.
-Include as much information as possible for each author, including the surname at a minimum.
+Include as much information as possible for each author and **include the surname at a minimum**.
 Papers with author lists that contain more/less information than the input will still be found.
 For example, `Andrew Sydney Withiel Thomas` will work to find papers with exact matches, as well as lower-information representations such as: `Andrew S. W. Thomas`, `A. Thomas`, `Thomas`, etc., while excluding authors such as `A. S. Z. Thomas`, etc..
 However, if you include only `A. Thomas` in the `search_terms.yaml` file, you will get true positive matches for `Andrew Thomas`, as well as false positives for `Alexander Thomas`, etc..
-Note that periods are not rquired after initials in either the `search_terms.yaml` or the authors field of the papers, and initials with no whitespace will automatically be expanded.
 
 Accented/special characters, ligatures, and LaTeX commands for author names are handled by the script.
 Feel free to enter any representation you prefer, e.g. 'Lopez', 'López', 'L{\\'o}pez', or 'L\'opez', in the `search_terms.yaml` file.
