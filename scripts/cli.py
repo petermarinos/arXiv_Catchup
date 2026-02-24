@@ -165,6 +165,9 @@ class CLI:
                             # Show *regardless* of logging level. Critical output.
                             print(corpus.corpus[arxiv_id].paper_info.link_abs)
 
+                        # After printing all the papers, also print a blank space.
+                        print("")
+
     def display(
         self,
         storage: Storage,
