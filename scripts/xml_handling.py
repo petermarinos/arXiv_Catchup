@@ -15,7 +15,7 @@ def extract_paper_id_version(
     """Extract the arXiv ID and version numbers, updated/published dates, and compute if the paper
     is a revision.
 
-    inouts
+    inputs
     ------
     logger : The logger object.
     ns     : XML namespaces used by arXiv.
@@ -75,7 +75,7 @@ def extract_paper_links(
 ) -> tuple[str, str]:
     """Extract the arXiv abs/pdf links.
 
-    inouts
+    inputs
     ------
     logger : The logger object.
     ns     : XML namespaces used by arXiv.
@@ -134,7 +134,7 @@ def extract_paper_textfields(
     """Extract the title, abstract, and comment fields. Also compute the number of words in the
     title and abstract fields.
 
-    inouts
+    inputs
     ------
     logger : The logger object.
     ns     : XML namespaces used by arXiv.
@@ -196,7 +196,7 @@ def extract_paper_cats(
 ) -> list[str]:
     """Extract all categories the paper was submitted to.
 
-    inouts
+    inputs
     ------
     logger : The logger object.
     ns     : XML namespaces used by arXiv.
@@ -224,7 +224,7 @@ def extract_paper_authors(
 ) -> tuple[list[str], int]:
     """Extract all authors from the paper entry.
 
-    inouts
+    inputs
     ------
     logger : The logger object.
     ns     : XML namespaces used by arXiv.
