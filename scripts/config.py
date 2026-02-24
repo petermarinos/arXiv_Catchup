@@ -55,7 +55,7 @@ class Config:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary."""
 
         # Read the file
-        self.search_terms = storage.read_search_terms()
+        self.search_terms = storage.read_search_term_file()
 
         # At least one category is required
         if self.search_terms["Categories"] is None:
@@ -149,7 +149,7 @@ class Config:
         else:
 
             # If the start_date was not passed on the command line, attempt to load it
-            self.start_time, self.start_date = storage.read_date(
+            self.start_time, self.start_date = storage.read_previous_date_file(
                 self.end_time, self.SEARCH_TIME, self.POST_TIME
             )
 

@@ -123,7 +123,7 @@ class Corpus:
             )
 
             # Load the file
-            xml_tree = storage.read_xml(arxiv_client.NS, expected_url, False)
+            xml_tree = storage.read_xml_file(arxiv_client.NS, expected_url, False)
 
             # Extract the papers from the xml
             self.extract_papers(arxiv_client.NS, xml_tree)
@@ -209,7 +209,7 @@ class Corpus:
                 )
 
                 # Write the xml to a file
-                storage.write_xml(xml_root, arxiv_client.NS, False)
+                storage.write_xml_file(xml_root, arxiv_client.NS, False)
 
                 # Extract the paper from the xml
                 self.extract_papers(arxiv_client.NS, xml_root)
@@ -424,8 +424,8 @@ class Corpus:
 
         # Print a summary
         self.logger.info(
-            f"\nThere were {self.length:>{max_digits}} papers submitted to the categories of interest"
-            " within the search window."
+            f"\nThere were {self.length:>{max_digits}} papers submitted to the categories of "
+            "interest within the search window."
         )
         self.logger.info(
             f" of these, {len(self.papers_of_note):>{max_digits}} papers were interesting.\n"

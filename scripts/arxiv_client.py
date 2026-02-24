@@ -449,7 +449,7 @@ class ArxivClient:
             expected_url = self.apiquery.format(start_num=0, blocksize=1)
 
             # Load the file
-            xml_tree = storage.read_xml(self.NS, expected_url, True)
+            xml_tree = storage.read_xml_file(self.NS, expected_url, True)
             xml_root = xml_tree.getroot()
 
         # If there is no file, perform the search
@@ -465,7 +465,7 @@ class ArxivClient:
             xml_root = self.arxiv_query(0, 1)
 
             # Write the extracted xml to a file
-            storage.write_xml(xml_root, self.NS, True)
+            storage.write_xml_file(xml_root, self.NS, True)
 
             self.logger.info(
                 "Search information successfully obtained from the arXiv servers!"

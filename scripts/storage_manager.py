@@ -54,7 +54,7 @@ class Storage:
 
         self.logger = logger
 
-    def read_search_terms(self) -> dict[str, list[str] | None]:
+    def read_search_term_file(self) -> dict[str, list[str] | None]:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
         Performs some basic checks on the data.
         """
@@ -144,7 +144,7 @@ class Storage:
 
         return search_terms
 
-    def read_catchup(self) -> list[str]:
+    def read_catchup_file(self) -> list[str]:
         """Read the `catchup.txt` file and open all links in the browser.
 
         inputs
@@ -179,7 +179,7 @@ class Storage:
 
         return links
 
-    def read_xml(
+    def read_xml_file(
         self,
         ns: dict[str, str],
         expected_url: str,
@@ -198,20 +198,18 @@ class Storage:
         # If we are operating on the search XML
         if search:
 
-            try:
-                xml_tree = typing.cast(ET.ElementTree, ET.parse(self.paths.search_xml))
-            except ET.ParseError as e:
-                self.logger.critical(f"Could not parse XML: {e}")
-                raise ValueError(f"Malformed XML file: {self.paths.search_xml}") from e
+            filename = self.paths.search_xml
 
         else:
 
-            # Load the file
-            try:
-                xml_tree = typing.cast(ET.ElementTree, ET.parse(self.paths.papers_xml))
-            except ET.ParseError as e:
-                self.logger.critical(f"Could not parse XML: {e}")
-                raise ValueError(f"Malformed XML file: {self.paths.search_xml}") from e
+            filename = self.paths.papers_xml
+
+        # Load the file
+        try:
+            xml_tree = typing.cast(ET.ElementTree, ET.parse(filename))
+        except ET.ParseError as e:
+            self.logger.critical(f"Could not parse XML: {e}")
+            raise ValueError(f"Malformed XML file: {filename}") from e
 
         # Check the url from the loaded xml matches the current search url
         # Extract the url from the xml. It will *always* be the first link
@@ -236,7 +234,7 @@ class Storage:
             self.logger.debug(f"Found:    {returned_url}")
 
             # Clear the .xml file
-            self.delete_file(self.paths.papers_xml)
+            self.delete_file(filename)
 
         else:
 
@@ -246,7 +244,7 @@ class Storage:
 
         return xml_tree
 
-    def read_date(
+    def read_previous_date_file(
         self,
         end_time: datetime.datetime,
         search_time: datetime.time,
@@ -267,7 +265,7 @@ class Storage:
             #     into the calc_search_endtime() function
             prev_end_time = calc_search_endtime(end_time, search_time, post_time)
 
-            self.write_date(prev_end_time.date())
+            self.write_previous_date_file(prev_end_time.date())
 
         # The file is now guaranteed to exist. Load it and extract the previous runtime
         with open(self.paths.previous_date, "r", encoding="utf-8") as f:
@@ -278,7 +276,7 @@ class Storage:
 
         return start_time, start_date
 
-    def write_catchup(
+    def write_catchup_file(
         self,
         args: argparse.Namespace,
         papers_of_note: list[str],
@@ -309,7 +307,9 @@ class Storage:
 
                     f.write(f"{link}\n")
 
-    def write_xml(self, xml_root: ET.Element, ns: dict[str, str], search: bool) -> None:
+    def write_xml_file(
+        self, xml_root: ET.Element, ns: dict[str, str], search: bool
+    ) -> None:
         """docstring needed
         NOTE: We always want to overwrite the search XML.
               We always want to append to the papers XML if it exists, else create it.
@@ -354,7 +354,7 @@ class Storage:
                     encoding="utf-8",
                 )
 
-    def write_date(self, date: datetime.date) -> None:
+    def write_previous_date_file(self, date: datetime.date) -> None:
         """Write the previous search date to a file.
 
         inputs
@@ -372,7 +372,7 @@ class Storage:
 
             f.write(date.isoformat())
 
-    def write_aux(self, end_date: datetime.date, n_papers: int) -> None:
+    def write_aux_files(self, end_date: datetime.date, n_papers: int) -> None:
         """Write the auxiliary files.
         The only file currently written is for the previous search date.
 
@@ -393,10 +393,11 @@ class Storage:
         else:
 
             # Write the end date of the search to a file for the next run
-            self.write_date(end_date)
+            self.write_previous_date_file(end_date)
 
     def delete_file(self, filename: pathlib.Path) -> None:
         """Deletes a file.
+        NOTE: Will delete ANY file passed to it.
 
         inputs
         ------
@@ -408,7 +409,7 @@ class Storage:
         file = pathlib.Path(filename)
         file.unlink()
 
-    def clear_temp_files(self) -> None:
+    def delete_temp_files(self) -> None:
         """Clear the temporary files created by the script."""
 
         self.delete_file(self.paths.search_xml)

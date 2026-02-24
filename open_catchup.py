@@ -61,7 +61,7 @@ SLEEP_OPENING = 0.25  # 0.25 seconds between opening links
 logger = logger_setup(args, root_dir)
 
 # Read the catchup file
-papers = storage.read_catchup()
+papers = storage.read_catchup_file()
 
 # Open the links
 open_links(papers, SLEEP_OPENING)

@@ -186,7 +186,7 @@ class CLI:
 
         if self.write_to_file:
 
-            storage.write_catchup(self.args, papers_of_note)
+            storage.write_catchup_file(self.args, papers_of_note)
 
         if self.open_in_browser:
 
