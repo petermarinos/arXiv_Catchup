@@ -83,12 +83,12 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
 
     # If sleeping for a long time, show a progress bar
     else:
+
         # Flush any already-existing progress bar
         sys.stdout.write("\r\033[K")
         sys.stdout.flush()
 
         # Update the bar every 0.1s
-        # n_msecs = sleep_time * 1000
         n_steps = math.ceil(sleep_time * 10)
         for ii in range(0, n_steps):
 

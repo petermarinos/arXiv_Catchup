@@ -263,6 +263,7 @@ class ArxivClient:
         # # Add a CLI option to skip verification entirely?
         # Do not do it by default, and ensure the users are warned of the risk
         #     (e.g. by forcing to confirm a prompt)
+        # Leaving here in case it is added later.
         # self.logger.warning(
         #     f"Disabling verification and retrying in {self.wait_time} seconds ..."
         # )
@@ -362,9 +363,6 @@ class ArxivClient:
                     xml_data = f.read()
 
                     # Parse the xml
-                    # if ET.fromstring(xml_data) is None:
-                    #     raise
-                    # else:
                     parsed_xml_root = ET.fromstring(xml_data)
 
                     return parsed_xml_root
@@ -394,7 +392,7 @@ class ArxivClient:
                 # May need to add a way to warn and skip.
                 # This error shouldn't occur, but potenially could be due to malformed paper entries
                 # It is rare error and difficult to know the cause -- it has only ever occured in
-                # historical searches when testing.
+                #     historical searches when testing.
 
                 # # For now, raise an error
                 self.logger.critical(

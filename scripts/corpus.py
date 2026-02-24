@@ -199,7 +199,6 @@ class Corpus:
 
                 # Sleep before the query so that there is no dead time on the last query.
                 # Also need to sleep here as we do not wait after the initial API call
-                # Add jitter to the sleep timer
                 progress_bar(ii, num_steps, remaining_steps * arxiv_client.SLEEP_SEARCH)
                 pretty_sleep(self.logger, arxiv_client.SLEEP_SEARCH)
 
@@ -364,7 +363,6 @@ class Corpus:
 
                 self.logger.debug("Adding paper: {key} (found author)")
 
-                # self.papers_of_note.append(key)
                 self.papers_of_note.append(key)
 
             # If there were included word matches and *no* excluded word matches, append
@@ -374,7 +372,6 @@ class Corpus:
 
                 self.logger.debug(f"Adding paper: {key} (found word)")
 
-                # self.papers_of_note.append(key)
                 self.papers_of_note.append(key)
 
     def filter_papers_score(self) -> None:

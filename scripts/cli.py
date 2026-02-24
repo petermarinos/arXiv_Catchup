@@ -112,7 +112,6 @@ class CLI:
         # If no papers were found, overwrite output bools with False
         if len(corpus.papers_of_note) == 0:
 
-            # self.logger.warning("No papers of interest were found.")
             self.write_to_file = False
             self.open_in_browser = False
 
