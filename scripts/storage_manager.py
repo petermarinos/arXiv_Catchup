@@ -224,10 +224,10 @@ class Storage:
             raise ValueError("Malformed search link.")
         returned_url = returned_urlblock.attrib["href"]
 
-        url_missmatch = expected_url != returned_url
+        url_mismatch = expected_url != returned_url
 
         # If the urls do not match, discard and restart the search
-        if url_missmatch:
+        if url_mismatch:
 
             self.logger.warning(
                 "The .xml file information does not match the current search. "
