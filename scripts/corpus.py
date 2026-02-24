@@ -329,22 +329,24 @@ class Corpus:
                 # Take the name of the author ealiest in the author list
                 found_authors.append(paper.paper_scores.found_authors[0] + ", et al.")
 
-        fill = len(max(found_authors, key=len))
+        if len(found_authors) > 0:
 
-        # Loop through the papers again to create the summary text
-        for _, paper in self.corpus.items():
+            fill = len(max(found_authors, key=len))
 
-            if paper.paper_scores.n_author_matches == 1:
-                self.author_summary += (
-                    f"    {paper.paper_scores.found_authors[0]: >{fill}}: "
-                    f"{paper.paper_info.link_abs}\n"
-                )
-            # If more than one author, fill with +8 to account for ', et al.'
-            elif paper.paper_scores.n_author_matches > 1:
-                self.author_summary += (
-                    f"    {paper.paper_scores.found_authors[0]: >{fill-8}}, et al.: "
-                    f"{paper.paper_info.link_abs}\n"
-                )
+            # Loop through the papers again to create the summary text
+            for _, paper in self.corpus.items():
+
+                if paper.paper_scores.n_author_matches == 1:
+                    self.author_summary += (
+                        f"    {paper.paper_scores.found_authors[0]: >{fill}}: "
+                        f"{paper.paper_info.link_abs}\n"
+                    )
+                # If more than one author, fill with +8 to account for ', et al.'
+                elif paper.paper_scores.n_author_matches > 1:
+                    self.author_summary += (
+                        f"    {paper.paper_scores.found_authors[0]: >{fill-8}}, et al.: "
+                        f"{paper.paper_info.link_abs}\n"
+                    )
 
     def score_papers_matches(self) -> None:
         """Scores all Papers in the Corpus based on the number of matches found.
