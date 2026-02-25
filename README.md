@@ -52,7 +52,6 @@ There are additional arguments that can be used:
 - `--only-ids` will only write the arXiv ID numbers to a file (instead of the url).
 - `-s str`, `--start-date str` manually set the start date for the search.
 - `-e str`, `--end-date str` manually set the end date for the search.
-<!-- - `--score-on-matches` use the author/word matches to score the papers, instead of the machine-learning algorithm. NOT YET IMPLEMENTED AND IS HIDDEN FROM USERS -->
 - `--filter-on-matches` use the basic matching algorithm to filter the papers, rather than the 'interest' score
 - `-v int`, `--verbosity int` set the verbosity level. Default is 3.
     - 0 => Show only critical error messages.
@@ -60,6 +59,7 @@ There are additional arguments that can be used:
     - 2 => Show all the above, and warning messages.
     - 3 => Show all the above, and info messages. Recommended.
     - 4 => Show all the above, and debug messages. Not recommended.
+<!-- - `--score-on-matches` use the author/word matches to score the papers, instead of the machine-learning algorithm. NOT YET IMPLEMENTED AND IS HIDDEN FROM USERS -->
 
 If both `-f` and `-w` are passed, then the script will do both.
 If neither are passed, then the script will prompt the user for their preference.
