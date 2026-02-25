@@ -98,17 +98,29 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
         progress_bar(n_steps, n_steps)
 
 
-def open_links(links: list[str], sleep_time: float):
-    """Open all links in the webbrowser."""
+def open_links(papers_of_note: list[str], sleep_time: float):
+    """Open all links in the webbrowser.
+    NOTE: While we extract the abs links from the downloaded data, we reconstruct the links here
+          using the arXiv ID numbers. This is done to slightly reduce complexity while giving the
+          CLI option to only write the ID numbers to files.
 
-    total = len(links)
+    inputs
+    ------
+    papers_of_note : The arXiv ID numbers of all papers that passed filtering
+    sleep_time     : Time to sleep for between opening papers
+    """
+
+    total = len(papers_of_note)
 
     request_count = 0
-    for link in links:
+    for arxiv_id in papers_of_note:
+
+        link = f"https://arxiv.org/abs/{arxiv_id}"
 
         progress_bar(request_count, total, (total - request_count) * sleep_time)
 
         if request_count > 0:
+
             time.sleep(sleep_time)
 
         if request_count == 0:
