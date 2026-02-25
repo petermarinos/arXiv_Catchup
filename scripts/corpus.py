@@ -162,49 +162,6 @@ class Corpus:
 
         progress_bar(self.length, self.length)
 
-    def calc_author_summary(self) -> None:
-        """Compute a summary string for the found authors.
-        NOTE: Currently does not consider the penalties for collaboration papers! Add CLI args as
-              an input and only add if the score is above the threshold? Would also require the
-              algorithm (matching versus scoring) to be a CLI argument first.
-        """
-
-        # Loop through all the papers.
-        # Find the longest name in the first position
-        found_authors: list[str] = []
-        for _, paper in self.corpus.items():
-
-            # If the paper had one match:
-            if paper.paper_scores.n_author_matches == 1:
-
-                # Take the name of the author ealiest in the author list
-                found_authors.append(paper.paper_scores.found_authors[0])
-
-            # If the paper had more than one match:
-            elif paper.paper_scores.n_author_matches > 1:
-
-                # Take the name of the author ealiest in the author list
-                found_authors.append(paper.paper_scores.found_authors[0] + ", et al.")
-
-        if len(found_authors) > 0:
-
-            fill = len(max(found_authors, key=len))
-
-            # Loop through the papers again to create the summary text
-            for _, paper in self.corpus.items():
-
-                if paper.paper_scores.n_author_matches == 1:
-                    self.author_summary += (
-                        f"    {paper.paper_scores.found_authors[0]: >{fill}}: "
-                        f"{paper.paper_info.link_abs}\n"
-                    )
-                # If more than one author, fill with +8 to account for ', et al.'
-                elif paper.paper_scores.n_author_matches > 1:
-                    self.author_summary += (
-                        f"    {paper.paper_scores.found_authors[0]: >{fill-8}}, et al.: "
-                        f"{paper.paper_info.link_abs}\n"
-                    )
-
     def score_papers_matches(self) -> None:
         """Scores all Papers in the Corpus based on the number of matches found.
         NOTE: This function also counts the number of matches.
@@ -317,6 +274,54 @@ class Corpus:
         self.logger.debug("Final Paper scores:")
         for ii, paper_of_note in enumerate(self.papers_of_note):
             self.logger.debug(f"arXiv:{paper_of_note} = {self.scores[ii]:.2f}")
+
+    def calc_author_summary(self) -> None:
+        """Compute a summary string for the found authors.
+        NOTE: Currently does not consider the penalties for collaboration papers! Add CLI args as
+              an input and only add if the score is above the threshold? Would also require the
+              algorithm (matching versus scoring) to be a CLI argument first.
+        NOTE: We construct the link with the arXiv ID number instead of taking the abs links. This
+              is done because the revision number is never important and it slightly reduces visual
+              clutter in the output.
+        """
+
+        # Loop through all the papers.
+        # Find the longest name in the first position
+        found_authors: list[str] = []
+        for _, paper in self.corpus.items():
+
+            # If the paper had one match:
+            if paper.paper_scores.n_author_matches == 1:
+
+                # Take the name of the author ealiest in the author list
+                found_authors.append(paper.paper_scores.found_authors[0])
+
+            # If the paper had more than one match:
+            elif paper.paper_scores.n_author_matches > 1:
+
+                # Take the name of the author ealiest in the author list
+                found_authors.append(paper.paper_scores.found_authors[0] + ", et al.")
+
+        if len(found_authors) > 0:
+
+            fill = len(max(found_authors, key=len))
+
+            # Loop through the papers again to create the summary text
+            for _, paper in self.corpus.items():
+
+                if paper.paper_scores.n_author_matches == 1:
+                    self.author_summary += (
+                        f"    {paper.paper_scores.found_authors[0]: >{fill}}: "
+                        f"https://arxiv.org/abs/{paper.paper_info.id_num}\n"
+                        # f"{paper.paper_info.link_abs}\n"
+                    )
+                # If more than one author, fill with +8 to account for ', et al.'
+                elif paper.paper_scores.n_author_matches > 1:
+                    self.author_summary += (
+                        f"    {paper.paper_scores.found_authors[0]: >{fill-8}}, et al.: "
+                        f"https://arxiv.org/abs/{paper.paper_info.id_num}\n"
+                        # f"{paper.paper_info.link_abs}\n"
+                    )
 
     def summary(self) -> None:
         """Summarise the results."""
