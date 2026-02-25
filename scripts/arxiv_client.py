@@ -283,7 +283,7 @@ class ArxivClient:
 
             # Search the arXiv
             self.logger.info(
-                f"Searching for papers. Estimated time: {est_time:.0f} seconds"
+                f"Downloading papers. Estimated time: {est_time:.0f} seconds"
             )
             start_index = (
                 corpus.length
