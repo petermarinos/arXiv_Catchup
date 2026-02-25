@@ -1,13 +1,20 @@
 """Config class."""
 
+# Import dependency type checking libraries
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 # Import standard libraries
 import argparse
 import datetime
 import logging
 
 # Import functions
-from .storage_manager import Storage
 from .dates import parse_date, calc_search_endtime, calc_next_posttime
+
+# Import classes for type checking
+if TYPE_CHECKING:
+    from .storage_manager import Storage
 
 
 class Config:

@@ -1,18 +1,23 @@
 """CLI class, for interactions with the CLI."""
 
+# Import dependency type checking libraries
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 # Import libraries
 import logging
 import pathlib
 import sys
 
-# Import classes
-from .storage_manager import Storage
-from .arxiv_client import ArxivClient
-from .corpus import Corpus
-
 # Import functions
 from .utils import cli_args
 from .ui import open_links
+
+# Import classes for type checking
+if TYPE_CHECKING:
+    from .storage_manager import Storage
+    from .arxiv_client import ArxivClient
+    from .corpus import Corpus
 
 
 class CLI:
@@ -39,8 +44,8 @@ class CLI:
 
     def add_logger(self, logger: logging.Logger) -> None:
         """
-        Setting up the logger requires knowlegde of this Storage manager.
-        Add the logger object to this class for future log messages.
+        Setting up the logger requires knowlegde of the storage manager. Add the logger to this
+        class after it has been created.
         """
 
         self.logger = logger

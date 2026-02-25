@@ -1,5 +1,9 @@
 """Utily functions."""
 
+# Import dependency type checking libraries
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 # Import libraries
 from importlib import metadata
 import argparse
@@ -11,8 +15,9 @@ import sys
 # Import version number
 from scripts import __version__
 
-# Import classes
-from .storage_manager import Storage
+# Import classes for type checking
+if TYPE_CHECKING:
+    from .storage_manager import Storage
 
 
 class FlushingStreamHandler(logging.StreamHandler):  # type: ignore

@@ -1,18 +1,23 @@
 """arXiv client class, which sets up the connections to the API."""
 
+# Import dependency type checking libraries
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 # Import standard libraries
 import xml.etree.ElementTree as ET
 import math
 import os
 
-# Import classes
-from .storage_manager import Storage
-from .http_client import HttpClient
-from .config import Config
-from .corpus import Corpus
-
 # Import functions
 from .ui import pretty_sleep, progress_bar
+
+# Import classes for type checking
+if TYPE_CHECKING:
+    from .storage_manager import Storage
+    from .http_client import HttpClient
+    from .config import Config
+    from .corpus import Corpus
 
 
 class ArxivClient:
