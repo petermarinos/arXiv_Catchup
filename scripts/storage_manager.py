@@ -183,16 +183,19 @@ class Storage:
 
                 link = line.strip()
 
-                if link[:21] != "http://arxiv.org/abs/":
+                if link[:22] != "https://arxiv.org/abs/":
 
                     self.logger.critical(
-                        f"Found:    {link}\nExpected: http://arxiv.org/abs/0123.45678v9 format\n"
+                        f"Found:    {link}\n"
+                        "          Expected: https://arxiv.org/abs/0123.45678v9 format\n"
                     )
                     raise ValueError(
                         "One or more links in the catchup file is malformed."
                     )
 
-                links.append(link)
+                id_num = link[22:]
+                self.logger.debug(f"Found {id_num} with link: {link}")
+                links.append(id_num)
 
         return links
 
@@ -439,3 +442,53 @@ class Storage:
 
         self.delete_file(self.paths.search_xml)
         self.delete_file(self.paths.papers_xml)
+
+    def delete_catchup_file(self, links: list[str]) -> None:
+        """Deletes the `catchup.txt` file (contains all links that have been saved over previous
+        runs). Only used by the auxiliary script `open_catchup.py`.
+        NOTE: This function checks to ensure the file is formatted correctly to prevent deletions
+              when users manually alter the file, or if the CLI option to only output the ID
+              numbers is used.
+
+        inputs
+        ------
+        links : List containing all arXiv links in the file.
+        """
+
+        # Ask the user if they would like to open the links in the browser. Default is no
+        self.logger.warning(f"There are {len(links)} links in {self.paths.catchup}.")
+        user_prompt = (
+            input(
+                "         Delete all links? This action cannot be reversed. "
+                "Only do so if the papers have been reviewed. [y/N]: "
+            )
+            .strip()
+            .lower()
+        )
+
+        # If the user says yes, delete the file
+        if user_prompt == "y":
+
+            # Check that the file is of the correct format to prevent deleting some other file
+            # Loop through all lines, ensuring they begin with the correct text
+            with open(self.paths.catchup, "r", encoding="utf8") as f:
+
+                for line in f:
+
+                    link = line.strip()
+
+                    if link[:22] != "https://arxiv.org/abs/":
+
+                        self.logger.critical(
+                            "The catchup file is not formatted correctly. "
+                            "Double check its contents manually.\n"
+                        )
+                        raise ValueError("Malformed catchup file.")
+
+            # If the file is of the correct format, delete it
+            self.delete_file(self.paths.catchup)
+
+        # Else, do nothing
+        else:
+
+            self.logger.info("Doing nothing.")

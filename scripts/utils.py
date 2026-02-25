@@ -1,9 +1,5 @@
 """Utily functions."""
 
-# Import dependency type checking libraries
-from __future__ import annotations
-from typing import TYPE_CHECKING
-
 # Import libraries
 from importlib import metadata
 import argparse
@@ -14,10 +10,6 @@ import sys
 
 # Import version number
 from scripts import __version__
-
-# Import classes for type checking
-if TYPE_CHECKING:
-    from .storage_manager import Storage
 
 
 class FlushingStreamHandler(logging.StreamHandler):  # type: ignore
@@ -267,55 +259,3 @@ def log_args(logger: logging.Logger, args: argparse.Namespace) -> None:
         logger.debug(f"Argument '{key}' was set to: {val}")
 
     logger.debug("===============================")
-
-
-def delete_catchup(storage: Storage, filename: pathlib.Path, links: list[str]) -> None:
-    """Deletes the `catchup.txt` file (contains all links that have been saved over previous runs).
-    Only used by the auxiliary script `open_catchup.py`.
-    NOTE: This function checks to ensure the file is formatted correctly to prevent deletions when
-          users manually alter the file, or if the CLI option to only output the ID numbers is used.
-
-    inputs
-    ------
-    logger   : The logger object
-    filename : Path+filename of the `catchup.txt` file.
-    links    : List containing all arXiv links in the file.
-    """
-
-    # Ask the user if they would like to open the links in the browser. Default is no
-    storage.logger.warning(f"There are {len(links)} links in {filename}.")
-    user_prompt = (
-        input(
-            "         Delete all links? This action cannot be reversed. "
-            "Only do so if the papers have been reviewed. [y/N]: "
-        )
-        .strip()
-        .lower()
-    )
-
-    # If the user says yes, delete the file
-    if user_prompt == "y":
-
-        # Check that the file is of the correct format to prevent deleting some other file
-        # Loop through all lines, ensuring they begin with the correct text
-        with open(filename, "r", encoding="utf8") as f:
-
-            for line in f:
-
-                link = line.strip()
-
-                if link[:21] != "http://arxiv.org/abs/":
-
-                    storage.logger.critical(
-                        "The catchup file is not formatted correctly. "
-                        "Double check its contents manually.\n"
-                    )
-                    raise ValueError("Malformed catchup file.")
-
-        # If the file is of the correct format, delete it
-        storage.delete_file(filename)
-
-    # Else, do nothing
-    else:
-
-        storage.logger.info("Doing nothing.")

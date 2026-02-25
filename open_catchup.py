@@ -13,7 +13,7 @@ import pathlib
 from scripts.storage_manager import Storage
 
 # Import packages
-from scripts.utils import logger_setup, delete_catchup
+from scripts.utils import logger_setup
 from scripts.ui import open_links
 
 # The goal of this script is to save the link opening for later if the user chooses
@@ -28,7 +28,7 @@ from scripts.ui import open_links
 # If you rarely want to open all papers, this is the recommended method.
 
 # Find the directory of this file
-root_dir = pathlib.Path(__file__).resolve().parent.parent
+root_dir = pathlib.Path(__file__).resolve().parent
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -58,7 +58,8 @@ ns = {
 SLEEP_OPENING = 0.25  # 0.25 seconds between opening links
 
 # Setup logging
-logger = logger_setup(args, root_dir)
+logger = logger_setup(args, storage.paths.log)
+storage.add_logger(logger)
 
 # Read the catchup file
 papers = storage.read_catchup_file()
@@ -67,4 +68,4 @@ papers = storage.read_catchup_file()
 open_links(papers, SLEEP_OPENING)
 
 # Ask the user if the file should be deleted
-delete_catchup(storage, storage.paths.catchup, papers)
+storage.delete_catchup_file(papers)
