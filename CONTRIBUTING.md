@@ -7,13 +7,10 @@ However, if there is something small, feel free to contribute!
 
 ## Development workflow
 
+- Do not use USAian alternate spellings.
 - Follow PEP 8 naming conventions (e.g. snake_case for functions, CapWords for classes).
-- Add type hints on everything, check with PyLance.
+- Add type hints on everything, check with PyLance and mypy.
 - Use the black formatter and the PyLint linter
-
-### Exceptions to black
-
-- Arrange imports into columns.
 
 ## Reporting issues
 
