@@ -1,31 +1,22 @@
-"""arXiv client class, which controls connections to the API."""
+"""arXiv client class, which sets up the connections to the API."""
 
 # Import standard libraries
 import xml.etree.ElementTree as ET
-import urllib.request
-import urllib.error
-import ssl
+import math
 import os
 
-# Import non-standard libraries
-import certifi
-
-# # Import libraries used to test API connections and errors
-# from email.message import Message
-# from unittest.mock import patch
-
 # Import classes
+from .storage_manager import Storage
+from .http_client import HttpClient
 from .config import Config
+from .corpus import Corpus
 
 # Import functions
-from .storage_manager import Storage
-from .ui import pretty_sleep
+from .ui import pretty_sleep, progress_bar
 
 
 class ArxivClient:
-    """Defines all data that is used to connect to the arXiv servers.
-    Also performs said connections.
-    """
+    """Set up the API so that connections can be made."""
 
     # All 8 attributes are required to ensure connections can be made to the arXiv servers,
     #     and for error checking.
@@ -46,23 +37,6 @@ class ArxivClient:
     # Superficial number and not important
     SLEEP_FUDGE = 0.70 + 0.15
 
-    # Define some values for retry attempts. These are magic values and kept from the users.
-    # These can be altered as arXiv does not specify values.
-    # However, these values are pretty typical so it is best to leave them.
-    MAX_RETRIES = 5  # Maximum number of retried connections
-    BACKOFF = 2  # Factor to increase the wait_time after a failure
-    TIMEOUT = 30  # Seconds to wait before a timeout
-
-    # Define some error codes. If one of these, we will retry
-    RETRY_CODES = (
-        408,  # Request timeout
-        429,  # Too many requests
-        500,  # Internal server error. Also caused by malformed urls in the request.
-        502,  # Bad gateway
-        503,  # Service unavailable (i.e. overloaded or down)
-        504,  # Gateway timeout
-    )
-
     # XML namespaces used by arXiv
     NS = {
         "atom": "http://www.w3.org/2005/Atom",
@@ -70,12 +44,13 @@ class ArxivClient:
         "arxiv": "http://arxiv.org/schemas/atom",
     }
 
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, http_client: HttpClient) -> None:
         """Set up some information that is required for the arXiv API calls.
 
         inputs
         ------
-        config : Run configuration
+        config      : Run configuration.
+        http_client : The client that performs the connections to the arXiv servers.
         """
 
         self.logger = config.logger
@@ -136,292 +111,39 @@ class ArxivClient:
             cats=api_catstring,
         )
 
-        # Initialise wait times. Values will be modified if connection errors occur
-        self.wait_time = 3.0
-        self.retry_after = 0.0
-
         # Total number of papers that will be searched for
         # Different to the length of the Corpus (though they should be equal at the end).
         self.total_papers = 0
 
-        # Define the ssl_context and define a flag
-        self.ssl_context = ssl.create_default_context()
-        self.cert_error_bool = False
+        # Insert the http client
+        self.http_client = http_client
 
-    def http_errorcheck(self, error: urllib.error.HTTPError, attempt: int) -> None:
-        """Handles the HTTP errors that could arise.
+    def arxiv_search_error_check(self) -> None:
+        """Runs some error checks on the results of the initial arXiv API pull.
+        (i.e. the one that collects some basic information)."""
 
-        inputs
-        ------
-        error   : Error returned from the connection attempt.
-        attempt : Attempt number.
-        """
+        self.logger.debug("Checking for issues with the search information ...")
 
-        # If the HTTP error is in our list of codes that tell us to retry
-        if error.code in self.RETRY_CODES:
-
-            self.logger.warning(
-                f"HTTP error code {error.code} on attempt {attempt} of {self.MAX_RETRIES}."
+        # If no papers were found in the search, raise an error
+        # This should catch deferred mailings
+        if self.total_papers == 0:
+            self.logger.critical(
+                "There were no papers submitted to the arXiv.\n          "
+                "Refine search dates/categories and check for deferred mailings:\n          "
+                "https://info.arxiv.org/help/availability.html\n"
             )
+            raise RuntimeError("No papers were submitted to the arXiv.")
 
-            # Obtain some additional information from the error headers
+        # If there are too many papers then there can be issues with the arXiv API.
+        # While the API will likely return an error, catch it here as well just in case
+        if self.total_papers >= 30000:
 
-            # If the error header is empty
-            # Probably unnecessary, but good to check
-            if not error.headers:
-
-                self.logger.debug("HTTP error header was empty.")
-
-            # Else, if the header isn't empty
-            else:
-
-                for key, value in error.headers.items():
-                    self.logger.debug(f"HTTP header: {key}: {value}")
-
-                # Obtain the 'Retry-After' header
-                retry = error.headers.get("Retry-After")
-
-                # If there is a Retry-After header
-                if retry is not None:
-
-                    self.logger.debug("Found Retry-After header.")
-
-                    self.retry_after = float(retry)
-
-                    self.logger.warning(
-                        "---> Received a wait command from the server. "
-                        f"Increasing wait time to the recommended {self.retry_after} seconds ..."
-                    )
-
-                # Catch 429 error codes that do not have a Retry-after header
-                elif (retry is None) and (error.code == 429):
-
-                    self.retry_after = 90.0 * attempt
-                    self.logger.warning(
-                        "Did not find a Retry-After command despite being a 429 error. "
-                        f"Increasing wait time to {self.retry_after} seconds ..."
-                    )
-
-                # Else, if there are headers but no retry-after header
-                else:
-
-                    self.logger.debug("Did not find a Retry-After header.")
-
-        # Otherwise, raise an error
-        else:
-
-            self.logger.critical(f"HTTP error code {error.code}: {error.reason}\n")
-            for key, value in error.headers.items():
-                self.logger.debug(f"HTTP header: {key}: {value}")
-            raise RuntimeError("Received non-retry HTTP error code.")
-
-    def url_errorcheck(self, error: urllib.error.URLError) -> None:
-        """Handles the URL errors that could arise.
-
-        inputs
-        ------
-        error : Error returned from the connection attempt.
-        """
-
-        # If it is a certificate verification error, and no certification error has occured before:
-        if (
-            isinstance(error.reason, ssl.SSLCertVerificationError)
-            and not self.cert_error_bool
-        ):
-
-            # Warn the user that verification failed
-            self.logger.warning(
-                f"Connection error: {error.reason}. "
-                f"Updating certificate and retrying in {self.wait_time} seconds ..."
+            self.logger.critical(
+                "Number of papers is too large. Refine search dates and/or categories.\n"
             )
+            raise RuntimeError("Too many papers were submitted to the arXiv.")
 
-            # Try updating the ssl_context to use the certifi cafile
-            self.ssl_context = ssl.create_default_context(cafile=certifi.where())
-
-            # Set the certification error flag to True
-            self.cert_error_bool = True
-
-        # If it is a certificate verification error, and we have tried certifying earlier:
-        elif (
-            isinstance(error.reason, ssl.SSLCertVerificationError)
-            and self.cert_error_bool
-        ):
-
-            # Warn the user that we are disabling verification
-            self.logger.warning("Verification still failed.")
-            self.logger.warning(
-                "This could potentially be an issue with your OS and its trust store, or the "
-                "certifi package version, or a wifi proxy."
-            )
-            self.logger.info(
-                f"Current certifi version: {certifi.__version__}. Recommended: >2026.01.04."
-            )
-            self.logger.warning(
-                "This issue should be fixed before rerunning the script."
-            )
-
-        # # Add a CLI option to skip verification entirely?
-        # Do not do it by default, and ensure the users are warned of the risk
-        #     (e.g. by forcing to confirm a prompt)
-        # Leaving here in case it is added later.
-        # self.logger.warning(
-        #     f"Disabling verification and retrying in {self.wait_time} seconds ..."
-        # )
-
-        # # Disable verification
-        # ssl._create_default_https_context = ssl._create_unverified_context
-
-        # Otherwise, if it is any other type of URL error, raise an error
-        else:
-
-            self.logger.critical(f"Connection error: {error.reason}\n")
-            raise RuntimeError("Unable to connect.")
-
-    def arxiv_query(self, start_num: int, blocksize: int) -> ET.Element:
-        """Queries the arXiv servers for the papers.
-        Will catch errors and attempt retries (if the error allows retries).
-
-        inputs
-        ------
-        start_num : Starting paper number for the search query.
-        blocksize : Number of papers to download in the search query.
-        """
-
-        # Format the last two fields in the url
-        formatted_url = self.url.format(start_num=start_num, blocksize=blocksize)
-
-        self.logger.debug(
-            f"Searching for papers {start_num} to {start_num+blocksize-1} ..."
-        )
-
-        # Query the server
-        for attempt in range(
-            1, self.MAX_RETRIES + 1
-        ):  # 1 -> max_retries+1 so that we start counting attempts at 1 in the logger messages
-
-            self.logger.debug(f"Attempting connection to:\n       {formatted_url}")
-
-            try:
-
-                # Test error handling
-                # Add an indent to the "attempt to connect to arXiv"--"return parsed_xml_date" lines
-                # -- add proper testing in the future
-
-                # # HTTP ERRORS
-
-                # # http error with a random code and no header
-                # err = urllib.error.HTTPError(
-                #     url=None, code=47, msg="fake error that should exit", hdrs=None, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # http repeating error code with no header
-                # err = urllib.error.HTTPError(
-                #     url=None, code=408, msg="non-repeating code", hdrs=None, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # http non-repeating error code with a useless header
-                # headers = Message()
-                # headers["blank"] = "nothing"
-                # err = urllib.error.HTTPError(
-                #     url=None, code=408, msg="non-repeating code", hdrs=headers, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # http error with a retry-after header
-                # headers = Message()
-                # headers["Retry-After"] = 40
-                # err = urllib.error.HTTPError(
-                #     url=None, code=429, msg="repeating code", hdrs=headers, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # URL ERRORS
-
-                # # non-Verification errors
-                # with patch(
-                #     "urllib.request.urlopen", side_effect=urllib.error.URLError("DNS fail")
-                # ):
-
-                # # Verification errors
-                # err = urllib.error.URLError(
-                #     ssl.SSLCertVerificationError(
-                #         "certificate verify failed: unable to get local issuer certificate"
-                #     )
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # Attempt to connect to arXiv
-                with urllib.request.urlopen(
-                    formatted_url, timeout=self.TIMEOUT, context=self.ssl_context
-                ) as f:
-
-                    self.logger.debug("...Connection successful")
-
-                    # Read the data
-                    xml_data = f.read()
-
-                    # Parse the xml
-                    parsed_xml_root = ET.fromstring(xml_data)
-
-                    return parsed_xml_root
-
-            # If there is a HTTP error:
-            except urllib.error.HTTPError as error:
-
-                self.http_errorcheck(error, attempt)
-
-            # If there is a URL error:
-            except urllib.error.URLError as error:
-
-                self.url_errorcheck(error)
-
-            # If there is a timeout error:
-            except TimeoutError:
-
-                self.retry_after = 60.0
-
-                self.logger.warning(
-                    f"Timeout Error. Retrying in {self.retry_after} seconds ..."
-                )
-
-            # If there is an error parsing the xml, raise an error
-            except ET.ParseError as error:
-
-                # May need to add a way to warn and skip.
-                # This error shouldn't occur, but potenially could be due to malformed paper entries
-                # It is rare error and difficult to know the cause -- it has only ever occured in
-                #     historical searches when testing.
-
-                # # For now, raise an error
-                self.logger.critical(
-                    "XML parsing error. Please upload log file to github.\n"
-                )
-                self.logger.debug(error)
-                raise ValueError(
-                    "Failed to parse the XML data from the servers."
-                ) from error
-
-            # If there was a Retry-After command, replace the wait time
-            if self.retry_after != 0.0:
-
-                self.wait_time = self.retry_after
-
-            # Sleep before retrying
-            pretty_sleep(self.logger, self.wait_time)
-
-            # If there was no retry after demand, increase the wait time for the next attempt
-            if self.retry_after == 0.0:
-
-                self.wait_time *= self.BACKOFF
-
-        # If the loop completes and no data was downloaded, raise an error.
-        self.logger.critical(
-            "Maximum retries attempted. arXiv query failed.\n          "
-            "Review connection error codes before trying again.\n"
-        )
-        raise RuntimeError("Cancelling arXiv connection. Too many attempts.")
+        self.logger.debug("All search information tests passed!")
 
     def get_search_info(self, storage: Storage) -> None:
         """Obtain the information on how we will obtain all papers within the search period.
@@ -432,7 +154,7 @@ class ArxivClient:
 
         inputs
         ------
-        xml_path : Path to searchxml
+        storage : The storage manager.
         """
 
         # Initialise the xml data
@@ -462,7 +184,7 @@ class ArxivClient:
             self.logger.info("Obtaining search information from the servers.")
 
             # Perform the query
-            xml_root = self.arxiv_query(0, 1)
+            xml_root = self.http_client.arxiv_query(self.url, 0, 1)
 
             # Write the extracted xml to a file
             storage.write_xml_file(xml_root, self.NS, True)
@@ -494,29 +216,136 @@ class ArxivClient:
         # Set the number of papers
         self.total_papers = int(max_num_str)
 
-    def arxiv_error_check(self) -> None:
-        """Runs some error checks on the results of the initial arXiv API pull.
-        (i.e. the one that collects some basic information)."""
+    def get_papers(self, corpus: Corpus, storage: Storage) -> None:
+        """Obtains all Papers and places them in the Corpus.
+        Will attempt to load the Corpus from an .xml file.
+        Will fall back to connecting to the arXiv servers if:
+        1) can't find the file, or
+        2) the file does not match the current search parameters.
 
-        self.logger.debug("Checking for issues with the search information ...")
+        inputs
+        ------
+        corpus  : The corpus of all papers.
+        storage : The storage object.
+        """
 
-        # If no papers were found in the search, raise an error
-        # This should catch deferred mailings
-        if self.total_papers == 0:
-            self.logger.critical(
-                "There were no papers submitted to the arXiv.\n          "
-                "Refine search dates/categories and check for deferred mailings:\n          "
-                "https://info.arxiv.org/help/availability.html\n"
+        # Search for xml file. If found, load it
+        if os.path.exists(storage.paths.papers_xml):
+
+            self.logger.info(f"Found an .xml file: {storage.paths.papers_xml}")
+            self.logger.info("Attempting to continue a previous failed run.")
+
+            # Define the url we expect from the file
+            expected_url = self.apiquery.format(
+                start_num=0, blocksize=self.SEARCH_BLOCKSIZE
             )
-            raise RuntimeError("No papers were submitted to the arXiv.")
 
-        # If there are too many papers then there can be issues with the arXiv API.
-        # While the API will likely return an error, catch it here as well just in case
-        if self.total_papers >= 30000:
+            # Load the file
+            xml_tree = storage.read_xml_file(self.NS, expected_url, False)
 
-            self.logger.critical(
-                "Number of papers is too large. Refine search dates and/or categories.\n"
+            # Extract the papers from the xml
+            corpus.extract_papers(self.NS, xml_tree)
+
+        # If all papers were found, log a message and continue
+        if corpus.length == self.total_papers:
+
+            self.logger.info("All papers found in the .xml file!")
+
+        # If the xml file had more papers than expected, discard and redownload
+        # Only possible if the temp xml file is altered manually
+        elif corpus.length > self.total_papers:
+
+            self.logger.info("Too many papers found in the .xml file. Redownloading")
+
+            # Clear the entries from the list.
+            corpus.clear_corpus()
+
+        # If there were fewer papers in the xml than we expected, connect to arXiv
+        # NOTE: Not an elif in the case that the above statement clears the corpus
+        if corpus.length < self.total_papers:
+
+            self.logger.debug(f"The number of papers found so far is: {corpus.length}")
+
+            # # Compute the estimated time for the search
+            est_time = -(self.SLEEP_SEARCH + self.SLEEP_FUDGE) * (
+                (self.total_papers - corpus.length) // -self.SEARCH_BLOCKSIZE
             )
-            raise RuntimeError("Too many papers were submitted to the arXiv.")
 
-        self.logger.debug("All search information tests passed!")
+            # Compute the number of steps it will take
+            num_steps = math.ceil(
+                (self.total_papers / self.SEARCH_BLOCKSIZE) * self.SEARCH_BLOCKSIZE
+            )
+
+            # Search the arXiv
+            self.logger.info(
+                f"Searching for papers. Estimated time: {est_time:.0f} seconds"
+            )
+            start_index = (
+                corpus.length
+            )  # self.length updates when adding papers. Need a constant
+            for ii in range(start_index, self.total_papers, self.SEARCH_BLOCKSIZE):
+
+                # Compute the progress of the loop
+                if ii + self.SEARCH_BLOCKSIZE > self.total_papers:
+                    remaining_steps = 1
+                    search_interval = self.total_papers - ii
+                    search_endnum = self.total_papers
+                else:
+                    remaining_steps = -(
+                        (self.total_papers - ii) // -self.SEARCH_BLOCKSIZE
+                    )
+                    search_interval = self.SEARCH_BLOCKSIZE
+                    search_endnum = ii + self.SEARCH_BLOCKSIZE
+
+                # Print the progress bar
+                progress_bar(
+                    ii,
+                    num_steps,
+                    remaining_steps * (self.SLEEP_SEARCH + self.SLEEP_FUDGE),
+                )
+
+                # Debug messages
+                self.logger.debug(f"Remaining steps: {remaining_steps}")
+                self.logger.debug(f"Starting number: {ii}")
+                self.logger.debug(f"Ending number:   {search_endnum}")
+
+                # Sleep before the query so that there is no dead time on the last query.
+                # Also need to sleep here as we do not wait after the initial API call
+                progress_bar(ii, num_steps, remaining_steps * self.SLEEP_SEARCH)
+                pretty_sleep(self.logger, self.SLEEP_SEARCH)
+
+                # Query the API
+                xml_root = self.http_client.arxiv_query(
+                    self.url,
+                    ii,
+                    search_interval,
+                )
+
+                # Write the xml to a file
+                storage.write_xml_file(xml_root, self.NS, False)
+
+                # Extract the paper from the xml
+                corpus.extract_papers(self.NS, xml_root)
+
+            # Close the progress bar
+            progress_bar(self.total_papers, self.total_papers)
+
+            self.logger.info(
+                "All paper information successfully downloaded from the arXiv servers!"
+            )
+
+        # Double check that we found the correct number of papers
+        if corpus.length != self.total_papers:
+
+            self.logger.error(
+                f"Found {corpus.length} papers (expected {self.total_papers})."
+            )
+
+        else:
+
+            self.logger.debug(
+                f"Found the expected number of papers ({self.total_papers})."
+            )
+
+        # Remove revised papers
+        corpus.drop_revisions()

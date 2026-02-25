@@ -1,0 +1,316 @@
+"""HTTP client class. Handles all connections, retry logic, etc."""
+
+# Import standard libraries
+import xml.etree.ElementTree as ET
+import urllib.request
+import urllib.error
+import logging
+import ssl
+
+# Import non-standard libraries
+import certifi
+
+# # Import libraries used to test API connections and errors
+# from email.message import Message
+# from unittest.mock import patch
+
+# Import functions
+from .xml_handling import convert_request_to_xml_root
+from .ui import pretty_sleep
+
+
+class HttpClient:
+    """Performs the connections to the arXiv servers."""
+
+    # Define some values for retry attempts. These are magic values and kept from the users.
+    # These can be altered as arXiv does not specify values.
+    # However, these values are pretty typical so it is best to leave them.
+    MAX_RETRIES = 5  # Maximum number of retried connections
+    BACKOFF = 2  # Factor to increase the wait_time after a failure
+    TIMEOUT = 30  # Seconds to wait before a timeout
+
+    # Define some error codes. If one of these, we will retry
+    RETRY_CODES = (
+        408,  # Request timeout
+        429,  # Too many requests
+        500,  # Internal server error. Also caused by malformed urls in the request.
+        502,  # Bad gateway
+        503,  # Service unavailable (i.e. overloaded or down)
+        504,  # Gateway timeout
+    )
+
+    def __init__(self, logger: logging.Logger) -> None:
+        """Set up the connection parameters.
+
+        inputs
+        ------
+        logger : The logger object
+        """
+
+        self.logger = logger
+
+        # Initialise wait times. Values will be modified if connection errors occur
+        self.wait_time = 3.0
+        self.retry_after = 0.0
+
+        # Define the ssl_context and define a flag
+        self.ssl_context = ssl.create_default_context()
+        self.cert_error_bool = False
+
+    def arxiv_query(self, url: str, start_num: int, blocksize: int) -> ET.Element:
+        """Queries the arXiv servers for the papers.
+        Will catch errors and attempt retries (if the error allows retries).
+
+        inputs
+        ------
+        url       : The url that will be used for connections.
+        start_num : Starting paper number for the search query.
+        blocksize : Number of papers to download in the search query.
+        """
+
+        # Format the last two fields in the url
+        formatted_url = url.format(start_num=start_num, blocksize=blocksize)
+
+        self.logger.debug(
+            f"Searching for papers {start_num} to {start_num+blocksize-1} ..."
+        )
+
+        # Query the server
+        for attempt in range(
+            1, self.MAX_RETRIES + 1
+        ):  # 1 -> max_retries+1 so that we start counting attempts at 1 in the logger messages
+
+            self.logger.debug(f"Attempting connection to:\n       {formatted_url}")
+
+            try:
+
+                # Test error handling
+                # Add an indent to the "attempt to connect to arXiv"--"return parsed_xml_date" lines
+                # -- add proper testing in the future
+
+                # # HTTP ERRORS
+
+                # # http error with a random code and no header
+                # err = urllib.error.HTTPError(
+                #     url=None, code=47, msg="fake error that should exit", hdrs=None, fp=None
+                # )
+                # with patch("urllib.request.urlopen", side_effect=err):
+
+                # # http repeating error code with no header
+                # err = urllib.error.HTTPError(
+                #     url=None, code=408, msg="non-repeating code", hdrs=None, fp=None
+                # )
+                # with patch("urllib.request.urlopen", side_effect=err):
+
+                # # http non-repeating error code with a useless header
+                # headers = Message()
+                # headers["blank"] = "nothing"
+                # err = urllib.error.HTTPError(
+                #     url=None, code=408, msg="non-repeating code", hdrs=headers, fp=None
+                # )
+                # with patch("urllib.request.urlopen", side_effect=err):
+
+                # # http error with a retry-after header
+                # headers = Message()
+                # headers["Retry-After"] = 40
+                # err = urllib.error.HTTPError(
+                #     url=None, code=429, msg="repeating code", hdrs=headers, fp=None
+                # )
+                # with patch("urllib.request.urlopen", side_effect=err):
+
+                # # URL ERRORS
+
+                # # non-Verification errors
+                # with patch(
+                #     "urllib.request.urlopen", side_effect=urllib.error.URLError("DNS fail")
+                # ):
+
+                # # Verification errors
+                # err = urllib.error.URLError(
+                #     ssl.SSLCertVerificationError(
+                #         "certificate verify failed: unable to get local issuer certificate"
+                #     )
+                # )
+                # with patch("urllib.request.urlopen", side_effect=err):
+
+                # Attempt to connect to arXiv
+                with urllib.request.urlopen(
+                    formatted_url, timeout=self.TIMEOUT, context=self.ssl_context
+                ) as f:
+
+                    self.logger.debug("...Connection successful")
+
+                    # Read the data
+                    data = f.read()
+
+                    xml_root = convert_request_to_xml_root(self.logger, data)
+
+                    return xml_root
+
+            # If there is a HTTP error:
+            except urllib.error.HTTPError as error:
+
+                self.http_errorcheck(error, attempt)
+
+            # If there is a URL error:
+            except urllib.error.URLError as error:
+
+                self.url_errorcheck(error)
+
+            # If there is a timeout error:
+            except TimeoutError:
+
+                self.retry_after = 60.0
+
+                self.logger.warning(
+                    f"Timeout Error. Retrying in {self.retry_after} seconds ..."
+                )
+
+            # If there was a Retry-After command, replace the wait time
+            if self.retry_after != 0.0:
+
+                self.wait_time = self.retry_after
+
+            # Sleep before retrying
+            pretty_sleep(self.logger, self.wait_time)
+
+            # If there was no retry after demand, increase the wait time for the next attempt
+            if self.retry_after == 0.0:
+
+                self.wait_time *= self.BACKOFF
+
+        # If the loop completes and no data was downloaded, raise an error.
+        self.logger.critical(
+            "Maximum retries attempted. arXiv query failed.\n          "
+            "Review connection error codes before trying again.\n"
+        )
+        raise RuntimeError("Cancelling arXiv connection. Too many attempts.")
+
+    def http_errorcheck(self, error: urllib.error.HTTPError, attempt: int) -> None:
+        """Handles the HTTP errors that could arise.
+
+        inputs
+        ------
+        error   : Error returned from the connection attempt.
+        attempt : Attempt number.
+        """
+
+        # If the HTTP error is in our list of codes that tell us to retry
+        if error.code in self.RETRY_CODES:
+
+            self.logger.warning(
+                f"HTTP error code {error.code} on attempt {attempt} of {self.MAX_RETRIES}."
+            )
+
+            # Obtain some additional information from the error headers
+
+            # If the error header is empty
+            # Probably unnecessary, but good to check
+            if not error.headers:
+
+                self.logger.debug("HTTP error header was empty.")
+
+            # Else, if the header isn't empty
+            else:
+
+                for key, value in error.headers.items():
+                    self.logger.debug(f"HTTP header: {key}: {value}")
+
+                # Obtain the 'Retry-After' header
+                retry = error.headers.get("Retry-After")
+
+                # If there is a Retry-After header
+                if retry is not None:
+
+                    self.logger.debug("Found Retry-After header.")
+
+                    self.retry_after = float(retry)
+
+                    self.logger.warning(
+                        "---> Received a wait command from the server. "
+                        f"Increasing wait time to the recommended {self.retry_after} seconds ..."
+                    )
+
+                # Catch 429 error codes that do not have a Retry-after header
+                elif (retry is None) and (error.code == 429):
+
+                    self.retry_after = 90.0 * attempt
+                    self.logger.warning(
+                        "Did not find a Retry-After command despite being a 429 error. "
+                        f"Increasing wait time to {self.retry_after} seconds ..."
+                    )
+
+                # Else, if there are headers but no retry-after header
+                else:
+
+                    self.logger.debug("Did not find a Retry-After header.")
+
+        # Otherwise, raise an error
+        else:
+
+            self.logger.critical(f"HTTP error code {error.code}: {error.reason}\n")
+            for key, value in error.headers.items():
+                self.logger.debug(f"HTTP header: {key}: {value}")
+            raise RuntimeError("Received non-retry HTTP error code.")
+
+    def url_errorcheck(self, error: urllib.error.URLError) -> None:
+        """Handles the URL errors that could arise.
+
+        inputs
+        ------
+        error : Error returned from the connection attempt.
+        """
+
+        # If it is a certificate verification error, and no certification error has occured before:
+        if (
+            isinstance(error.reason, ssl.SSLCertVerificationError)
+            and not self.cert_error_bool
+        ):
+
+            # Warn the user that verification failed
+            self.logger.warning(
+                f"Connection error: {error.reason}. "
+                f"Updating certificate and retrying in {self.wait_time} seconds ..."
+            )
+
+            # Try updating the ssl_context to use the certifi cafile
+            self.ssl_context = ssl.create_default_context(cafile=certifi.where())
+
+            # Set the certification error flag to True
+            self.cert_error_bool = True
+
+        # If it is a certificate verification error, and we have tried certifying earlier:
+        elif (
+            isinstance(error.reason, ssl.SSLCertVerificationError)
+            and self.cert_error_bool
+        ):
+
+            # Warn the user that we are disabling verification
+            self.logger.warning("Verification still failed.")
+            self.logger.warning(
+                "This could potentially be an issue with your OS and its trust store, or the "
+                "certifi package version, or a wifi proxy."
+            )
+            self.logger.info(
+                f"Current certifi version: {certifi.__version__}. Recommended: >2026.01.04."
+            )
+            self.logger.warning(
+                "This issue should be fixed before rerunning the script."
+            )
+
+        # # Add a CLI option to skip verification entirely?
+        # Do not do it by default, and ensure the users are warned of the risk
+        #     (e.g. by forcing to confirm a prompt)
+        # Leaving here in case it is added later.
+        # self.logger.warning(
+        #     f"Disabling verification and retrying in {self.wait_time} seconds ..."
+        # )
+
+        # # Disable verification
+        # ssl._create_default_https_context = ssl._create_unverified_context
+
+        # Otherwise, if it is any other type of URL error, raise an error
+        else:
+
+            self.logger.critical(f"Connection error: {error.reason}\n")
+            raise RuntimeError("Unable to connect.")

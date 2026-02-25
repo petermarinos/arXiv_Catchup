@@ -261,3 +261,33 @@ def extract_paper_authors(
     logger.debug(f"Number of authors: {n_authors}")
 
     return author_list, n_authors
+
+
+def convert_request_to_xml_root(logger: logging.Logger, arxiv_data: str) -> ET.Element:
+    """Convert the raw output from connecting to the servers into a .xml root object.
+
+    inputs
+    ------
+    logger     : The logger object.
+    arxiv_data : The raw data returned from an arXiv server connection.
+    """
+
+    try:
+
+        # Parse the results from the connection into an xml
+        xml_root = ET.fromstring(arxiv_data)
+
+        return xml_root
+
+    # If there is an error parsing the xml, raise an error
+    except ET.ParseError as error:
+
+        # May need to add a way to warn and skip.
+        # This error shouldn't occur, but potenially could be due to malformed paper entries
+        # It is rare error and difficult to know the cause -- it has only ever occured in
+        #     historical searches when testing.
+
+        # # For now, raise an error
+        logger.critical("XML parsing error. Please upload log file to github.\n")
+        logger.debug(error)
+        raise ValueError("Failed to parse the XML data from the servers.") from error

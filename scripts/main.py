@@ -6,6 +6,7 @@ import pathlib
 # Import classes
 from .storage_manager import Storage
 from .arxiv_client import ArxivClient
+from .http_client import HttpClient
 from .config import Config
 from .corpus import Corpus
 from .cli import CLI
@@ -47,19 +48,22 @@ def main():
     # # Check for errors with the dates
     search_params.date_error_check()
 
+    # # Set up the client that will connect to the servers
+    http_client = HttpClient(logger)
+
     # # Setup the API information
-    api = ArxivClient(search_params)
+    api = ArxivClient(search_params, http_client)
 
     # # Obtain basic search information
     api.get_search_info(storage)
 
     # # Check for errors
-    api.arxiv_error_check()
+    api.arxiv_search_error_check()
     cli.check_continue_status(api, storage, storage.paths.search_xml)
 
     # # Loop through the searches and obtain all papers
     corpus = Corpus(logger)
-    corpus.get_papers(storage, api)
+    api.get_papers(corpus, storage)
 
     # # Find matches in the papers
     corpus.find_matches(search_params.search_terms)

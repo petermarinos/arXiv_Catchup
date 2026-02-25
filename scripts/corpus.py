@@ -3,15 +3,11 @@
 # Import standard libraries
 import xml.etree.ElementTree as ET
 import logging
-import math
-import os
 
 # Import function
-from .ui import progress_bar, pretty_sleep
+from .ui import progress_bar
 
 # Import classes
-from .storage_manager import Storage
-from .arxiv_client import ArxivClient
 from .paper import Paper
 
 
@@ -99,145 +95,6 @@ class Corpus:
             count += 1
 
         self.logger.debug(f"Found {count:d} papers in this search block.")
-
-    def get_papers(self, storage: Storage, arxiv_client: ArxivClient) -> None:
-        """Obtains all Papers and places them in the Corpus.
-        Will attempt to load the Corpus from an .xml file.
-        Will fall back to connecting to the arXiv servers if:
-        1) can't find the file, or
-        2) the file does not match the current search parameters.
-
-        inputs
-        ------
-        arxiv_client : The arxiv client object.
-        xml_path     : Path+filename of the temp .xml file
-        """
-
-        # Search for xml file. If found, load it
-        if os.path.exists(storage.paths.papers_xml):
-
-            self.logger.info(f"Found an .xml file: {storage.paths.papers_xml}")
-            self.logger.info("Attempting to continue a previous failed run.")
-
-            # Define the url we expect from the file
-            expected_url = arxiv_client.apiquery.format(
-                start_num=0, blocksize=arxiv_client.SEARCH_BLOCKSIZE
-            )
-
-            # Load the file
-            xml_tree = storage.read_xml_file(arxiv_client.NS, expected_url, False)
-
-            # Extract the papers from the xml
-            self.extract_papers(arxiv_client.NS, xml_tree)
-
-        # If all papers were found, log a message and continue
-        if self.length == arxiv_client.total_papers:
-
-            self.logger.info("All papers found in the .xml file!")
-
-        # If the xml file had more papers than expected, discard and redownload
-        # Only possible if the temp xml file is altered manually
-        elif self.length > arxiv_client.total_papers:
-
-            self.logger.info("Too many papers found in the .xml file. Redownloading")
-
-            # Clear the entries from the list.
-            self.clear_corpus()
-
-        # If there were fewer papers in the xml than we expected, connect to arXiv
-        # NOTE: Not an elif in the case that the above statement clears the corpus
-        if self.length < arxiv_client.total_papers:
-
-            self.logger.debug(f"The number of papers found so far is: {self.length}")
-
-            # # Compute the estimated time for the search
-            est_time = -(arxiv_client.SLEEP_SEARCH + arxiv_client.SLEEP_FUDGE) * (
-                (arxiv_client.total_papers - self.length)
-                // -arxiv_client.SEARCH_BLOCKSIZE
-            )
-
-            # Compute the number of steps it will take
-            num_steps = math.ceil(
-                (arxiv_client.total_papers / arxiv_client.SEARCH_BLOCKSIZE)
-                * arxiv_client.SEARCH_BLOCKSIZE
-            )
-
-            # Search the arXiv
-            self.logger.info(
-                f"Searching for papers. Estimated time: {est_time:.0f} seconds"
-            )
-            start_index = (
-                self.length
-            )  # self.length updates when adding papers. Need a constant
-            for ii in range(
-                start_index, arxiv_client.total_papers, arxiv_client.SEARCH_BLOCKSIZE
-            ):
-
-                # Compute the progress of the loop
-                if ii + arxiv_client.SEARCH_BLOCKSIZE > arxiv_client.total_papers:
-                    remaining_steps = 1
-                    search_interval = arxiv_client.total_papers - ii
-                    search_endnum = arxiv_client.total_papers
-                else:
-                    remaining_steps = -(
-                        (arxiv_client.total_papers - ii)
-                        // -arxiv_client.SEARCH_BLOCKSIZE
-                    )
-                    search_interval = arxiv_client.SEARCH_BLOCKSIZE
-                    search_endnum = ii + arxiv_client.SEARCH_BLOCKSIZE
-
-                # Print the progress bar
-                progress_bar(
-                    ii,
-                    num_steps,
-                    remaining_steps
-                    * (arxiv_client.SLEEP_SEARCH + arxiv_client.SLEEP_FUDGE),
-                )
-
-                # Debug messages
-                self.logger.debug(f"Remaining steps: {remaining_steps}")
-                self.logger.debug(f"Starting number: {ii}")
-                self.logger.debug(f"Ending number:   {search_endnum}")
-
-                # Sleep before the query so that there is no dead time on the last query.
-                # Also need to sleep here as we do not wait after the initial API call
-                progress_bar(ii, num_steps, remaining_steps * arxiv_client.SLEEP_SEARCH)
-                pretty_sleep(self.logger, arxiv_client.SLEEP_SEARCH)
-
-                # Query the API
-                xml_root = arxiv_client.arxiv_query(
-                    ii,
-                    search_interval,
-                )
-
-                # Write the xml to a file
-                storage.write_xml_file(xml_root, arxiv_client.NS, False)
-
-                # Extract the paper from the xml
-                self.extract_papers(arxiv_client.NS, xml_root)
-
-            # Close the progress bar
-            progress_bar(arxiv_client.total_papers, arxiv_client.total_papers)
-
-            self.logger.info(
-                "All paper information successfully downloaded from the arXiv servers!"
-            )
-
-        # Double check that we found the correct number of papers
-        if self.length != arxiv_client.total_papers:
-
-            self.logger.error(
-                f"Found {self.length} papers (expected {arxiv_client.total_papers})."
-            )
-
-        else:
-
-            self.logger.debug(
-                f"Found the expected number of papers ({arxiv_client.total_papers})."
-            )
-
-        # Remove revised papers
-        self.drop_revisions()
 
     def drop_revisions(self) -> None:
         """Drop revised papers from the Corpus."""
