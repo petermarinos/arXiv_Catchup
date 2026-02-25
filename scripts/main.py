@@ -69,17 +69,10 @@ def main():
     corpus.find_matches(search_params.search_terms)
 
     # # Score the papers
-    # # Score based on author/word matches
-    corpus.score_papers_matches()
-    # # Score based on the ML model
-    # # NOT YET IMPLEMENTED
-    # corpus.score_papers_ml()
+    cli.score_papers(corpus)
 
     # # Filter the papers
-    # # Filter based on matches
-    # corpus.filter_papers_matches()
-    # Filter based on score
-    corpus.filter_papers_score()
+    cli.filter_papers(corpus)
 
     # # Display the results
     cli.get_display_method(api, corpus)

@@ -44,36 +44,46 @@ def cli_args() -> argparse.Namespace:
     args : Contains all parsed arguments and their values.
     """
 
-    # Parse command-line arguments
+    # # Parse command-line arguments
     parser = argparse.ArgumentParser(
         prog="arXiv Catchup",
         description="Searches arXiv for papers matching your criteria.",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
+    # # Extract the arguments
+    # Skip dialogues and open links in browser
     parser.add_argument(
         "-f",
         "--force-open",
         action="store_true",
         help="Skip all user prompts and open links in the web browser.",
     )
-    parser.add_argument(
-        "-w",
-        "--write-to-file",
-        action="store_true",
-        help="Skip all user prompts and write all links to a file.",
-    )
-    parser.add_argument(
-        "--only-ids",
-        action="store_true",
-        help="Will only write the arXiv ID numbers to the file (if writing).",
-    )
+
+    # Open links in a new browswer window
     parser.add_argument(
         "-n",
         "--new-window",
         action="store_true",
         help="Open all papers in a new browser window as tabs.",
     )  # Doesn't work on mac with firefox
+
+    # Skip confirmations and write links to files
+    parser.add_argument(
+        "-w",
+        "--write-to-file",
+        action="store_true",
+        help="Skip all user prompts and write all links to a file.",
+    )
+
+    # If writing links to files, only include the arXiv ID number
+    parser.add_argument(
+        "--only-ids",
+        action="store_true",
+        help="Will only write the arXiv ID numbers to the file (if writing).",
+    )
+
+    # Manually set the start date of the search
     parser.add_argument(
         "-s",
         "--start-date",
@@ -84,6 +94,8 @@ def cli_args() -> argparse.Namespace:
             "Ignores the date in the `prev_search.txt`."
         ),
     )
+
+    # Manually set the end date of the search
     parser.add_argument(
         "-e",
         "--end-date",
@@ -91,11 +103,35 @@ def cli_args() -> argparse.Namespace:
         help='Set the end date for the search.\n"'
         "Input in ISO format, i.e. 'YYYY-mm-dd'.",
     )
+
+    # Chose the scoring algorithm
+    # Help message is suppressed as the ML algorithm has not been implemented yet
+    # Once implemented, change default to False
+    parser.add_argument(
+        "--score-on-matches",
+        action="store_true",
+        # Current default while ML is not implemented
+        default=True,  # DEFAULT: True => don't use the ML algorithm and score based on matches
+        help=argparse.SUPPRESS,
+        # Default once ML is implemented
+        # default=False,  # DEFAULT: False => use the ML algorithm to score the papers
+        # help="Use the author/word matches to score papers (default: use ML algorithm).",
+    )
+
+    # Chose the filtering algorithm
+    parser.add_argument(
+        "--filter-on-matches",
+        action="store_true",
+        default=False,  # DEFAULT: False => don't filter on matches and use the score instead
+        help="Filter papers based on matches (default: use interest scores).",
+    )
+
+    # Choose the verbosity
     parser.add_argument(
         "-v",
         "--verbosity",
         type=int,
-        default=3,
+        default=3,  # DEFAULT: Info messages
         help="Set the verbosity level.\n"
         "    0 => critical errors\n"
         "    1 => ... and non-critical errors\n"

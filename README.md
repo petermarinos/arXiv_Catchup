@@ -47,11 +47,13 @@ The search can then be performed in the CLI from any directory by running:
 There are additional arguments that can be used:
 - `-h`, `--help` show the help message.
 - `-f`, `--force-open` skips all confirmation dialogues and opens all links.
-- `-w`, `--write-to-file` skips all confirmation dialogues and writes all links to a file.
 - `-n`, `--new-window` opens all links in a new window (does not work on mac).
+- `-w`, `--write-to-file` skips all confirmation dialogues and writes all links to a file.
 - `--only-ids` will only write the arXiv ID numbers to a file (instead of the url).
 - `-s str`, `--start-date str` manually set the start date for the search.
 - `-e str`, `--end-date str` manually set the end date for the search.
+<!-- - `--score-on-matches` use the author/word matches to score the papers, instead of the machine-learning algorithm. NOT YET IMPLEMENTED AND IS HIDDEN FROM USERS -->
+- `--filter-on-matches` use the basic matching algorithm to filter the papers, rather than the 'interest' score
 - `-v int`, `--verbosity int` set the verbosity level. Default is 3.
     - 0 => Show only critical error messages.
     - 1 => Show the above, and error messages.

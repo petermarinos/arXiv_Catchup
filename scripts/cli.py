@@ -100,6 +100,40 @@ class CLI:
                     "Cancelling the search. Reduce search window to decrease the number of results."
                 )
 
+    def score_papers(self, corpus: Corpus) -> None:
+        """Wrapper to choose which scoring algorithm is used based on the CLI arguments that were
+        passed.
+        NOTE: While ML is not implemented, the CLI argument cannot be changed and the score will
+              always be used.
+        """
+
+        # If argument was passed, score papers based on matches
+        if self.args.score_on_matches:
+
+            corpus.score_papers_matches()
+
+        # DEFAULT: Score based on ml algorithm.
+        # NOTE: Not yet implemented. Current default is actually to use matches, as the CLI argument
+        #       is always True
+        else:
+
+            corpus.score_papers_ml()
+
+    def filter_papers(self, corpus: Corpus) -> None:
+        """Wrapper to choose with filtering algorithm is used based on the CLI arguments that were
+        passed
+        """
+
+        # If argument was passed, filter based on matches
+        if not self.args.filter_on_matches:
+
+            corpus.filter_papers_matches()
+
+        # DEFAULT: filter based on score
+        else:
+
+            corpus.filter_papers_score()
+
     def get_display_method(self, arxiv_client: ArxivClient, corpus: Corpus) -> None:
         """Find the preferred method of displaying the results.
 
