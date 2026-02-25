@@ -40,13 +40,19 @@ class Storage:
 
         self.logger: logging.Logger
 
+        config_dir = root_dir / "config"
+        state_dir = root_dir / "state"
+        out_dir = root_dir / "outputs"
+        log_dir = root_dir / "logs"
+        tmp_dir = root_dir / "tmp"
+
         self.paths = Paths(
-            log=root_dir / "catchup.log",
-            previous_date=root_dir / "prev_search.txt",
-            search_terms=root_dir / "search_terms.yaml",
-            catchup=root_dir / "catchup.txt",
-            search_xml=root_dir / "search.xml",
-            papers_xml=root_dir / "papers.xml",
+            log=log_dir / "catchup.log",
+            previous_date=state_dir / "prev_search.txt",
+            search_terms=config_dir / "search_terms.yaml",
+            catchup=out_dir / "catchup.txt",
+            search_xml=tmp_dir / "search.xml",
+            papers_xml=tmp_dir / "papers.xml",
         )
 
     def add_logger(self, logger: logging.Logger) -> None:
