@@ -130,7 +130,7 @@ class CLI:
         """
 
         # If argument was passed, filter based on matches
-        if not self.args.filter_on_matches:
+        if self.args.filter_on_matches:
 
             corpus.filter_papers_matches()
 
