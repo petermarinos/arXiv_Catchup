@@ -67,7 +67,7 @@ These CLI arguments can be added to the bash alias.
 
 #### Search Term File
 
-The file `search_terms.yaml` contains all terms that are used in the search.
+The file `./config/search_terms.yaml` contains all terms that are used in the search.
 There are four fields, `Categories`, `Authors`, `Included Words`, and `Excluded Words`.
 The `Included Words` and `Excluded Words` are used to compute a score measuring how interesting a paper is.
 Examples of the format required for each can be found in the provided file.
@@ -83,7 +83,7 @@ Examples of the format required for each can be found in the provided file.
 > If including terms that are frequently displayed with a symbol, include all possibilities (e.g. gamma, ɣ, and γ). 
 
 > [!IMPORTANT]
-> If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree search_terms.yaml` to prevent your personal search terms updating to the main branch.
+> If cloning the repo, please add this file to the ignored list via the command `$ git update-index --skip-worktree ./config/search_terms.yaml` to prevent your personal search terms updating to the main branch.
 
 ##### Notes on Author Names
 
@@ -106,19 +106,19 @@ For example, only include `Ludwig Beethoven` if you want matches for `Ludwig van
 
 #### Generated Files
 
-The script creates the file `prev_search.txt`, which contains the date of the previous run in ISO format.
+The script creates the file `./state/prev_search.txt`, which contains the date of the previous run in ISO format.
 This file will be used as the starting point for the next search, and is ignored if manually setting the start-date of the search on the CLI.
 
-If choosing to write links/IDs to a file, they will be placed in `catchup.txt`.
+If choosing to write links/IDs to a file, they will be placed in `./outputs/catchup.txt`.
 Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
 All links in this file can be opened in a browser by running `python3 /path/to/arXiv_Catchup/open_catchup.py`.
 
-During the run there are two `.xml` files that will be created.
+During the run there are two `.xml` files that will be created in `./tmp/`.
 These files contain the results of the queries to the arXiv servers.
 If some non-recoverable error occurs, these files can be used to restart the search.
 After successfully presenting the results, both `.xml` files will be deleted.
 
-All logs will be written to `catchup.log`.
+All logs will be written to `./logs/catchup.log`.
 
 ### Daily Mailings
 

@@ -7,14 +7,20 @@ __pycache__
 # VSCode settings
 .vscode/
 
-# Temporary files
-*.xml
-*.log
+# Temporary/logging files
+tmp/
+logs/
 
-# Auxiliary files
-*.txt
-*.yaml
+# State files
+state/
+
+# Config files
+config/
+
+# Outputs
+outputs/
 
 # Testing files
+TODO.txt
 *.ipynb_checkpoints
 *.ipynb

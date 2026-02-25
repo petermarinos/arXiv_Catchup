@@ -55,6 +55,16 @@ class Storage:
             papers_xml=tmp_dir / "papers.xml",
         )
 
+        # Check that the config file exists
+        if not os.path.exists(self.paths.search_terms):
+            raise RuntimeError(f"Could not find config file: {self.paths.search_terms}")
+
+        # Create directories if they don't exist
+        os.makedirs(os.path.dirname(state_dir), exist_ok=True)
+        os.makedirs(os.path.dirname(out_dir), exist_ok=True)
+        os.makedirs(os.path.dirname(log_dir), exist_ok=True)
+        os.makedirs(os.path.dirname(tmp_dir), exist_ok=True)
+
     def add_logger(self, logger: logging.Logger) -> None:
         """
         Setting up the logger requires knowlegde of this Storage manager.
