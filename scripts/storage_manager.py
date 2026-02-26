@@ -60,10 +60,21 @@ class Storage:
             raise RuntimeError(f"Could not find config file: {self.paths.search_terms}")
 
         # Create directories if they don't exist
-        os.makedirs(os.path.dirname(state_dir), exist_ok=True)
-        os.makedirs(os.path.dirname(out_dir), exist_ok=True)
-        os.makedirs(os.path.dirname(log_dir), exist_ok=True)
-        os.makedirs(os.path.dirname(tmp_dir), exist_ok=True)
+        os.makedirs(state_dir, exist_ok=True)
+        if not os.path.exists(state_dir):
+            raise RuntimeError(f"Could not find log directory file: {state_dir}")
+
+        os.makedirs(out_dir, exist_ok=True)
+        if not os.path.exists(out_dir):
+            raise RuntimeError(f"Could not find log directory file: {out_dir}")
+
+        os.makedirs(log_dir, exist_ok=True)
+        if not os.path.exists(log_dir):
+            raise RuntimeError(f"Could not find log directory file: {log_dir}")
+
+        os.makedirs(tmp_dir, exist_ok=True)
+        if not os.path.exists(tmp_dir):
+            raise RuntimeError(f"Could not find log directory file: {tmp_dir}")
 
     def add_logger(self, logger: logging.Logger) -> None:
         """
