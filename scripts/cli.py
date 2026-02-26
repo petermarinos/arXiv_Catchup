@@ -200,7 +200,7 @@ class CLI:
                     # If they want the output in the terminal
                     else:
 
-                        self.logger.info("Printing all links to the terminal:\n")
+                        print("Printing all links to the terminal:\n")
                         for arxiv_id in corpus.papers_of_note:
 
                             # Show *regardless* of logging level. Critical output.

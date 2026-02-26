@@ -108,7 +108,7 @@ class Paper:
         self.logger = logging.getLogger(__name__)
 
         # # Extract values, and perform some error checking
-        self.logger.debug("Attempting to extract a paper from an xml ...")
+        # self.logger.debug("Attempting to extract a paper from an xml ...")
 
         # Extract values from the paper
         id_num, version, updated, published, revised = extract_paper_id_version(
@@ -172,7 +172,7 @@ class Paper:
             return
 
         # If there is at least one author of interest
-        self.logger.debug("Searching for Authors")
+        # self.logger.debug("Searching for Authors")
 
         # Loop over the authors of the paper
         for paper_author in self.paper_info.authors:
@@ -187,7 +187,9 @@ class Paper:
                 if key_author_match:
 
                     self.logger.debug(
-                        "Found author: %s | Matched with: %s", key_author, paper_author
+                        "    Found author: %s | Matched with: %s",
+                        key_author,
+                        paper_author,
                     )
 
                     # Increase the number of author matches by 1
@@ -198,9 +200,9 @@ class Paper:
                     # This way the user is shown exactly what was matched
                     self.paper_scores.found_authors.append(paper_author)
 
-        # If no matches were found for this Paper:
-        if self.paper_scores.n_author_matches == 0:
-            self.logger.debug(" ... none found")
+        # # If no matches were found for this Paper:
+        # if self.paper_scores.n_author_matches == 0:
+        #     self.logger.debug(" ... none found")
 
     def match_words(self, key_words: SearchTermsDict, match_type: WordKind) -> None:
         """Find matches between the Title/Abstract of the Paper and key words in the search terms.
@@ -224,7 +226,7 @@ class Paper:
             self.logger.debug("No %s to search for...", match_type)
             return
 
-        self.logger.debug("Searching for %s", match_type)
+        # self.logger.debug("Searching for %s", match_type)
 
         # Search all titles and abstracts for words in the supplied key
         for word in words:
@@ -245,7 +247,7 @@ class Paper:
                 num_title_matches = len(re.findall(pattern, title, re.IGNORECASE))
 
                 self.logger.debug(
-                    "Found '%s' %s time(s) in the title.", word, num_title_matches
+                    "    Found '%s' %s time(s) in the title.", word, num_title_matches
                 )
 
                 # Add to score
@@ -268,7 +270,7 @@ class Paper:
                     )
 
                     self.logger.debug(
-                        "Found '%s' %s time(s) in the abstract.",
+                        "    Found '%s' %s time(s) in the abstract.",
                         word,
                         num_abstract_matches,
                     )
@@ -290,14 +292,14 @@ class Paper:
         #     f"Abstract {self.paper_scores.matches[match_type]['Abstract']} |"
         # )
 
-        # If no matches were found:
-        if self.paper_scores.matches[match_type]["Total"] == 0:
-            self.logger.debug(" ... none found")
+        # # If no matches were found:
+        # if self.paper_scores.matches[match_type]["Total"] == 0:
+        #     self.logger.debug(" ... none found")
 
     def score_authors(self) -> None:
         """Score the Paper based on the author list."""
 
-        self.logger.debug("** Author Scores **")
+        # self.logger.debug("** Author Scores **")
 
         # # Compute penalties
         # Author lists are penalised for being above a count of self.AUTHOR_REQ_DENSITY
@@ -327,7 +329,7 @@ class Paper:
         match_type : The type of match we are searching for ('Included Words' or 'Excluded Words').
         """
 
-        self.logger.debug("** %s Scores **", match_type)
+        # self.logger.debug("** %s Scores **", match_type)
 
         # Compute penalties
         title_penalty = self.TITLE_REQ_DENSITY / self.paper_info.n_words_title
@@ -380,4 +382,8 @@ class Paper:
             +0,
         )
 
-        self.logger.debug("Final Score = %s", self.paper_scores.final_score)
+        self.logger.debug(
+            "arXiv:%s final Score = %.2f",
+            self.paper_info.id_num,
+            self.paper_scores.final_score,
+        )

@@ -177,11 +177,12 @@ class Corpus:
 
         # Loop over all Papers
         count = 0
-        for arxiv_id, paper in self.corpus.items():
+        # for arxiv_id, paper in self.corpus.items():
+        for _, paper in self.corpus.items():
 
             progress_bar(count, self.length)
 
-            self.logger.debug("Computing a score for arXiv:%s.", arxiv_id)
+            # self.logger.debug("Computing a score for arXiv:%s.", arxiv_id)
 
             # Score the authors
             paper.score_authors()
@@ -253,7 +254,7 @@ class Corpus:
             if paper.paper_scores.author_score >= self.AUTHOR_THRESHOLD:
 
                 self.logger.debug(
-                    "Adding paper: %s (Author score = %s)",
+                    "Adding paper: %s (Author score = %.2f)",
                     key,
                     paper.paper_scores.author_score,
                 )
@@ -265,7 +266,7 @@ class Corpus:
             elif paper.paper_scores.final_score >= self.WORD_THRESHOLD:
 
                 self.logger.debug(
-                    "Adding paper: %s (Word score = %s)",
+                    "Adding paper: %s (Word score = %.2f)",
                     key,
                     paper.paper_scores.final_score,
                 )

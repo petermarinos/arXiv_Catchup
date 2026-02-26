@@ -34,7 +34,8 @@ def extract_paper_id_version(
     id_num = arxiv_id.text.split("/")[-1][:10]
     version = int(arxiv_id.text.split("/")[-1][11:])
 
-    logger.debug(f"arXiv ID: {id_num}, version: {version}")
+    # logger.debug(f"arXiv ID: {id_num}, version: {version}")
+    logger.debug(f"Found arXiv ID: {id_num}v{version}")
 
     # Extract the updated datetime
     raw_updated = entry.find("atom:updated", ns)
@@ -47,7 +48,7 @@ def extract_paper_id_version(
 
     updated = raw_updated.text
 
-    logger.debug(f"Updated on: {updated}")
+    # logger.debug(f"Updated on: {updated}")
 
     # Extract the published datetime
     raw_published = entry.find("atom:published", ns)
@@ -60,12 +61,12 @@ def extract_paper_id_version(
 
     published = raw_published.text
 
-    logger.debug(f"Published on: {published}")
+    # logger.debug(f"Published on: {published}")
 
     # Derive the revised flag
     revised = (updated > published) or (version > 1)
 
-    logger.debug(f"Revised: {revised}")
+    # logger.debug(f"Revised: {revised}")
 
     return id_num, version, updated, published, revised
 
@@ -122,8 +123,8 @@ def extract_paper_links(
 
         raise TypeError("Malformed pdf url")
 
-    logger.debug(f"Main page: {link_abs}")
-    logger.debug(f".pdf page: {link_pdf}")
+    # logger.debug(f"Main page: {link_abs}")
+    # logger.debug(f".pdf page: {link_pdf}")
 
     return link_abs, link_pdf
 
@@ -152,7 +153,7 @@ def extract_paper_textfields(
 
     title = raw_title.text.strip()
 
-    logger.debug(f"Title: {title}")
+    # logger.debug(f"Title: {title}")
 
     # Extract the abstract
     raw_abstract = entry.find("atom:summary", ns)
@@ -165,20 +166,20 @@ def extract_paper_textfields(
 
     abstract = raw_abstract.text.strip()
 
-    logger.debug("Abstract was found")
+    # logger.debug("Abstract was found")
     # logger.debug(f"Abstract: {abstract}") # Can print a bit too much information
 
     n_words_title = len(re.findall(r"\w+", title))
     n_words_abstract = len(re.findall(r"\w+", abstract))
 
-    logger.debug(f"Wordcount: Title = {n_words_title} | Abstract = {n_words_abstract}")
+    # logger.debug(f"Wordcount: Title = {n_words_title} | Abstract = {n_words_abstract}")
 
     # Extract the comment. Replace with an empty string if it isn't found.
     raw_comment = entry.find("arxiv:comment", ns)
 
     if raw_comment is None or raw_comment.text is None:
 
-        logger.debug("No comment found.")
+        # logger.debug("No comment found.")
 
         comment = ""
 
@@ -186,7 +187,7 @@ def extract_paper_textfields(
 
         comment = raw_comment.text.strip()
 
-    logger.debug(f"Comment: {comment}")
+    # logger.debug(f"Comment: {comment}")
 
     return title, abstract, comment, n_words_title, n_words_abstract
 
@@ -214,7 +215,7 @@ def extract_paper_cats(
 
     category = [cat.attrib["term"] for cat in raw_category]
 
-    logger.debug(f"Category: {category}")
+    # logger.debug(f"Category: {category}")
 
     return category
 
@@ -257,8 +258,8 @@ def extract_paper_authors(
 
     n_authors = len(author_list)
 
-    logger.debug(f"Found Authors: {author_list}")
-    logger.debug(f"Number of authors: {n_authors}")
+    # logger.debug(f"Paper Authors: {author_list}")
+    # logger.debug(f"Number of authors: {n_authors}")
 
     return author_list, n_authors
 
