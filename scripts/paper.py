@@ -34,7 +34,6 @@ Section = Literal["Title", "Abstract", "Total"]
 class PaperInfo:
     """Holds all information for a paper.
     Stores all data from the arXiv query, plus a few derived values.
-
     """
 
     # 11 attributes from the .xml
@@ -90,14 +89,11 @@ class Paper:
     TITLE_REQ_DENSITY = 18  # Title word counts above => penalised
     ABSTRACT_REQ_DENSITY = 250  # Abstract word counts above => penalised
 
-    def __init__(
-        self, logger: logging.Logger, ns: dict[str, str], entry: ET.Element
-    ) -> None:
+    def __init__(self, ns: dict[str, str], entry: ET.Element) -> None:
         """Create the Paper object that represents a single paper.
 
         inputs
         -----
-        logger : The logger object.
         ns     : XML namespaces.
         entry  : XML data for a single paper.
         """
@@ -108,7 +104,8 @@ class Paper:
         # Want to store *all* paper information. Disable linting warning for >15 variables
         # pylint: disable=R0914
 
-        self.logger = logger
+        # Obtain the logger
+        self.logger = logging.getLogger(__name__)
 
         # # Extract values, and perform some error checking
         self.logger.debug("Attempting to extract a paper from an xml ...")
@@ -190,7 +187,7 @@ class Paper:
                 if key_author_match:
 
                     self.logger.debug(
-                        f"Found author: {key_author} | Matched with: {paper_author}"
+                        "Found author: %s | Matched with: %s", key_author, paper_author
                     )
 
                     # Increase the number of author matches by 1
@@ -224,10 +221,10 @@ class Paper:
 
         # If there are no key_words to search for, skip the search
         if words is None:
-            self.logger.debug(f"No {match_type} to search for...")
+            self.logger.debug("No %s to search for...", match_type)
             return
 
-        self.logger.debug(f"Searching for {match_type}")
+        self.logger.debug("Searching for %s", match_type)
 
         # Search all titles and abstracts for words in the supplied key
         for word in words:
@@ -248,7 +245,7 @@ class Paper:
                 num_title_matches = len(re.findall(pattern, title, re.IGNORECASE))
 
                 self.logger.debug(
-                    f"Found '{word:s}' {num_title_matches:d} time(s) in the title."
+                    "Found '%s' %s time(s) in the title.", word, num_title_matches
                 )
 
                 # Add to score
@@ -271,7 +268,9 @@ class Paper:
                     )
 
                     self.logger.debug(
-                        f"Found '{word:s}' {num_abstract_matches:d} time(s) in the abstract."
+                        "Found '%s' %s time(s) in the abstract.",
+                        word,
+                        num_abstract_matches,
                     )
 
                     self.paper_scores.matches[match_type][
@@ -284,11 +283,12 @@ class Paper:
             + self.paper_scores.matches[match_type]["Abstract"]
         )
 
-        self.logger.debug(
-            "Matches | "
-            f"Title {self.paper_scores.matches[match_type]['Title']} | "
-            f"Abstract {self.paper_scores.matches[match_type]['Abstract']} |"
-        )
+        # # Summary of matches
+        # self.logger.debug(
+        #     "Matches | "
+        #     f"Title {self.paper_scores.matches[match_type]['Title']} | "
+        #     f"Abstract {self.paper_scores.matches[match_type]['Abstract']} |"
+        # )
 
         # If no matches were found:
         if self.paper_scores.matches[match_type]["Total"] == 0:
@@ -303,7 +303,6 @@ class Paper:
         # Author lists are penalised for being above a count of self.AUTHOR_REQ_DENSITY
         # The penalty is minor, but slightly de-prioritises collaboration papers
         authors_penalty = self.AUTHOR_REQ_DENSITY / self.paper_info.n_authors
-        self.logger.debug(f"| Author Penalty = {authors_penalty:.2f} |")
 
         # Compute the Author score:
         authors_found = len(self.paper_scores.found_authors)
@@ -312,10 +311,13 @@ class Paper:
         )
         self.paper_scores.author_score = authors_score
 
-        self.logger.debug(
-            f"| Total authors = {len(self.paper_info.authors):d} | Found = {authors_found:d} |"
-        )
-        self.logger.debug(f"| Author score = {self.paper_scores.author_score:.2f} |")
+        # # Logging messages. Creates a large amount of output and are no longer necessary
+        # # Keeping here in case the algorithms are altered
+        # self.logger.debug(f"| Author Penalty = {authors_penalty:.2f} |")
+        # self.logger.debug(
+        #     f"| Total authors = {len(self.paper_info.authors):d} | Found = {authors_found:d} |"
+        # )
+        # self.logger.debug(f"| Author score = {self.paper_scores.author_score:.2f} |")
 
     def score_words(self, match_type: WordKind) -> None:
         """Score the Paper based on the found words in the Title/Abstract.
@@ -325,15 +327,11 @@ class Paper:
         match_type : The type of match we are searching for ('Included Words' or 'Excluded Words').
         """
 
-        self.logger.debug(f"** {match_type:} Scores **")
+        self.logger.debug("** %s Scores **", match_type)
 
         # Compute penalties
         title_penalty = self.TITLE_REQ_DENSITY / self.paper_info.n_words_title
         abstract_penalty = self.ABSTRACT_REQ_DENSITY / self.paper_info.n_words_abstract
-        self.logger.debug(
-            f"| Title Penalty = {title_penalty:.2f} "
-            f"| Abstract Penalty = {abstract_penalty:.2f} |"
-        )
 
         # Compute the Included Word scores:
         inc_title_count = self.paper_scores.matches[match_type]["Title"]
@@ -354,16 +352,22 @@ class Paper:
         self.paper_scores.scores[match_type]["Abstract"] = inc_abstract_score
         self.paper_scores.scores[match_type]["Total"] = inc_total_score
 
-        self.logger.debug(
-            f"| Title Matches = {inc_title_count:d} "
-            f"| Title Score = {inc_title_score:.2f} |"
-        )
-        self.logger.debug(
-            f"| Abstract Matches = {inc_abstract_count:d} "
-            f"| Abstract Score = {inc_abstract_score:.2f} |"
-        )
+        # # Logging messages. Creates a large amount of output and are no longer necessary
+        # # Keeping here in case the algorithms are altered
+        # self.logger.debug(
+        #     f"| Title Penalty = {title_penalty:.2f} "
+        #     f"| Abstract Penalty = {abstract_penalty:.2f} |"
+        # )
+        # self.logger.debug(
+        #     f"| Title Matches = {inc_title_count:d} "
+        #     f"| Title Score = {inc_title_score:.2f} |"
+        # )
+        # self.logger.debug(
+        #     f"| Abstract Matches = {inc_abstract_count:d} "
+        #     f"| Abstract Score = {inc_abstract_score:.2f} |"
+        # )
 
-        self.logger.debug(f"| {match_type:} Score = {inc_total_score:.2f} |")
+        # self.logger.debug(f"| {match_type:} Score = {inc_total_score:.2f} |")
 
     def final_word_score(self) -> None:
         """Compute a final word score for a Paper.
@@ -376,4 +380,4 @@ class Paper:
             +0,
         )
 
-        self.logger.debug(f"Final Score = {self.paper_scores.final_score}")
+        self.logger.debug("Final Score = %s", self.paper_scores.final_score)

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 # Import standard libraries
 import xml.etree.ElementTree as ET
+import logging
 import math
 import os
 
@@ -58,7 +59,8 @@ class ArxivClient:
         http_client : The client that performs the connections to the arXiv servers.
         """
 
-        self.logger = config.logger
+        # Obtain the logger
+        self.logger = logging.getLogger(__name__)
 
         # Define the urls
         # Double braces, {{}}, used for fields that change on each search
@@ -164,7 +166,7 @@ class ArxivClient:
         # Search for xml file. If found, load it
         if os.path.exists(storage.paths.search_xml):
 
-            self.logger.info(f"Found a .xml file: {storage.paths.search_xml}")
+            self.logger.info("Found a .xml file: %s", storage.paths.search_xml)
             self.logger.info("Attempting to continue from the previous failed run.")
 
             # Define the url we expect from the file
@@ -216,7 +218,7 @@ class ArxivClient:
         # Set the number of papers
         self.total_papers = int(max_num_str)
 
-        self.logger.info(f"Will search over {self.total_papers} papers.")
+        self.logger.info("Will search over %s papers.", self.total_papers)
 
     def get_papers(self, corpus: Corpus, storage: Storage) -> None:
         """Obtains all Papers and places them in the Corpus.
@@ -234,7 +236,7 @@ class ArxivClient:
         # Search for xml file. If found, load it
         if os.path.exists(storage.paths.papers_xml):
 
-            self.logger.info(f"Found an .xml file: {storage.paths.papers_xml}")
+            self.logger.info("Found an .xml file: %s", storage.paths.papers_xml)
             self.logger.info("Attempting to continue a previous failed run.")
 
             # Define the url we expect from the file
@@ -266,7 +268,7 @@ class ArxivClient:
         # NOTE: Not an elif in the case that the above statement clears the corpus
         if corpus.length < self.total_papers:
 
-            self.logger.debug(f"The number of papers found so far is: {corpus.length}")
+            self.logger.debug("The number of papers found so far is: %s", corpus.length)
 
             # # Compute the estimated time for the search
             est_time = -(self.SLEEP_SEARCH + self.SLEEP_FUDGE) * (
@@ -280,8 +282,9 @@ class ArxivClient:
 
             # Search the arXiv
             self.logger.info(
-                f"Downloading data for {self.total_papers - corpus.length} papers. "
-                f"Estimated time: {est_time:.0f} seconds"
+                "Downloading data for %s papers. Estimated time: %.0f seconds",
+                self.total_papers - corpus.length,
+                est_time,
             )
             start_index = (
                 corpus.length
@@ -308,9 +311,9 @@ class ArxivClient:
                 )
 
                 # Debug messages
-                self.logger.debug(f"Remaining steps: {remaining_steps}")
-                self.logger.debug(f"Starting number: {ii}")
-                self.logger.debug(f"Ending number:   {search_endnum}")
+                self.logger.debug("Remaining steps: %s", remaining_steps)
+                self.logger.debug("Starting number: %s", ii)
+                self.logger.debug("Ending number:   %s", search_endnum)
 
                 # Sleep before the query so that there is no dead time on the last query.
                 # Also need to sleep here as we do not wait after the initial API call
@@ -341,13 +344,13 @@ class ArxivClient:
         if corpus.length != self.total_papers:
 
             self.logger.error(
-                f"Found {corpus.length} papers (expected {self.total_papers})."
+                "Found %s papers (expected %s).", corpus.length, self.total_papers
             )
 
         else:
 
             self.logger.debug(
-                f"Found the expected number of papers ({self.total_papers})."
+                "Found the expected number of papers (%s).", self.total_papers
             )
 
         # Remove revised papers

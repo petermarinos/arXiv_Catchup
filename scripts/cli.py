@@ -34,21 +34,22 @@ class CLI:
         if self.args.force_open:
             self.open_in_browser = True
         else:
-            self.open_in_browser = False
+            self.open_in_browser = False  # May be mutated later
 
         # if -w is passed
         if self.args.write_to_file:
             self.write_to_file = True
         else:
-            self.write_to_file = False
+            self.write_to_file = False  # May be mutated later
 
-    def add_logger(self, logger: logging.Logger) -> None:
+    def add_logger(self) -> None:
         """
         Setting up the logger requires knowlegde of the storage manager. Add the logger to this
         class after it has been created.
         """
 
-        self.logger = logger
+        # Obtain the logger
+        self.logger = logging.getLogger(__name__)
 
     def check_continue_status(
         self,
@@ -76,8 +77,9 @@ class CLI:
         if 1 <= time_to_search_minutes < 5:
 
             self.logger.warning(
-                f"There are {arxiv_client.total_papers:d} papers. "
-                f"The search will take {time_to_search_minutes:.1f} minutes."
+                "There are %s papers. The search will take %.1f minutes.",
+                arxiv_client.total_papers,
+                time_to_search_minutes,
             )
 
         # Prompt the user if it is going to take a really long time.
@@ -235,7 +237,7 @@ class CLI:
             # Print a time estimate
             est_time = len(papers_of_note) * sleeptimer
             self.logger.info(
-                f"Opening the papers. Estimated time: {est_time:.2f} seconds"
+                "Opening the papers. Estimated time: %.2f seconds", est_time
             )
 
             open_links(papers_of_note, sleeptimer)

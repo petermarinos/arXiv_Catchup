@@ -39,15 +39,11 @@ class HttpClient:
         504,  # Gateway timeout
     )
 
-    def __init__(self, logger: logging.Logger) -> None:
-        """Set up the connection parameters.
+    def __init__(self) -> None:
+        """Set up the connection parameters."""
 
-        inputs
-        ------
-        logger : The logger object
-        """
-
-        self.logger = logger
+        # Obtain the logger
+        self.logger = logging.getLogger(__name__)
 
         # Initialise wait times. Values will be modified if connection errors occur
         self.wait_time = 3.0
@@ -72,7 +68,7 @@ class HttpClient:
         formatted_url = url.format(start_num=start_num, blocksize=blocksize)
 
         self.logger.debug(
-            f"Searching for papers {start_num} to {start_num+blocksize-1} ..."
+            "Searching for papers %s to %s ...", start_num, start_num + blocksize - 1
         )
 
         # Query the server
@@ -80,7 +76,7 @@ class HttpClient:
             1, self.MAX_RETRIES + 1
         ):  # 1 -> max_retries+1 so that we start counting attempts at 1 in the logger messages
 
-            self.logger.debug(f"Attempting connection to:\n       {formatted_url}")
+            self.logger.debug("Attempting connection to:\n       %s", formatted_url)
 
             try:
 
@@ -163,7 +159,7 @@ class HttpClient:
                 self.retry_after = 60.0
 
                 self.logger.warning(
-                    f"Timeout Error. Retrying in {self.retry_after} seconds ..."
+                    "Timeout Error. Retrying in %s seconds ...", self.retry_after
                 )
 
             # If there was a Retry-After command, replace the wait time
@@ -199,7 +195,10 @@ class HttpClient:
         if error.code in self.RETRY_CODES:
 
             self.logger.warning(
-                f"HTTP error code {error.code} on attempt {attempt} of {self.MAX_RETRIES}."
+                "HTTP error code %s on attempt %s of %s.",
+                error.code,
+                attempt,
+                self.MAX_RETRIES,
             )
 
             # Obtain some additional information from the error headers
@@ -214,7 +213,7 @@ class HttpClient:
             else:
 
                 for key, value in error.headers.items():
-                    self.logger.debug(f"HTTP header: {key}: {value}")
+                    self.logger.debug("HTTP header: %s: %s", key, value)
 
                 # Obtain the 'Retry-After' header
                 retry = error.headers.get("Retry-After")
@@ -228,7 +227,8 @@ class HttpClient:
 
                     self.logger.warning(
                         "---> Received a wait command from the server. "
-                        f"Increasing wait time to the recommended {self.retry_after} seconds ..."
+                        "Increasing wait time to the recommended %s seconds ...",
+                        self.retry_after,
                     )
 
                 # Catch 429 error codes that do not have a Retry-after header
@@ -237,7 +237,8 @@ class HttpClient:
                     self.retry_after = 90.0 * attempt
                     self.logger.warning(
                         "Did not find a Retry-After command despite being a 429 error. "
-                        f"Increasing wait time to {self.retry_after} seconds ..."
+                        "Increasing wait time to %s seconds ...",
+                        self.retry_after,
                     )
 
                 # Else, if there are headers but no retry-after header
@@ -248,9 +249,9 @@ class HttpClient:
         # Otherwise, raise an error
         else:
 
-            self.logger.critical(f"HTTP error code {error.code}: {error.reason}\n")
+            self.logger.critical("HTTP error code %s: %s\n", error.code, error.reason)
             for key, value in error.headers.items():
-                self.logger.debug(f"HTTP header: {key}: {value}")
+                self.logger.debug("HTTP header: %s: %s", key, value)
             raise RuntimeError("Received non-retry HTTP error code.")
 
     def url_errorcheck(self, error: urllib.error.URLError) -> None:
@@ -269,8 +270,9 @@ class HttpClient:
 
             # Warn the user that verification failed
             self.logger.warning(
-                f"Connection error: {error.reason}. "
-                f"Updating certificate and retrying in {self.wait_time} seconds ..."
+                "Connection error: %s.\n"
+                "         Updating certificate and retrying in {self.wait_time} seconds ...",
+                error.reason,
             )
 
             # Try updating the ssl_context to use the certifi cafile
@@ -292,7 +294,8 @@ class HttpClient:
                 "certifi package version, or a wifi proxy."
             )
             self.logger.info(
-                f"Current certifi version: {certifi.__version__}. Recommended: >2026.01.04."
+                "Current certifi version: %s | Recommended: >2026.01.04.",
+                certifi.__version__,
             )
             self.logger.warning(
                 "This issue should be fixed before rerunning the script."
@@ -312,5 +315,5 @@ class HttpClient:
         # Otherwise, if it is any other type of URL error, raise an error
         else:
 
-            self.logger.critical(f"Connection error: {error.reason}\n")
+            self.logger.critical("Connection error: %s\n", error.reason)
             raise RuntimeError("Unable to connect.")

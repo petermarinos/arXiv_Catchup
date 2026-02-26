@@ -1,8 +1,5 @@
 """The main script."""
 
-# Import standard libraries
-import pathlib
-
 # Import classes
 from .storage_manager import Storage
 from .arxiv_client import ArxivClient
@@ -23,21 +20,18 @@ def main():
     # # Parse command-line arguments
     cli = CLI()
 
-    # Find the root path
-    root_path = pathlib.Path(__file__).resolve().parent.parent
-
     # # Set up the storage manager
-    storage = Storage(root_path)
+    storage = Storage()
 
     # # Set up the logger
-    logger = logger_setup(cli.args, storage.paths.log)
+    logger_setup(cli.args, storage.paths.log)
 
     # # Add the logger to the CLI and storage objects
-    cli.add_logger(logger)
-    storage.add_logger(logger)
+    cli.add_logger()
+    storage.add_logger()
 
     # # Set up the papers class
-    search_params = Config(logger)
+    search_params = Config()
 
     # # Load search terms from the auxiliary file
     search_params.get_searchterms(storage)
@@ -49,7 +43,7 @@ def main():
     search_params.date_error_check()
 
     # # Set up the client that will connect to the servers
-    http_client = HttpClient(logger)
+    http_client = HttpClient()
 
     # # Setup the API information
     api = ArxivClient(search_params, http_client)
@@ -62,7 +56,7 @@ def main():
     cli.check_continue_status(api, storage, storage.paths.search_xml)
 
     # # Loop through the searches and obtain all papers
-    corpus = Corpus(logger)
+    corpus = Corpus()
     api.get_papers(corpus, storage)
 
     # # Find matches in the papers

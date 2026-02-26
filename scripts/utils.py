@@ -142,7 +142,7 @@ def cli_args() -> argparse.Namespace:
     return args
 
 
-def logger_setup(args: argparse.Namespace, filename: pathlib.Path) -> logging.Logger:
+def logger_setup(args: argparse.Namespace, filename: pathlib.Path):
     """Set up the logger.
     Writes all messages to a log file, and takes the CLI argument for the terminal logs.
 
@@ -214,8 +214,6 @@ def logger_setup(args: argparse.Namespace, filename: pathlib.Path) -> logging.Lo
 
     # Log the passed arguments
     log_args(logger, args)
-
-    return logger
 
 
 def log_environment(logger: logging.Logger) -> None:

@@ -32,15 +32,11 @@ class Corpus:
     # 1.00 => too strict, especially if there are many 'excluded words'
     WORD_THRESHOLD = 0.65
 
-    def __init__(self, logger: logging.Logger) -> None:
-        """Create the Corpus object.
+    def __init__(self) -> None:
+        """Create the Corpus object."""
 
-        inputs
-        ------
-        logger : The logger object
-        """
-
-        self.logger = logger
+        # Obtain the logger
+        self.logger = logging.getLogger(__name__)
 
         self.corpus: dict[str, Paper] = {}
 
@@ -72,7 +68,7 @@ class Corpus:
         """
 
         # Extract the paper from the xml entry
-        paper = Paper(self.logger, ns, entry)
+        paper = Paper(ns, entry)
 
         # Add the paper to the corpus dictionary
         # Include the version number to ensure each key is unique. We will drop revisions later
@@ -102,7 +98,7 @@ class Corpus:
 
             count += 1
 
-        self.logger.debug(f"Found {count:d} papers in this search block.")
+        self.logger.debug("Found %s papers in this search block.", count)
 
     def drop_revisions(self) -> None:
         """Drop revised papers from the Corpus."""
@@ -134,7 +130,7 @@ class Corpus:
         # Compute the number of papers that were dropped
         num_dropped = n - self.length
 
-        self.logger.debug(f"Dropped {num_dropped} revised entries.")
+        self.logger.debug("Dropped %s revised entries.", num_dropped)
 
     def find_matches(self, search_terms: SearchTermsDict) -> None:
         """Find search_term matches within each Paper in the Corpus.
@@ -155,7 +151,7 @@ class Corpus:
                 count, self.length
             )  # No time estimate as it should always be fast.
 
-            self.logger.debug(f"Seaching for matches in arXiv:{arxiv_id}.")
+            self.logger.debug("Seaching for matches in arXiv:%s.", arxiv_id)
 
             # Seach for Authors
             paper.match_authors(search_terms["authors"])
@@ -185,7 +181,7 @@ class Corpus:
 
             progress_bar(count, self.length)
 
-            self.logger.debug(f"Computing a score for arXiv:{arxiv_id}.")
+            self.logger.debug("Computing a score for arXiv:%s.", arxiv_id)
 
             # Score the authors
             paper.score_authors()
@@ -228,7 +224,7 @@ class Corpus:
             # If an Author was found, append it to the entries of note
             if paper.paper_scores.n_author_matches >= 1:
 
-                self.logger.debug("Adding paper: {key} (found author)")
+                self.logger.debug("Adding paper: %s (found author)", key)
 
                 self.papers_of_note.append(key)
 
@@ -237,7 +233,7 @@ class Corpus:
                 paper.paper_scores.matches["Excluded Words"]["Total"] == 0
             ):
 
-                self.logger.debug(f"Adding paper: {key} (found word)")
+                self.logger.debug("Adding paper: %s (found word)", key)
 
                 self.papers_of_note.append(key)
 
@@ -257,7 +253,9 @@ class Corpus:
             if paper.paper_scores.author_score >= self.AUTHOR_THRESHOLD:
 
                 self.logger.debug(
-                    f"Adding paper: {key} (Author score = {paper.paper_scores.author_score})"
+                    "Adding paper: %s (Author score = %s)",
+                    key,
+                    paper.paper_scores.author_score,
                 )
 
                 papers_of_note_unsorted.append(paper.paper_info.id_num)
@@ -267,7 +265,9 @@ class Corpus:
             elif paper.paper_scores.final_score >= self.WORD_THRESHOLD:
 
                 self.logger.debug(
-                    f"Adding paper: {key} (Word score = {paper.paper_scores.final_score})"
+                    "Adding paper: %s (Word score = %s)",
+                    key,
+                    paper.paper_scores.final_score,
                 )
 
                 papers_of_note_unsorted.append(paper.paper_info.id_num)
@@ -279,9 +279,11 @@ class Corpus:
         self.papers_of_note = [paper for _, paper in pairs]
         self.scores = [score for score, _ in pairs]
 
-        self.logger.debug("Final Paper scores:")
-        for ii, paper_of_note in enumerate(self.papers_of_note):
-            self.logger.debug(f"arXiv:{paper_of_note} = {self.scores[ii]:.2f}")
+        # # Log paper scores
+        # # No longer using but kept in case a summary is wanted in testing
+        # self.logger.debug("Final Paper scores:")
+        # for ii, paper_of_note in enumerate(self.papers_of_note):
+        #     self.logger.debug(f"arXiv:{paper_of_note} = {self.scores[ii]:.2f}")
 
     def calc_author_summary(self) -> None:
         """Compute a summary string for the found authors.
@@ -352,10 +354,11 @@ class Corpus:
         max_digits = len(str(self.length))
 
         # Print a summary
-        self.logger.info(
+        # Considered basic output -> use print
+        print(
             f"There were {self.length:>{max_digits}} papers submitted to the categories of "
             "interest within the search window."
         )
-        self.logger.info(
+        print(
             f" of these, {len(self.papers_of_note):>{max_digits}} papers were interesting.\n"
         )

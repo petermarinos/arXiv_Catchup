@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Config:
-    """Defines important parameters required for the search"""
+    """Defines important parameters required for the search."""
 
     # There are 10 attributes. All of which are required to set up the execution of the script.
     # Disable linting warnings
@@ -30,20 +30,15 @@ class Config:
     # Time the searches will be bound by
     SEARCH_TIME = datetime.time(19, 0, tzinfo=datetime.timezone.utc)
 
-    def __init__(self, logger: logging.Logger) -> None:
+    def __init__(self) -> None:
         """
         Create the CatchupPipeline object, which will store important values used throughout the
         search, scoring, and filtering sections.
         - May want to break apart to separate pipelines in the future
-
-        inputs
-        ------
-        logger   : The logger object.
-        root_dir : Absolute path to the root directory.
         """
 
-        # logger
-        self.logger = logger
+        # Obtain the logger
+        self.logger = logging.getLogger(__name__)
 
         # Obtain the current time, converted to the UTC timezone
         self.current_time = datetime.datetime.now(datetime.timezone.utc)
@@ -92,7 +87,7 @@ class Config:
             )
 
         # Print which categories are being searched over
-        self.logger.info(f"Searching the {self.cat_printstring} categories")
+        self.logger.info("Searching the %s categories", self.cat_printstring)
 
     def get_dates(self, storage: Storage, cli_args: argparse.Namespace) -> None:
         """Set up the dates that the script uses for the arXiv API calls.
@@ -105,7 +100,7 @@ class Config:
         # If the end_date was passed on the command line, use it
         if cli_args.end_date:
 
-            self.logger.debug(f"Attempting to use the end_date: {cli_args.end_date}")
+            self.logger.debug("Attempting to use the end_date: %s", cli_args.end_date)
 
             self.end_time, self.end_date = parse_date(
                 self.logger,
@@ -131,7 +126,7 @@ class Config:
         if cli_args.start_date:
 
             self.logger.debug(
-                f"Attempting to use the start_date: {cli_args.start_date}"
+                "Attempting to use the start_date: %s", cli_args.start_date
             )
 
             self.start_time, self.start_date = parse_date(
@@ -150,15 +145,20 @@ class Config:
             )
 
         # Log the dates
+        # Compute the string first. Too many values to be readable with lazy-formatting, and the
+        #     values are guaranteed to be of the correct type if they are extracted from the
+        #     datetime objects.
         s_yyyy = self.start_date.year
         s_mm = self.start_date.month
         s_dd = self.start_date.day
         e_yyyy = self.end_date.year
         e_mm = self.end_date.month
         e_dd = self.end_date.day
-        self.logger.info(
-            f"Searching from {s_yyyy}/{s_mm}/{s_dd} 19:00 UTC to {e_yyyy}/{e_mm}/{e_dd} 19:00 UTC"
+        date_string = (
+            f"Searching from {s_yyyy}/{s_mm}/{s_dd} 19:00 UTC "
+            f"to {e_yyyy}/{e_mm}/{e_dd} 19:00 UTC"
         )
+        self.logger.info(date_string)
 
     def date_error_check(self) -> None:
         """Check for errors with the dates."""
@@ -206,7 +206,7 @@ class Config:
         # If the end date is equal to the start date, tell the user to wait
         if prev_run.days == 0:
             self.logger.critical(
-                f"Search start/end dates are equal.{next_post_string}\n"
+                "Search start/end dates are equal.%s\n", next_post_string
             )
             raise ValueError("Search start/end dates are equal.")
 
@@ -222,9 +222,9 @@ class Config:
         #     period is invalid
         if deltadays_now_to_search < 7 and valid_search_days == 0:
             self.logger.critical(
-                f"No valid search dates are included.{next_post_string}\n"
+                "No valid search dates are included.%s\n", next_post_string
             )
             raise ValueError(f"No valid search dates are included.{next_post_string}")
 
         # If there are no issues, let the user know how many days we are searching over
-        self.logger.info(f"Days since the previous search: {prev_run.days}")
+        self.logger.info("Days since the previous search: %s", prev_run.days)

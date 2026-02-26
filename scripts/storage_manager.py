@@ -45,7 +45,11 @@ class Paths:
 class Storage:
     """Storage manager to perform all file I/O."""
 
-    def __init__(self, root_dir: pathlib.Path) -> None:
+    def __init__(self) -> None:
+        """Create the object that holds all paths."""
+
+        # Find the root path
+        root_dir = pathlib.Path(__file__).resolve().parent.parent
 
         if not root_dir.is_dir():
             raise ValueError(f"root_dir must be a valid directory: {root_dir}")
@@ -88,13 +92,14 @@ class Storage:
         if not os.path.exists(tmp_dir):
             raise RuntimeError(f"Could not find log directory file: {tmp_dir}")
 
-    def add_logger(self, logger: logging.Logger) -> None:
+    def add_logger(self) -> None:
         """
         Setting up the logger requires knowlegde of this Storage manager.
         Add the logger object to this class for future log messages.
         """
 
-        self.logger = logger
+        # Obtain the logger
+        self.logger = logging.getLogger(__name__)
 
     def read_search_term_file(self) -> SearchTermsDict:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
@@ -110,7 +115,7 @@ class Storage:
         # Disable Pylint warning for >12 branches
         # pylint: disable=R0912
 
-        self.logger.info(f"Loading search terms from {self.paths.search_terms}.")
+        self.logger.info("Loading search terms from %s", self.paths.search_terms)
 
         # Load the .yaml into a dictionary
         with open(self.paths.search_terms, "r", encoding="utf8") as f:
@@ -150,7 +155,7 @@ class Storage:
             # Print debug info
             for author in search_terms["authors"]:
 
-                self.logger.debug(f"Found author: {author}")
+                self.logger.debug("Found author: %s", author)
 
         # # INCLUDED WORDS
 
@@ -168,7 +173,7 @@ class Storage:
 
             for included_word in search_terms["included_words"]:
 
-                self.logger.debug(f"Found included word: {included_word}")
+                self.logger.debug("Found included word: %s", included_word)
 
         # # EXCLUDED WORDS
 
@@ -188,7 +193,7 @@ class Storage:
 
             for excluded_word in search_terms["excluded_words"]:
 
-                self.logger.debug(f"Found excluded word: {excluded_word}")
+                self.logger.debug("Found excluded word: %s", excluded_word)
 
         # Check to see if any word is in both the 'included' and 'excluded fields
         if (
@@ -201,7 +206,8 @@ class Storage:
                 if inc_word in search_terms["excluded_words"]:
 
                     self.logger.warning(
-                        f"The term '{inc_word}' appears in both the Included and Excluded fields."
+                        "The term '%s' appears in both the Included and Excluded fields.",
+                        inc_word,
                     )
 
         # Ensure that there is at least one search term between the 'authors' and '_words' fields.
@@ -240,15 +246,16 @@ class Storage:
                 if link[:22] != "https://arxiv.org/abs/":
 
                     self.logger.critical(
-                        f"Found:    {link}\n"
-                        "          Expected: https://arxiv.org/abs/0123.45678v9 format\n"
+                        "Found:    %s\n"
+                        "          Expected: https://arxiv.org/abs/0123.45678v9 format\n",
+                        link,
                     )
                     raise ValueError(
                         "One or more links in the catchup file is malformed."
                     )
 
                 id_num = link[22:]
-                self.logger.debug(f"Found {id_num} with link: {link}")
+                self.logger.debug("Found %s with link: %s", id_num, link)
                 links.append(id_num)
 
         return links
@@ -281,7 +288,7 @@ class Storage:
         try:
             xml_tree = typing.cast(ET.ElementTree, ET.parse(filename))
         except ET.ParseError as e:
-            self.logger.critical(f"Could not parse XML: {e}")
+            self.logger.critical("Could not parse XML: %s", e)
             raise ValueError(f"Malformed XML file: {filename}") from e
 
         # Check the url from the loaded xml matches the current search url
@@ -303,8 +310,8 @@ class Storage:
                 "The .xml file information does not match the current search. "
                 "Discarding the file and re-connecting."
             )
-            self.logger.debug(f"Expected: {expected_url}")
-            self.logger.debug(f"Found:    {returned_url}")
+            self.logger.debug("Expected: %s", expected_url)
+            self.logger.debug("Found:    %s", returned_url)
 
             # Clear the .xml file
             self.delete_file(filename)
@@ -370,7 +377,7 @@ class Storage:
         """
 
         self.logger.info(
-            f"Writing all links to the end of the file: {self.paths.catchup}"
+            "Writing all links to the end of the file: %s", self.paths.catchup
         )
 
         with open(self.paths.catchup, "a+", encoding="utf-8") as f:
@@ -404,7 +411,7 @@ class Storage:
         # If we are operating on the search XML
         if search:
 
-            self.logger.debug(f"Saving xml to file: {self.paths.search_xml}")
+            self.logger.debug("Saving xml to file: %s", self.paths.search_xml)
             tree = ET.ElementTree(xml_root)
             tree.write(self.paths.search_xml, encoding="utf-8")
 
@@ -414,13 +421,13 @@ class Storage:
             # check if the file exists
             if not os.path.exists(self.paths.papers_xml):
 
-                self.logger.debug(f"Saving xml to file: {self.paths.papers_xml}")
+                self.logger.debug("Saving xml to file: %s", self.paths.papers_xml)
                 tree = ET.ElementTree(xml_root)
                 tree.write(self.paths.papers_xml, encoding="utf-8")
 
             else:
 
-                self.logger.debug(f"Appending xml to file {self.paths.papers_xml}")
+                self.logger.debug("Appending xml to file %s", self.paths.papers_xml)
 
                 # Load the contents of the file
                 master_tree = ET.parse(self.paths.papers_xml)
@@ -449,7 +456,7 @@ class Storage:
         """
 
         self.logger.info(
-            f"Writing the date {date} to the file: {self.paths.previous_date}."
+            "Writing the date %s to the file: %s", date, self.paths.previous_date
         )
 
         with open(self.paths.previous_date, "w", encoding="utf8") as f:
@@ -487,7 +494,7 @@ class Storage:
         filename : Path+filename of the file being deleted.
         """
 
-        self.logger.info(f"Deleting file: {filename}")
+        self.logger.info("Deleting file: %s", filename)
         file = pathlib.Path(filename)
         file.unlink()
 
@@ -510,7 +517,7 @@ class Storage:
         """
 
         # Ask the user if they would like to open the links in the browser. Default is no
-        self.logger.warning(f"There are {len(links)} links in {self.paths.catchup}.")
+        self.logger.warning("There are %s links in %s.", len(links), self.paths.catchup)
         user_prompt = (
             input(
                 "         Delete all links? This action cannot be reversed. "
