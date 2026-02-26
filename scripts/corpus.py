@@ -157,10 +157,10 @@ class Corpus:
             paper.match_authors(search_terms["authors"])
 
             # # Search for included words
-            paper.match_words(search_terms, "Included Words")
+            paper.match_words(search_terms, "included_words")
 
             # # Search for excluded words
-            paper.match_words(search_terms, "Excluded Words")
+            paper.match_words(search_terms, "excluded_words")
 
             count += 1
 
@@ -188,10 +188,10 @@ class Corpus:
             paper.score_authors()
 
             # Score for included words
-            paper.score_words("Included Words")
+            paper.score_words("included_words")
 
             # Score for excluded words
-            paper.score_words("Excluded Words")
+            paper.score_words("excluded_words")
 
             # Finalise the score
             paper.final_word_score()
@@ -230,8 +230,8 @@ class Corpus:
                 self.papers_of_note.append(key)
 
             # If there were included word matches and *no* excluded word matches, append
-            elif (paper.paper_scores.matches["Included Words"]["Total"] >= 1) and (
-                paper.paper_scores.matches["Excluded Words"]["Total"] == 0
+            elif (paper.paper_scores.matches["included_words"]["total"] >= 1) and (
+                paper.paper_scores.matches["excluded_words"]["total"] == 0
             ):
 
                 self.logger.debug("Adding paper: %s (found word)", key)
