@@ -61,7 +61,7 @@ class Config:
     def get_searchterms(self, storage: Storage) -> None:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary."""
 
-        # Read the file
+        # Read the file containing all search terms
         self.search_terms = storage.read_search_term_file()
 
         # Define category string for the urls/API calls

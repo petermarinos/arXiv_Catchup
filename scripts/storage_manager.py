@@ -105,6 +105,11 @@ class Storage:
         search_terms : The terms that will be searched for in the matching/scoring algorithms.
         """
 
+        # 13 branches to load the information and perform all error checks and cleaning
+        # Do not view it as worthwhile to split the function at this point
+        # Disable Pylint warning for >12 branches
+        # pylint: disable=R0912
+
         self.logger.info(f"Loading search terms from {self.paths.search_terms}.")
 
         # Load the .yaml into a dictionary
