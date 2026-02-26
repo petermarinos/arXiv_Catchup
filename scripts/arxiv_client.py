@@ -94,12 +94,7 @@ class ArxivClient:
         )
 
         # Format the API url
-        cats = config.search_terms.get("Categories")
-        # Ensure there is at least one category to search
-        # Should be handled while loading the .yaml, but double-check here
-        if cats is None or len(cats) == 0:
-            raise ValueError("Empty set of categories to search.")
-        # If only one category, change nothing
+        cats = config.search_terms["categories"]
         if len(cats) == 1:
             api_catstring = config.cat_urlstring
         # If multiple categories, surround with parentheses

@@ -2,6 +2,7 @@
 
 # Import standard libraries
 from dataclasses import dataclass
+from typing import TypedDict, cast
 import xml.etree.ElementTree as ET
 import argparse
 import datetime
@@ -16,6 +17,17 @@ import yaml
 # Import functions
 from .string_handling import normalise_string
 from .dates import calc_search_endtime, parse_date
+
+
+class SearchTermsDict(TypedDict):
+    """Create a typed dictionary for the search terms. Ensures type checkers know that the category
+    field *must* be included.
+    """
+
+    categories: list[str]
+    authors: list[str] | None
+    included_words: list[str] | None
+    excluded_words: list[str] | None
 
 
 @dataclass
@@ -84,7 +96,7 @@ class Storage:
 
         self.logger = logger
 
-    def read_search_term_file(self) -> dict[str, list[str] | None]:
+    def read_search_term_file(self) -> SearchTermsDict:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
         Performs some basic checks on the data.
 
@@ -102,81 +114,92 @@ class Storage:
 
         # # CATEGORIES
 
+        # At least one category is required
+        if search_terms["categories"] is None:
+
+            self.logger.critical(
+                "No search terms were found in the 'Categories' entry in the configuration file.\n"
+                "          Please check the file and add at least one item.\n"
+            )
+            raise RuntimeError(
+                "No search categories found. Add atleast one to the .yaml."
+            )
+
         # Remove duplicates, but preserve order from the config file
-        search_terms["Categories"] = list(dict.fromkeys(search_terms["Categories"]))
+        search_terms["categories"] = list(dict.fromkeys(search_terms["categories"]))
 
         # # AUTHORS
 
         # If no authors, warn the use
-        if search_terms["Authors"] is None:
+        if search_terms["authors"] is None:
 
             self.logger.warning("No 'Authors' found in the configuration file.")
 
         # Normalise author strings and remove duplicates
-        if search_terms["Authors"] is not None:
+        else:
 
             # Remove duplicates, but preserve order from the config file
-            authors = [normalise_string(a) for a in search_terms["Authors"]]
-            search_terms["Authors"] = list(dict.fromkeys(authors))
+            authors = [normalise_string(a) for a in search_terms["authors"]]
+            search_terms["authors"] = list(dict.fromkeys(authors))
 
             # Print debug info
-            for author in search_terms["Authors"]:
+            for author in search_terms["authors"]:
 
                 self.logger.debug(f"Found author: {author}")
 
         # # INCLUDED WORDS
 
         # If no included words are found, warn the user
-        if search_terms["Included Words"] is None:
+        if search_terms["included_words"] is None:
 
-            self.logger.warning("No 'Included Words' found in the configuration file.")
+            self.logger.warning("No 'included_words' found in the configuration file.")
 
         # Otherwise, remove duplicates and log all found included words
         else:
 
             # Remove duplicates and sort
-            inc_words = list(search_terms["Included Words"])
-            search_terms["Included Words"] = sorted(set(inc_words))
+            inc_words = list(search_terms["included_words"])
+            search_terms["included_words"] = sorted(set(inc_words))
 
-            for included_word in search_terms["Included Words"]:
+            for included_word in search_terms["included_words"]:
 
                 self.logger.debug(f"Found included word: {included_word}")
 
         # # EXCLUDED WORDS
 
         # If no excluded words are found, warn the user
-        if search_terms["Excluded Words"] is None:
+        if search_terms["excluded_words"] is None:
 
             self.logger.warning(
-                "No 'Excluded Words' were found in the configuration file."
+                "No 'excluded_words' were found in the configuration file."
             )
 
         # Otherwise, remove duplicates and log all found excluded words
         else:
 
             # Remove duplicates and sort
-            exc_words = list(search_terms["Excluded Words"])
-            search_terms["Excluded Words"] = sorted(set(exc_words))
+            exc_words = list(search_terms["excluded_words"])
+            search_terms["excluded_words"] = sorted(set(exc_words))
 
-            for excluded_word in search_terms["Excluded Words"]:
+            for excluded_word in search_terms["excluded_words"]:
 
                 self.logger.debug(f"Found excluded word: {excluded_word}")
 
         # Check to see if any word is in both the 'included' and 'excluded fields
         if (
-            search_terms["Included Words"] is not None
-            and search_terms["Excluded Words"] is not None
+            search_terms["included_words"] is not None
+            and search_terms["excluded_words"] is not None
         ):
 
-            for inc_word in search_terms["Included Words"]:
+            for inc_word in search_terms["included_words"]:
 
-                if inc_word in search_terms["Excluded Words"]:
+                if inc_word in search_terms["excluded_words"]:
 
                     self.logger.warning(
                         f"The term '{inc_word}' appears in both the Included and Excluded fields."
                     )
 
-        return search_terms
+        return cast(SearchTermsDict, search_terms)
 
     def read_catchup_file(self) -> list[str]:
         """Read the catchup file.

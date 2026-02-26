@@ -1,5 +1,9 @@
 """The Paper class."""
 
+# Import dependency type checking libraries
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 # Import libraries
 from dataclasses import dataclass
 from typing import Literal
@@ -16,6 +20,10 @@ from .xml_handling import (
     extract_paper_authors,
 )
 from .filtering import authors_match
+
+# Import classes for type checking
+if TYPE_CHECKING:
+    from .storage_manager import SearchTermsDict
 
 # Define some literals. Bounds the expected values.
 WordKind = Literal["Included Words", "Excluded Words"]
@@ -197,9 +205,7 @@ class Paper:
         if self.paper_scores.n_author_matches == 0:
             self.logger.debug(" ... none found")
 
-    def match_words(
-        self, key_words: dict[str, list[str] | None], match_type: WordKind
-    ) -> None:
+    def match_words(self, key_words: SearchTermsDict, match_type: WordKind) -> None:
         """Find matches between the Title/Abstract of the Paper and key words in the search terms.
 
         inputs
@@ -209,7 +215,12 @@ class Paper:
         """
 
         # Extract the words to search for from the key_words dictionary
-        words = key_words.get(match_type)
+        # Do not need to use .get() as match_type is limited to the type WordKind
+        if match_type == "Included Words":
+            words = key_words["included_words"]
+        else:
+            words = key_words["excluded_words"]
+        # words = key_words[match_type]
 
         # If there are no key_words to search for, skip the search
         if words is None:

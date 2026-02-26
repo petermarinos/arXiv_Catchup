@@ -1,5 +1,9 @@
 """Corpus class."""
 
+# Import dependency type checking libraries
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 # Import standard libraries
 import xml.etree.ElementTree as ET
 import logging
@@ -9,6 +13,10 @@ from .ui import progress_bar
 
 # Import classes
 from .paper import Paper
+
+# Import classes for type checking
+if TYPE_CHECKING:
+    from .storage_manager import SearchTermsDict
 
 
 class Corpus:
@@ -128,7 +136,7 @@ class Corpus:
 
         self.logger.debug(f"Dropped {num_dropped} revised entries.")
 
-    def find_matches(self, search_terms: dict[str, list[str] | None]) -> None:
+    def find_matches(self, search_terms: SearchTermsDict) -> None:
         """Find search_term matches within each Paper in the Corpus.
 
         inputs
@@ -150,7 +158,7 @@ class Corpus:
             self.logger.debug(f"Seaching for matches in arXiv:{arxiv_id}.")
 
             # Seach for Authors
-            paper.match_authors(search_terms["Authors"])
+            paper.match_authors(search_terms["authors"])
 
             # # Search for included words
             paper.match_words(search_terms, "Included Words")

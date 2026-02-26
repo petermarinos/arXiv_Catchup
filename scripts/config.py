@@ -14,7 +14,7 @@ from .dates import parse_date, calc_search_endtime, calc_next_posttime
 
 # Import classes for type checking
 if TYPE_CHECKING:
-    from .storage_manager import Storage
+    from .storage_manager import SearchTermsDict, Storage
 
 
 class Config:
@@ -53,7 +53,7 @@ class Config:
         self.end_time: datetime.datetime
         self.end_date: datetime.date
 
-        self.search_terms: dict[str, list[str] | None]
+        self.search_terms: SearchTermsDict
 
         self.cat_printstring = ""
         self.cat_urlstring = ""
@@ -64,42 +64,31 @@ class Config:
         # Read the file
         self.search_terms = storage.read_search_term_file()
 
-        # At least one category is required
-        if self.search_terms["Categories"] is None:
-
-            self.logger.critical(
-                "No search terms were found in the 'Categories' entry in the configuration file.\n"
-                "          Please check the file and add at least one item.\n"
-            )
-            raise RuntimeError(
-                "No search categories found. Add atleast one to the .yaml."
-            )
-
         # Define category string for the urls/API calls
         self.cat_urlstring = "+OR+".join(
-            f"cat:{cat}" for cat in self.search_terms["Categories"]
+            f"cat:{cat}" for cat in self.search_terms["categories"]
         )
 
         # Define category string to make nice print statements
-        if len(self.search_terms["Categories"]) == 2:
+        if len(self.search_terms["categories"]) == 2:
 
             self.cat_printstring = " and ".join(
-                f"{c}" for c in self.search_terms["Categories"]
+                f"{c}" for c in self.search_terms["categories"]
             )
 
-        elif len(self.search_terms["Categories"]) > 2:
+        elif len(self.search_terms["categories"]) > 2:
 
             catstring_temp = ", ".join(
-                f"{c}" for c in self.search_terms["Categories"][:-1]
+                f"{c}" for c in self.search_terms["categories"][:-1]
             )
             self.cat_printstring = ", and ".join(
-                [catstring_temp, self.search_terms["Categories"][-1]]
+                [catstring_temp, self.search_terms["categories"][-1]]
             )
 
         else:
 
             self.cat_printstring = ", ".join(
-                f"{c}" for c in self.search_terms["Categories"]
+                f"{c}" for c in self.search_terms["categories"]
             )
 
         # Print which categories are being searched over
