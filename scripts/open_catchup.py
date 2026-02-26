@@ -7,14 +7,13 @@ CLI Arguments
 
 # Import standard libraries
 import argparse
-import pathlib
 
 # Import classes
 from scripts.storage_manager import Storage
 
 # Import packages
-from scripts.utils import logger_setup
-from scripts.ui import open_links
+from .utils import logger_setup
+from .ui import open_links
 
 # The goal of this script is to save the link opening for later if the user chooses
 # However, it can also be used to automate the searches.
@@ -26,9 +25,6 @@ from scripts.ui import open_links
 # However, this script can be used to offload the search times (3s per ten papers) to a cron job.
 # The only impact to you would be the 0.25s per filtered paper opened in the browser.
 # If you rarely want to open all papers, this is the recommended method.
-
-# Find the directory of this file
-root_dir = pathlib.Path(__file__).resolve().parent
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(
@@ -45,7 +41,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 # Extract some of the required constants
-storage = Storage(root_dir)
+storage = Storage()
 
 # XML namespaces used by arXiv
 ns = {
@@ -58,8 +54,8 @@ ns = {
 SLEEP_OPENING = 0.25  # 0.25 seconds between opening links
 
 # Setup logging
-logger = logger_setup(args, storage.paths.log)
-storage.add_logger(logger)
+logger_setup(args, storage.paths.log)
+storage.add_logger()
 
 # Read the catchup file
 papers = storage.read_catchup_file()
