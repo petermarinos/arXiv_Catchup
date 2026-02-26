@@ -105,7 +105,7 @@ class Storage:
         search_terms : The terms that will be searched for in the matching/scoring algorithms.
         """
 
-        # 13 branches to load the information and perform all error checks and cleaning
+        # 14 branches to load the information and perform all error checks and cleaning
         # Do not view it as worthwhile to split the function at this point
         # Disable Pylint warning for >12 branches
         # pylint: disable=R0912
@@ -203,6 +203,21 @@ class Storage:
                     self.logger.warning(
                         f"The term '{inc_word}' appears in both the Included and Excluded fields."
                     )
+
+        # Ensure that there is at least one search term between the 'authors' and '_words' fields.
+        if (
+            search_terms["authors"] is None
+            and search_terms["included_words"] is None
+            and search_terms["excluded_words"] is None
+        ):
+
+            self.logger.critical(
+                "No search terms were found between the 'authors', 'included_words', and "
+                "'excluded_words' entries in the configuration file.\n"
+                "          Please check the file and add at least one item to at least one of "
+                "these fields.\n"
+            )
+            raise RuntimeError("No search terms found. Add atleast one to the .yaml.")
 
         return cast(SearchTermsDict, search_terms)
 
