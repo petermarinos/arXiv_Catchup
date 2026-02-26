@@ -4,7 +4,7 @@
 # Define categories to search
 # At least one is required
 # Examples shown only for astro-ph categories. If searching other fields, e.g. physics or computer science, find the correct format from arXiv https://arxiv.org/category_taxonomy
-Categories :
+categories :
   # - astro-ph*   # All astrophysics categories
   # - astro-ph.CO # Cosmology and Nongalactic Astrophysics
   # - astro-ph.EP # Earth and Planetary Astrophysics
@@ -17,13 +17,13 @@ Categories :
 # More information => better matching
 # For example, inputting `Andrew Sydney Withiel Thomas` will match with paper authors including `Andrew Sydney Withiel Thomas`, and lower-information representations such as `Andrew S. W. Thomas`, `A. Thomas`, `Thomas`, etc., while excluding `A. S. Z. Thomas`, etc.
 # Do not include particles or suffixes, e.g. write `Ludwig Beethoven` instead of `Ludwig van Beethoven`
-Authors :
+authors :
   # - examplename
 
 # Key words to search for
-Included Words :
+included_words :
   # - exampleword
 
 # Words that exclude papers being shown
-Excluded Words :
+excluded_words :
   # - exampleword
