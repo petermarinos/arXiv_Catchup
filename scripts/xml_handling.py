@@ -35,7 +35,7 @@ def extract_paper_id_version(
     version = int(arxiv_id.text.split("/")[-1][11:])
 
     # logger.debug(f"arXiv ID: {id_num}, version: {version}")
-    logger.debug(f"Found arXiv ID: {id_num}v{version}")
+    logger.debug(f"Found arXiv:{id_num}v{version}")
 
     # Extract the updated datetime
     raw_updated = entry.find("atom:updated", ns)
