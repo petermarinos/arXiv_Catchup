@@ -1,24 +1,7 @@
-# Requirements:
+# # Requirements:
 python>=3.10
 certifi==2026.01.04
 pylatexenc==2.10
 PyYAML==6.0.2
-# # Other required packages that are included in the python standard library and so do not need to be installed:
-# argparse
-# dataclasses
-# datetime
-# logging
-# os
-# pathlib
-# random
-# re
-# ssl
-# sys
-# time
-# unicodedata
-# unittest # For testing
-# urllib
-# webbrowser
-# xml
-# # Usefull for typechecking with mypy:
+# # Dev requirements:
 # types-PyYAML
