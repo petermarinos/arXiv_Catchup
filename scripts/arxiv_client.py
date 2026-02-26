@@ -216,7 +216,7 @@ class ArxivClient:
         # Set the number of papers
         self.total_papers = int(max_num_str)
 
-        self.logger.info(f"Will search for {self.total_papers} papers.")
+        self.logger.info(f"Will search over {self.total_papers} papers.")
 
     def get_papers(self, corpus: Corpus, storage: Storage) -> None:
         """Obtains all Papers and places them in the Corpus.
