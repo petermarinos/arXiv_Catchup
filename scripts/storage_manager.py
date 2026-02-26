@@ -123,7 +123,7 @@ class Storage:
         if search_terms["categories"] is None:
 
             self.logger.critical(
-                "No search terms were found in the 'Categories' entry in the configuration file.\n"
+                "No search terms were found in the 'categories' entry in the configuration file.\n"
                 "          Please check the file and add at least one item.\n"
             )
             raise RuntimeError(
@@ -138,7 +138,7 @@ class Storage:
         # If no authors, warn the use
         if search_terms["authors"] is None:
 
-            self.logger.warning("No 'Authors' found in the configuration file.")
+            self.logger.warning("No 'authors' found in the configuration file.")
 
         # Normalise author strings and remove duplicates
         else:

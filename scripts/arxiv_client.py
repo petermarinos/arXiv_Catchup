@@ -216,6 +216,8 @@ class ArxivClient:
         # Set the number of papers
         self.total_papers = int(max_num_str)
 
+        self.logger.info(f"Will search for {self.total_papers} papers.")
+
     def get_papers(self, corpus: Corpus, storage: Storage) -> None:
         """Obtains all Papers and places them in the Corpus.
         Will attempt to load the Corpus from an .xml file.
@@ -278,7 +280,8 @@ class ArxivClient:
 
             # Search the arXiv
             self.logger.info(
-                f"Downloading papers. Estimated time: {est_time:.0f} seconds"
+                f"Downloading {self.total_papers - corpus.length} papers. "
+                f"Estimated time: {est_time:.0f} seconds"
             )
             start_index = (
                 corpus.length
