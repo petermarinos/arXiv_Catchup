@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 # Import libraries
 import logging
 import pathlib
-import sys
+
+# import sys
 
 # Import functions
 from .utils import cli_args
@@ -18,6 +19,18 @@ if TYPE_CHECKING:
     from .storage_manager import Storage
     from .arxiv_client import ArxivClient
     from .corpus import Corpus
+
+
+class UserCancel(Exception):
+    """Exception raised if the user chooses to cancel the search.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
 
 
 class CLI:
@@ -102,9 +115,10 @@ class CLI:
                 # Delete the .xml file
                 storage.delete_file(xml_path)
 
-                # Exit
-                sys.exit(
-                    "Cancelling the search. Reduce search window to decrease the number of results."
+                # Raise the cancellation error
+                raise UserCancel(
+                    "Cancelling the search. "
+                    "Reduce search window to decrease the number of results."
                 )
 
     def score_papers(self, corpus: Corpus) -> None:
