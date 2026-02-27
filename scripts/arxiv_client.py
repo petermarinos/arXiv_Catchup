@@ -96,7 +96,7 @@ class ArxivClient:
         )
 
         # Format the API url
-        cats = config.search_terms["categories"]
+        cats = config.search_terms.categories
         if len(cats) == 1:
             api_catstring = config.cat_urlstring
         # If multiple categories, surround with parentheses

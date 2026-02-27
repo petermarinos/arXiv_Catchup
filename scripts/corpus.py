@@ -12,11 +12,11 @@ import logging
 from .ui import progress_bar
 
 # Import classes
-from .paper import Paper
+from .paper import WordKind, SectionKind, Paper
 
 # Import classes for type checking
 if TYPE_CHECKING:
-    from .storage_manager import SearchTermsDict
+    from .storage_manager import SearchTerms
 
 
 class Corpus:
@@ -132,7 +132,7 @@ class Corpus:
 
         self.logger.debug("Dropped %s revised entries.", num_dropped)
 
-    def find_matches(self, search_terms: SearchTermsDict) -> None:
+    def find_matches(self, search_terms: SearchTerms) -> None:
         """Find search_term matches within each Paper in the Corpus.
 
         inputs
@@ -154,13 +154,13 @@ class Corpus:
             self.logger.debug("Seaching for matches in arXiv:%s.", arxiv_id)
 
             # Seach for Authors
-            paper.match_authors(search_terms["authors"])
+            paper.match_authors(search_terms.authors)
 
             # # Search for included words
-            paper.match_words(search_terms, "included_words")
+            paper.match_words(search_terms, WordKind.INCLUDED)
 
             # # Search for excluded words
-            paper.match_words(search_terms, "excluded_words")
+            paper.match_words(search_terms, WordKind.EXCLUDED)
 
             count += 1
 
@@ -188,10 +188,10 @@ class Corpus:
             paper.score_authors()
 
             # Score for included words
-            paper.score_words("included_words")
+            paper.score_words(WordKind.INCLUDED)
 
             # Score for excluded words
-            paper.score_words("excluded_words")
+            paper.score_words(WordKind.EXCLUDED)
 
             # Finalise the score
             paper.final_word_score()
@@ -230,8 +230,16 @@ class Corpus:
                 self.papers_of_note.append(key)
 
             # If there were included word matches and *no* excluded word matches, append
-            elif (paper.paper_scores.matches["included_words"]["total"] >= 1) and (
-                paper.paper_scores.matches["excluded_words"]["total"] == 0
+            elif (
+                paper.paper_scores.matches_scores[WordKind.INCLUDED][
+                    SectionKind.TOTAL
+                ].matches
+                >= 1
+            ) and (
+                paper.paper_scores.matches_scores[WordKind.EXCLUDED][
+                    SectionKind.TOTAL
+                ].matches
+                == 0
             ):
 
                 self.logger.debug("Adding paper: %s (found word)", key)

@@ -2,7 +2,7 @@
 
 # Import standard libraries
 from dataclasses import dataclass
-from typing import TypedDict, cast
+from enum import Enum
 import xml.etree.ElementTree as ET
 import argparse
 import datetime
@@ -19,15 +19,26 @@ from .string_handling import normalise_string
 from .dates import calc_search_endtime, parse_date
 
 
-class SearchTermsDict(TypedDict):
+# Define some small classes. Bounds the expected values and prevents errors within strings.
+class YamlFields(Enum):
+    """Define the fields that we extract from the configuration .yaml."""
+
+    CATEGORIES = "categories"
+    AUTHORS = "authors"
+    INCLUDED = "included_words"
+    EXCLUDED = "excluded_words"
+
+
+@dataclass
+class SearchTerms:
     """Create a typed dictionary for the search terms. Ensures type checkers know that the category
     field *must* be included.
     """
 
     categories: list[str]
-    authors: list[str] | None
-    included_words: list[str] | None
-    excluded_words: list[str] | None
+    authors: list[str]
+    included_words: list[str]
+    excluded_words: list[str]
 
 
 @dataclass
@@ -101,7 +112,7 @@ class Storage:
         # Obtain the logger
         self.logger = logging.getLogger(__name__)
 
-    def read_search_term_file(self) -> SearchTermsDict:
+    def read_search_term_file(self) -> SearchTerms:
         """Loads the user-defined search terms from the `search_terms.yaml` into a dictionary.
         Performs some basic checks on the data.
 
@@ -120,12 +131,14 @@ class Storage:
         # Load the .yaml into a dictionary
         with open(self.paths.search_terms, "r", encoding="utf8") as f:
 
-            search_terms = yaml.safe_load(f)
+            raw_search_terms = yaml.safe_load(f)
+
+        # Extract the fields from the .yaml that we require
 
         # # CATEGORIES
 
         # At least one category is required
-        if search_terms["categories"] is None:
+        if raw_search_terms[YamlFields.CATEGORIES.value] is None:
 
             self.logger.critical(
                 "No search terms were found in the 'categories' entry in the configuration file.\n"
@@ -136,86 +149,83 @@ class Storage:
             )
 
         # Remove duplicates, but preserve order from the config file
-        search_terms["categories"] = list(dict.fromkeys(search_terms["categories"]))
+        cats = list(dict.fromkeys(raw_search_terms[YamlFields.CATEGORIES.value]))
 
         # # AUTHORS
 
         # If no authors, warn the use
-        if search_terms["authors"] is None:
+        if raw_search_terms[YamlFields.AUTHORS.value] is None:
 
             self.logger.warning("No 'authors' found in the configuration file.")
+            authors = []
 
         # Normalise author strings and remove duplicates
         else:
 
             # Remove duplicates, but preserve order from the config file
-            authors = [normalise_string(a) for a in search_terms["authors"]]
-            search_terms["authors"] = list(dict.fromkeys(authors))
+            raw_authors = [
+                normalise_string(a) for a in raw_search_terms[YamlFields.AUTHORS.value]
+            ]
+            authors = list(dict.fromkeys(raw_authors))
 
             # Print debug info
-            for author in search_terms["authors"]:
+            for author in authors:
 
                 self.logger.debug("Found author: %s", author)
 
         # # INCLUDED WORDS
 
         # If no included words are found, warn the user
-        if search_terms["included_words"] is None:
+        if raw_search_terms[YamlFields.INCLUDED.value] is None:
 
             self.logger.warning("No 'included_words' found in the configuration file.")
+
+            inc_words = []
 
         # Otherwise, remove duplicates and log all found included words
         else:
 
             # Remove duplicates and sort
-            inc_words = list(search_terms["included_words"])
-            search_terms["included_words"] = sorted(set(inc_words))
+            raw_inc_words = list(raw_search_terms[YamlFields.INCLUDED.value])
+            inc_words = sorted(set(raw_inc_words))
 
-            for included_word in search_terms["included_words"]:
+            for included_word in inc_words:
 
                 self.logger.debug("Found included word: %s", included_word)
 
         # # EXCLUDED WORDS
 
         # If no excluded words are found, warn the user
-        if search_terms["excluded_words"] is None:
+        if raw_search_terms[YamlFields.EXCLUDED.value] is None:
 
             self.logger.warning(
                 "No 'excluded_words' were found in the configuration file."
             )
+            exc_words = []
 
         # Otherwise, remove duplicates and log all found excluded words
         else:
 
             # Remove duplicates and sort
-            exc_words = list(search_terms["excluded_words"])
-            search_terms["excluded_words"] = sorted(set(exc_words))
+            raw_exc_words = list(raw_search_terms[YamlFields.EXCLUDED.value])
+            exc_words = sorted(set(raw_exc_words))
 
-            for excluded_word in search_terms["excluded_words"]:
+            for excluded_word in exc_words:
 
                 self.logger.debug("Found excluded word: %s", excluded_word)
 
         # Check to see if any word is in both the 'included' and 'excluded fields
-        if (
-            search_terms["included_words"] is not None
-            and search_terms["excluded_words"] is not None
-        ):
+        for inc_word in inc_words:
 
-            for inc_word in search_terms["included_words"]:
+            if inc_word in exc_words:
 
-                if inc_word in search_terms["excluded_words"]:
-
-                    self.logger.warning(
-                        "The term '%s' appears in both the Included and Excluded fields.",
-                        inc_word,
-                    )
+                self.logger.warning(
+                    "The term '%s' appears in both the Included and Excluded fields.",
+                    inc_word,
+                )
 
         # Ensure that there is at least one search term between the 'authors' and '_words' fields.
-        if (
-            search_terms["authors"] is None
-            and search_terms["included_words"] is None
-            and search_terms["excluded_words"] is None
-        ):
+        if len(authors) == 0 and len(inc_words) == 0 and len(exc_words) == 0:
 
             self.logger.critical(
                 "No search terms were found between the 'authors', 'included_words', and "
@@ -225,7 +235,14 @@ class Storage:
             )
             raise RuntimeError("No search terms found. Add atleast one to the .yaml.")
 
-        return cast(SearchTermsDict, search_terms)
+        search_terms = SearchTerms(
+            categories=cats,
+            authors=authors,
+            included_words=inc_words,
+            excluded_words=exc_words,
+        )
+
+        return search_terms
 
     def read_catchup_file(self) -> list[str]:
         """Read the catchup file.

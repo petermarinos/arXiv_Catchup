@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 # Import libraries
 from dataclasses import dataclass
-from typing import Literal
+from enum import Enum
 import xml.etree.ElementTree as ET
 import logging
 import re
@@ -23,11 +23,31 @@ from .filtering import authors_match
 
 # Import classes for type checking
 if TYPE_CHECKING:
-    from .storage_manager import SearchTermsDict
+    from .storage_manager import SearchTerms
 
-# Define some literals. Bounds the expected values.
-WordKind = Literal["included_words", "excluded_words"]
-Section = Literal["title", "abstract", "total"]
+
+# Define some small classes. Bounds the expected values and prevents errors within strings.
+class WordKind(Enum):
+    """Define the kinds of words we expect to use in the matching/scoring algorithms"""
+
+    INCLUDED = "included_words"
+    EXCLUDED = "excluded_words"
+
+
+class SectionKind(Enum):
+    """Define the kinds of sections that we expect to find matches/scores for."""
+
+    TITLE = "title"
+    ABSTRACT = "abstract"
+    TOTAL = "total"
+
+
+@dataclass
+class CountScore:
+    """Define the class that will hold the number of matches and scores. Default all to zero"""
+
+    matches: int = 0
+    scores: float = 0.0
 
 
 @dataclass
@@ -68,8 +88,7 @@ class PaperScores:
     found_authors: list[str]
     n_author_matches: int
     author_score: float
-    matches: dict[WordKind, dict[Section, int]]
-    scores: dict[WordKind, dict[Section, float]]
+    matches_scores: dict[WordKind, dict[SectionKind, CountScore]]
     final_score: float
 
 
@@ -140,21 +159,16 @@ class Paper:
             n_authors=n_authors,
         )
 
-        # Initialise the scores. Will set them all to zero
-        match_dict: dict[WordKind, dict[Section, int]] = {
-            "included_words": {"title": 0, "abstract": 0, "total": 0},
-            "excluded_words": {"title": 0, "abstract": 0, "total": 0},
+        # Initialise the scores. Will set them all to zero by default
+        matches_scores: dict[WordKind, dict[SectionKind, CountScore]] = {
+            wk: {sk: CountScore() for sk in SectionKind} for wk in WordKind
         }
-        score_dict: dict[WordKind, dict[Section, float]] = {
-            "included_words": {"title": 0.0, "abstract": 0.0, "total": 0.0},
-            "excluded_words": {"title": 0.0, "abstract": 0.0, "total": 0.0},
-        }
+
         self.paper_scores = PaperScores(
             found_authors=[],
             n_author_matches=0,
             author_score=0.0,
-            matches=match_dict,
-            scores=score_dict,
+            matches_scores=matches_scores,
             final_score=0.0,
         )
 
@@ -204,7 +218,7 @@ class Paper:
         # if self.paper_scores.n_author_matches == 0:
         #     self.logger.debug(" ... none found")
 
-    def match_words(self, key_words: SearchTermsDict, match_type: WordKind) -> None:
+    def match_words(self, key_words: SearchTerms, match_type: WordKind) -> None:
         """Find matches between the Title/Abstract of the Paper and key words in the search terms.
 
         inputs
@@ -215,13 +229,15 @@ class Paper:
 
         # Extract the words to search for from the key_words dictionary
         # Do not need to use .get() as match_type is limited to the type WordKind
-        # if match_type == "Included Words":
-        #     words = key_words["included_words"]
-        # else:
-        words = key_words[match_type]
+        if match_type == WordKind.INCLUDED:
+            words = key_words.included_words
+        elif match_type == WordKind.EXCLUDED:
+            words = key_words.excluded_words
+        else:
+            raise ValueError("Could not resolve match type")
 
         # If there are no key_words to search for, skip the search
-        if words is None:
+        if len(words) == 0:
             self.logger.debug("No %s to search for...", match_type)
             return
 
@@ -250,7 +266,9 @@ class Paper:
                 )
 
                 # Add to score
-                self.paper_scores.matches[match_type]["title"] += num_title_matches
+                self.paper_scores.matches_scores[match_type][
+                    SectionKind.TITLE
+                ].matches += num_title_matches
 
             # If something exists in the abstract field, search it for matches
             if self.paper_info.abstract is not None:
@@ -274,14 +292,14 @@ class Paper:
                         num_abstract_matches,
                     )
 
-                    self.paper_scores.matches[match_type][
-                        "abstract"
-                    ] += num_abstract_matches
+                    self.paper_scores.matches_scores[match_type][
+                        SectionKind.ABSTRACT
+                    ].matches += num_abstract_matches
 
         # Compute the total number of matches
-        self.paper_scores.matches[match_type]["total"] = (
-            self.paper_scores.matches[match_type]["title"]
-            + self.paper_scores.matches[match_type]["abstract"]
+        self.paper_scores.matches_scores[match_type][SectionKind.TOTAL].matches = (
+            self.paper_scores.matches_scores[match_type][SectionKind.TITLE].matches
+            + self.paper_scores.matches_scores[match_type][SectionKind.ABSTRACT].matches
         )
 
         # # Summary of matches
@@ -334,9 +352,13 @@ class Paper:
         title_penalty = self.TITLE_REQ_DENSITY / self.paper_info.n_words_title
         abstract_penalty = self.ABSTRACT_REQ_DENSITY / self.paper_info.n_words_abstract
 
-        # Compute the Included Word scores:
-        inc_title_count = self.paper_scores.matches[match_type]["title"]
-        inc_abstract_count = self.paper_scores.matches[match_type]["abstract"]
+        # Extract the number of matches
+        inc_title_count = self.paper_scores.matches_scores[match_type][
+            SectionKind.TITLE
+        ].matches
+        inc_abstract_count = self.paper_scores.matches_scores[match_type][
+            SectionKind.ABSTRACT
+        ].matches
 
         # # Compute word scores
         # They are bound to the interval [0, 1] via min functions
@@ -349,9 +371,15 @@ class Paper:
         inc_total_score = (inc_title_score + inc_abstract_score) / 2
 
         # Place scores into the Papers object
-        self.paper_scores.scores[match_type]["title"] = inc_title_score
-        self.paper_scores.scores[match_type]["abstract"] = inc_abstract_score
-        self.paper_scores.scores[match_type]["total"] = inc_total_score
+        self.paper_scores.matches_scores[match_type][
+            SectionKind.TITLE
+        ].scores = inc_title_score
+        self.paper_scores.matches_scores[match_type][
+            SectionKind.ABSTRACT
+        ].scores = inc_abstract_score
+        self.paper_scores.matches_scores[match_type][
+            SectionKind.TOTAL
+        ].scores = inc_total_score
 
         # # Logging messages. Creates a large amount of output and are no longer necessary
         # # Keeping here in case the algorithms are altered
@@ -376,8 +404,12 @@ class Paper:
 
         # Compute the Final score:
         self.paper_scores.final_score = max(
-            self.paper_scores.scores["included_words"]["total"]
-            - self.paper_scores.scores["excluded_words"]["total"],
+            self.paper_scores.matches_scores[WordKind.INCLUDED][
+                SectionKind.TOTAL
+            ].scores
+            - self.paper_scores.matches_scores[WordKind.EXCLUDED][
+                SectionKind.TOTAL
+            ].scores,
             +0,
         )
 
