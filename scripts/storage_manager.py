@@ -372,10 +372,17 @@ class Storage:
             self.write_previous_date_file(prev_end_time.date())
 
         # The file is now guaranteed to exist. Load it and extract the previous runtime
+        # File should only be one line. Only read the first.
         with open(self.paths.previous_date, "r", encoding="utf-8") as f:
 
+            raw_date = f.readline()
+
+            # Do an error check. Should never error.
+            if len(raw_date) != 10:
+                raise ValueError("File with previous date is corrupted.")
+
             start_time, start_date = parse_date(
-                self.logger, next(f), "start-date", search_time, post_time
+                self.logger, raw_date, "start-date", search_time, post_time
             )
 
         return start_time, start_date
