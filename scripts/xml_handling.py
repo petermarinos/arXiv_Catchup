@@ -134,6 +134,7 @@ def extract_paper_textfields(
 ) -> tuple[str, str, str, int, int]:
     """Extract the title, abstract, and comment fields. Also compute the number of words in the
     title and abstract fields.
+    NOTE: Hyphenated words are not counted as one, e.g. 'ultra-faint' => two words.
 
     inputs
     ------
