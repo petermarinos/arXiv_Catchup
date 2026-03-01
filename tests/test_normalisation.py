@@ -130,3 +130,7 @@ class TestStringNormalisation(unittest.TestCase):
         self.assertEqual(normalise_string("ł"), "l")
         self.assertEqual(normalise_string("ß"), "ss")
         self.assertEqual(normalise_string("þ"), "th")
+
+
+if __name__ == "__main__":
+    unittest.main()
