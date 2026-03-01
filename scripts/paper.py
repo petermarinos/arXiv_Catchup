@@ -19,7 +19,7 @@ from .xml_handling import (
     extract_paper_cats,
     extract_paper_authors,
 )
-from .string_handling import authors_match
+from .string_handling import authors_match, words_match_pattern
 
 # Import classes for type checking
 if TYPE_CHECKING:
@@ -246,10 +246,10 @@ class Paper:
         # Search all titles and abstracts for words in the supplied key
         for word in words:
 
-            # Define the pattern to search for
-            pattern = rf"(?<!\w){re.escape(word)}(?!\w)"
+            # # Define the pattern to search for
+            pattern = words_match_pattern(word)
 
-            # Define the text to search through
+            # # Define the text to search through
             title = self.paper_info.title  # DO NOT ESCAPE
 
             # Search the author field in the entry

@@ -76,6 +76,21 @@ def authors_match(name_1: str, name_2: str) -> bool:
     return True
 
 
+def words_match_pattern(word: str) -> str:
+    """Check if a word is contained within a larger string.
+
+    inputs
+    ------
+    word : the word to search for.
+
+    outputs
+    -------
+    : the regex pattern that will be searched for
+    """
+
+    return rf"(?<!\w){re.escape(word)}(?!\w)"
+
+
 def normalise_string(s: str | None) -> str:
     """First removes LaTeX commands, then normalises the string, then converts to ASCII.
 
