@@ -1,12 +1,13 @@
 """Functions used for handling strings."""
 
 # Import standard libraries
-from unicodedata import normalize as normalise  # Fix a spelling error
+# from unicodedata import normalize as normalise  # Fix a spelling error
 from typing import cast
 import re
 
 # Import non-standard libraries
 from pylatexenc.latex2text import LatexNodes2Text  # type: ignore[import-untyped]
+from unidecode import unidecode
 
 
 def normalise_string(s: str | None) -> str:
@@ -38,8 +39,10 @@ def normalise_string(s: str | None) -> str:
     s_unicode = cast(str, LatexNodes2Text().latex_to_text(s))  # type: ignore
 
     # Normalise the string
-    # Use "compatibility decomposition"
-    s_normalised = normalise("NFKD", s_unicode)  # Function from unicodedata
+    # # Use "compatibility decomposition"
+    # s_normalised = normalise("NFKD", s_unicode)  # Function from unicodedata
+    # Use unidecode
+    s_normalised = unidecode(s_unicode)
 
     # Convert the string to ASCII
     s_ascii = s_normalised.encode("ascii", "ignore").decode("ascii")
