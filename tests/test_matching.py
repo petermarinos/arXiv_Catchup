@@ -156,9 +156,7 @@ class TestAuthorMatching(unittest.TestCase):
 
 
 class TestWordMatching(unittest.TestCase):
-    """Test that words can be found in a large block of text.
-    Currently do these operations via regex and don't have a specific function for it.
-    """
+    """Test that words can be found in a large block of text."""
 
     def test_word(self):
         """Test words"""
@@ -187,6 +185,23 @@ class TestWordMatching(unittest.TestCase):
         self.assertIsNotNone(re.search(pattern, "text H.E.S.S. text", re.IGNORECASE))
         self.assertIsNotNone(re.search(pattern, "text H.E.S.S.. Text", re.IGNORECASE))
         self.assertIsNotNone(re.search(pattern, "text H.E.S.S., text", re.IGNORECASE))
+
+    def test_symbol(self):
+        """Test acronyms"""
+
+        pattern = words_match_pattern("ɣ")
+        self.assertIsNotNone(re.search(pattern, "some text ɣ more text", re.IGNORECASE))
+
+    def test_maths(self):
+        """Test acronyms"""
+
+        pattern = words_match_pattern(r"$\alpha$")
+        self.assertIsNone(
+            re.search(pattern, "some text alpha more text", re.IGNORECASE)
+        )
+        self.assertIsNotNone(
+            re.search(pattern, r"some text $\alpha$ more text", re.IGNORECASE)
+        )
 
 
 if __name__ == "__main__":
