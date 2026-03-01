@@ -2,9 +2,10 @@
 
 # Import libraries
 import unittest
+import re
 
 # Import functions to test
-from scripts.string_handling import authors_match
+from scripts.string_handling import authors_match, words_match_pattern
 
 
 class TestAuthorMatching(unittest.TestCase):
@@ -154,31 +155,38 @@ class TestAuthorMatching(unittest.TestCase):
         self.assertTrue(authors_match("Thomas, Andrew", "Thomas"))  # -> fails
 
 
-# class TestWordMatching(unittest.TestCase):
-#     """Test that words can be found in a large block of text.
-#     Currently do these operations via regex and don't have a specific function for it."""
+class TestWordMatching(unittest.TestCase):
+    """Test that words can be found in a large block of text.
+    Currently do these operations via regex and don't have a specific function for it.
+    """
 
-# Turn the following into a function so that the word matching can be tested here:
-# # Lines 249 to 256 in paper.py
-# pattern = rf"(?<!\w){re.escape(word)}(?!\w)"
-# title = self.paper_info.title  # DO NOT ESCAPE
-# title_match = re.search(pattern, title, re.IGNORECASE)
+    def test_word(self):
+        """Test words"""
 
-# cases to test:
-# "word" in "some text word more text"
-# "word" in "some text word: more text"
-# "word" in "some text word, more text"
-# "word" in "Word more text"
-# "word" in "some text word."
-# "H.E.S.S." in "text H.E.S.S. text"
-# "H.E.S.S." in "text H.E.S.S.. Text"
-# "H.E.S.S." in "text H.E.S.S., text"
-# "AGN" not in "magnetic"
+        pattern = words_match_pattern("word")
 
-#     def test_word_matching(self):
-#         """."""
+        self.assertIsNotNone(
+            re.search(pattern, "some text word more text", re.IGNORECASE)
+        )
+        self.assertIsNotNone(
+            re.search(pattern, "some text word, more text", re.IGNORECASE)
+        )
+        self.assertIsNotNone(
+            re.search(pattern, "some text word: more text", re.IGNORECASE)
+        )
+        self.assertIsNotNone(re.search(pattern, "Word more text", re.IGNORECASE))
+        self.assertIsNotNone(re.search(pattern, "some text word.", re.IGNORECASE))
 
-#         self.assertTrue()
+    def test_acronym(self):
+        """Test acronyms"""
+
+        pattern = words_match_pattern("AGN")
+        self.assertIsNone(re.search(pattern, "magnetic", re.IGNORECASE))
+
+        pattern = words_match_pattern("H.E.S.S.")
+        self.assertIsNotNone(re.search(pattern, "text H.E.S.S. text", re.IGNORECASE))
+        self.assertIsNotNone(re.search(pattern, "text H.E.S.S.. Text", re.IGNORECASE))
+        self.assertIsNotNone(re.search(pattern, "text H.E.S.S., text", re.IGNORECASE))
 
 
 if __name__ == "__main__":
