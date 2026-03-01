@@ -4,7 +4,7 @@
 import unittest
 
 # Import functions to test
-from scripts.filtering import authors_match
+from scripts.string_handling import authors_match
 
 
 class TestAuthorMatching(unittest.TestCase):
@@ -100,7 +100,7 @@ class TestAuthorMatching(unittest.TestCase):
         self.assertTrue(authors_match("Thomas", "A. Thomas"))
 
     def test_falses(self):
-        """Test for false matches, i.e. cases that shouldn't return True."""
+        """Test for cases that *should not* match."""
 
         self.assertFalse(
             authors_match("Andrew Sydney Withiel Thomas", "Andrew Sydney Wayne Thomas")
@@ -133,23 +133,25 @@ class TestAuthorMatching(unittest.TestCase):
 
         self.assertTrue(authors_match("Ludwig van Beethoven", "Beethoven"))
         self.assertTrue(authors_match("L. van Beethoven", "Beethoven"))
-        self.assertTrue(authors_match("Ludwig van Beethoven", "van Beethoven"))
-        self.assertTrue(authors_match("L. van Beethoven", "van Beethoven"))
+        self.assertTrue(
+            authors_match("Ludwig van Beethoven", "van Beethoven")
+        )  # -> fails
+        self.assertTrue(authors_match("L. van Beethoven", "van Beethoven"))  # -> fails
 
     def test_prefixes(self):
         """Test names with prefixes."""
 
-        self.assertTrue(authors_match("Dr. A. Thomas", "A. Thomas"))
+        self.assertTrue(authors_match("Dr. A. Thomas", "A. Thomas"))  # -> fails
 
     def test_suffixes(self):
         """Test names with suffixes."""
 
-        self.assertTrue(authors_match("A. Thomas, Jr.", "Thomas"))
+        self.assertTrue(authors_match("A. Thomas, Jr.", "Thomas"))  # -> fails
 
     def test_orders(self):
         """Test names that were input as 'surname, given'."""
 
-        self.assertTrue(authors_match("Thomas, Andrew", "Thomas"))
+        self.assertTrue(authors_match("Thomas, Andrew", "Thomas"))  # -> fails
 
 
 # class TestWordMatching(unittest.TestCase):

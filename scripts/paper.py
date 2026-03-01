@@ -19,7 +19,7 @@ from .xml_handling import (
     extract_paper_cats,
     extract_paper_authors,
 )
-from .filtering import authors_match
+from .string_handling import authors_match
 
 # Import classes for type checking
 if TYPE_CHECKING:
