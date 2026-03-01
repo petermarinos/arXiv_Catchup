@@ -175,6 +175,15 @@ class TestWordMatching(unittest.TestCase):
         self.assertIsNotNone(re.search(pattern, "Word more text", re.IGNORECASE))
         self.assertIsNotNone(re.search(pattern, "some text word.", re.IGNORECASE))
 
+    def test_words(self):
+        """Test words"""
+
+        pattern = words_match_pattern("words with spaces")
+
+        self.assertIsNotNone(
+            re.search(pattern, "some text words with spaces more text", re.IGNORECASE)
+        )
+
     def test_acronym(self):
         """Test acronyms"""
 
