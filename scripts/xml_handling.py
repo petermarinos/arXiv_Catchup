@@ -170,8 +170,11 @@ def extract_paper_textfields(
     # logger.debug("Abstract was found")
     # logger.debug(f"Abstract: {abstract}") # Can print a bit too much information
 
-    n_words_title = len(re.findall(r"\w+", title))
-    n_words_abstract = len(re.findall(r"\w+", abstract))
+    # Find word count
+    # Algorithm is the typical found elsewhere:
+    #     Number of whitespaces +1 for words instead of spaces
+    n_words_title = len(re.findall(r"\S+\s", title)) + 1
+    n_words_abstract = len(re.findall(r"\S+\s", abstract)) + 1
 
     # logger.debug(f"Wordcount: Title = {n_words_title} | Abstract = {n_words_abstract}")
 

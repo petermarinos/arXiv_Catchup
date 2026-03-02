@@ -107,10 +107,8 @@ class TestXmlHandling(unittest.TestCase):
                 "the orbits, accretion histories, and tidal influences of the same sample"
             ),
         )
-        self.assertEqual(n_words_title, 31)  # <- fail, counts "'s" as a word
-        self.assertEqual(
-            n_words_abstract, 242
-        )  # <- fails, counts each character in maths mode as a separate word
+        self.assertEqual(n_words_title, 27)
+        self.assertEqual(n_words_abstract, 242)
 
     def test_paper_cats(self):
         """Test the extraction of the paper's categories."""
