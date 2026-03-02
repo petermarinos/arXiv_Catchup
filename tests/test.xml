@@ -14,6 +14,7 @@
     <ns0:link href="https://arxiv.org/pdf/2602.17652v1" rel="related" type="application/pdf" title="pdf" />
     <ns0:summary>Deep, wide-area photometric surveys have uncovered a population of compact ($r_{1/2} \approx$ 1-15 pc), extremely-low-mass ($M_* \approx$ 20-4000 $M_{\odot}$) stellar systems in the Milky Way halo that are smaller in size than known ultra-faint dwarf galaxies (UFDs) and substantially fainter than most classical globular clusters (GCs). Very little is known about the nature and origins of this population of "Ultra-Faint Compact Satellites" (UFCSs) owing to a dearth of spectroscopic measurements. Here, we present the first spectroscopic census of these compact systems based on Magellan/IMACS and Keck/DEIMOS observations of 19 individual UFCSs, representing $\sim$2/3 of the known population. We securely measure mean radial velocities for all 19 systems, velocity dispersions for 15 (predominantly upper limits), metallicities for 17, metallicity dispersions for 8, and $\textit{Gaia}$-based mean proper motions for 18. This large new spectroscopic sample provides the first insights into population-level trends for these extreme satellites. We demonstrate that: (1) the UFCSs are kinematically colder, on average, than the UFDs, disfavoring very dense dark matter halos in most cases, (2) the UFCS population is chemically diverse, spanning a factor of $\sim$300 in mean iron abundance ($\rm -3.3 \lesssim [Fe/H] \lesssim -0.8$), with multiple systems falling beneath the "metallicity floor" proposed for GCs, and (3) while some higher-metallicity and/or younger UFCSs are clearly star clusters, the dynamical and/or chemical evidence allows the possibility that up to $\sim$50% of the UFCSs in our sample (9 of 19) may represent the smallest and least-massive galaxies yet discovered.</ns0:summary>
     <ns0:category term="astro-ph.GA" scheme="http://arxiv.org/schemas/atom" />
+    <ns0:category term="astro-ph.HE" scheme="http://arxiv.org/schemas/atom" />
     <ns0:published>2026-02-19T18:56:28Z</ns0:published>
     <ns2:comment>63 pages (main) + 18 pages (references + appendix), 30 Figures, 6 Tables. Will submit to ApJ in one week; comments welcome. Brief summary available here: https://wcerny.github.io/compactsatellites/. Repository with spectroscopic member catalogs: https://zenodo.org/records/18612486. Forthcoming Paper II will explore the orbits, accretion histories, and tidal influences of the same sample</ns2:comment>
     <ns2:primary_category term="astro-ph.GA" />
@@ -64,6 +65,63 @@
     </ns0:author>
     <ns0:author>
       <ns0:name>Evan N. Kirby</ns0:name>
+    </ns0:author>
+  </ns0:entry>
+  <ns0:entry>
+    <ns0:id>http://arxiv.org/abs/2602.24162v1</ns0:id>
+    <ns0:title>Filling the Gap in Cluster Evolution: JWST's Glimpse into a Young, Star-Forming Cluster at Cosmic Noon</ns0:title>
+    <ns0:updated>2026-02-27T16:41:59Z</ns0:updated>
+    <ns0:link href="https://arxiv.org/abs/2602.24162v1" rel="alternate" type="text/html" />
+    <ns0:link href="https://arxiv.org/pdf/2602.24162v1" rel="related" type="application/pdf" title="pdf" />
+    <ns0:summary>We present a detailed study of HUDFJ0332.4-2746.6 (HUDF46), a $z \approx 1.84$ overdensity in the Hubble Ultra Deep Field, previously identified with HST as a proto-cluster. JWST/NIRISS spectroscopy expands its confirmed membership from 18 to 37 galaxies, while deep HST/ACS, JWST/NIRCam, and JWST/MIRI imaging provide a comprehensive multiwavelength view from the rest-frame UV to the mid-infrared. This dataset probes the population across three dex in stellar mass ($M_\bigstar \approx 10^{7.5\text{--}10.5}\,M_\odot$), delivering the first direct view of a young cluster down to such low-$M_\bigstar$ at $z\gtrsim1$. Assuming virialization, we derive a velocity dispersion of $σ\approx 670\pm 91\,\mathrm{km\,s^{-1}}$ and a halo mass of $M_{200} \approx (1.2\pm0.2) \times 10^{14}\,M_\odot$, in agreement with X-ray constraints from deep {\it Chandra} data. Despite residing in a massive halo likely in the hot-halo regime, the population is overwhelmingly star-forming, with no established red sequence and no extended X-ray emission from a hot intracluster medium. HUDF46 members have stellar and structural properties nearly indistinguishable from coeval field galaxies, and the structure hosts only one AGN candidate, found in its brightest galaxy, which lies at the cluster center. Overall, HUDF46 appears to be in a transitional phase prior to the onset of environmental quenching, making its galaxy population a key benchmark for tracing the processes that will later build a passive population and shape the assembly of massive clusters at later cosmic times.</ns0:summary>
+    <ns0:category term="astro-ph.GA" scheme="http://arxiv.org/schemas/atom" />
+    <ns0:published>2026-02-27T16:41:59Z</ns0:published>
+    <ns2:comment>25 pages; 13 figures, 1 Table; Submitted to ApJ. Comments are welcome!</ns2:comment>
+    <ns2:primary_category term="astro-ph.GA" />
+    <ns0:author>
+      <ns0:name>Pierluigi Rinaldi</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Stacey Alberts</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Christopher N. A. Willmer</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Courtney Carreira</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Christina C. Williams</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Gaël Noirot</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Carys J. E. Gilbert</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Andrew J. Bunker</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>William M. Baker</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Luigi Barchiesi</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Zhiyuan Ji</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Jianwei Lyu</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Sandro Tacchella</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Zihao Wu</ns0:name>
+    </ns0:author>
+    <ns0:author>
+      <ns0:name>Yongda Zhu</ns0:name>
     </ns0:author>
   </ns0:entry>
 </ns0:feed>

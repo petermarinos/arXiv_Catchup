@@ -116,7 +116,7 @@ class TestXmlHandling(unittest.TestCase):
 
         category = extract_paper_cats(self.logger, self.ns, self.entry)
 
-        self.assertEqual(category, ["astro-ph.GA"])
+        self.assertEqual(category, ["astro-ph.GA", "astro-ph.HE"])
 
     def test_paper_authors(self):
         """Test the extraction of the paper's authors."""
