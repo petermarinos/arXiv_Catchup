@@ -282,7 +282,7 @@ class ArxivClient:
 
             # Search the arXiv
             self.logger.info(
-                "Downloading data for %s papers. Estimated time: %.0f seconds",
+                "Downloading data for %s papers. Estimated time: %.1f seconds",
                 self.total_papers - corpus.length,
                 est_time,
             )
