@@ -47,7 +47,7 @@ class TestAuthorMatching(unittest.TestCase):
         self.assertTrue(authors_match("Andrew Thomas", "A. Thomas"))
         self.assertTrue(authors_match("Thomas", "A. Thomas"))
 
-    def test_whitespace(self):
+    def test_initials_whitespace(self):
         """Test names with initials."""
 
         # With a period
@@ -66,7 +66,7 @@ class TestAuthorMatching(unittest.TestCase):
         self.assertTrue(authors_match("A S Thomas", "A. Thomas"))
         self.assertTrue(authors_match("A Thomas", "A. Thomas"))
 
-    def test_no_whitespace(self):
+    def test_initials_no_whitespace(self):
         """Test names with initials that have no whitespace match with those with whitespace, and
         test that no whitespace matches with no whitespace.
         """
@@ -117,8 +117,6 @@ class TestAuthorMatching(unittest.TestCase):
         self.assertFalse(authors_match("A.S.W. Thomas", "A.S.Z. Thomas"))
         self.assertFalse(authors_match("Thomas", "Smith"))
 
-    # # SPECIAL CASES
-
     def test_apostrophes(self):
         """Test names with apostrophes."""
 
@@ -139,14 +137,6 @@ class TestAuthorMatching(unittest.TestCase):
         )  # -> fails
         self.assertTrue(authors_match("L. van Beethoven", "van Beethoven"))  # -> fails
 
-    # def test_prefixes(self):
-    #     """Test names with prefixes.
-    #     NOTE: These will be rejected by arXiv. I have never seen one pass, so it is not necessary
-    #           to account for them.
-    #     """
-
-    #     self.assertTrue(authors_match("Dr. A. Thomas", "A. Thomas"))  # -> fails
-
     def test_suffixes(self):
         """Test names with suffixes.
         NOTE: rare edge case
@@ -161,6 +151,14 @@ class TestAuthorMatching(unittest.TestCase):
         """
 
         self.assertTrue(authors_match("Thomas Andrew", "Thomas"))  # -> fails
+
+    # def test_prefixes(self):
+    #     """Test names with prefixes.
+    #     NOTE: These will be rejected by arXiv. I have never seen one pass, so it is not necessary
+    #           to account for them.
+    #     """
+
+    #     self.assertTrue(authors_match("Dr. A. Thomas", "A. Thomas"))  # -> fails
 
 
 class TestWordMatching(unittest.TestCase):
