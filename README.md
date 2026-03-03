@@ -102,9 +102,17 @@ Some authors may use a spelling that is different to their preference for submis
 For example, an author may write 'ö' as 'oe'.
 For these cases it is recommended to include both representations in the `search_terms.yaml` file.
 
-There is currently no support for name particles or prefixes/suffixes.
-Do not include them in the `search_terms.yaml` file.
-For example, only include `Ludwig Beethoven` if you want matches for `Ludwig van Beethoven`.
+Notes on particles:
+If you want matches for `Ludwig van Beethoven` then enter `Ludwig van Beethoven`, or `Ludwig Beethoven` in the config -- `L. van Beethoven` will not work in the config.
+
+Notes on suffixes:
+Currently not supported.
+
+Notes on non-Eurocentric name ordering:
+arXiv asks all authors to write their names as "Givenname(s) Familyname".
+Still, some authors do not obey these rules.
+If you want matches for authors that may write their names as "Familyname Givenname(s)" then include both orderings.
+Note that exact matches for all given/surnames will be required in these cases.
 
 #### Generated Files
 
