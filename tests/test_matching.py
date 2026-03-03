@@ -139,7 +139,7 @@ class TestAuthorMatching(unittest.TestCase):
 
     def test_suffixes(self):
         """Test names with suffixes.
-        NOTE: rare edge case
+        NOTE: Allowed by arXiv, not used often.
         """
 
         self.assertTrue(authors_match("A. Thomas Jr.", "Thomas"))  # -> fails
