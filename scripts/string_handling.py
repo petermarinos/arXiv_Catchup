@@ -134,6 +134,8 @@ def normalise_string(s: str | None) -> str:
 def split_initials(name: list[str]) -> list[str]:
     """Splits initials that are not separated by whitespace.
     Does nothing if there are no initials or the initials were already split.
+    NOTE: arXiv demands authors are listed with whitespace between initials. However, some entries
+          do not obey this rule, so we should always check.
 
     inputs
     ------
