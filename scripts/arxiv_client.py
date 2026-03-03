@@ -166,7 +166,7 @@ class ArxivClient:
         # Search for xml file. If found, load it
         if os.path.exists(storage.paths.search_xml):
 
-            self.logger.info("Found a .xml file: %s", storage.paths.search_xml)
+            self.logger.info("Found an .xml file: %s", storage.paths.search_xml)
             self.logger.info("Attempting to continue from the previous failed run.")
 
             # Define the url we expect from the file
