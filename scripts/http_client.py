@@ -10,10 +10,6 @@ import ssl
 # Import non-standard libraries
 import certifi
 
-# # Import libraries used to test API connections and errors
-# from email.message import Message
-# from unittest.mock import patch
-
 # Import functions
 from .xml_handling import convert_request_to_xml_root
 from .ui import pretty_sleep
@@ -79,55 +75,6 @@ class HttpClient:
             self.logger.debug("Attempting connection to:\n       %s", formatted_url)
 
             try:
-
-                # Test error handling
-                # Add an indent to the "attempt to connect to arXiv"--"return parsed_xml_date" lines
-                # -- add proper testing in the future
-
-                # # HTTP ERRORS
-
-                # # http error with a random code and no header
-                # err = urllib.error.HTTPError(
-                #     url=None, code=47, msg="fake error that should exit", hdrs=None, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # http repeating error code with no header
-                # err = urllib.error.HTTPError(
-                #     url=None, code=408, msg="non-repeating code", hdrs=None, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # http non-repeating error code with a useless header
-                # headers = Message()
-                # headers["blank"] = "nothing"
-                # err = urllib.error.HTTPError(
-                #     url=None, code=408, msg="non-repeating code", hdrs=headers, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # http error with a retry-after header
-                # headers = Message()
-                # headers["Retry-After"] = 40
-                # err = urllib.error.HTTPError(
-                #     url=None, code=429, msg="repeating code", hdrs=headers, fp=None
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
-
-                # # URL ERRORS
-
-                # # non-Verification errors
-                # with patch(
-                #     "urllib.request.urlopen", side_effect=urllib.error.URLError("DNS fail")
-                # ):
-
-                # # Verification errors
-                # err = urllib.error.URLError(
-                #     ssl.SSLCertVerificationError(
-                #         "certificate verify failed: unable to get local issuer certificate"
-                #     )
-                # )
-                # with patch("urllib.request.urlopen", side_effect=err):
 
                 # Attempt to connect to arXiv
                 with urllib.request.urlopen(
