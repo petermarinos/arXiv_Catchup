@@ -130,8 +130,11 @@ class TestAuthorMatching(unittest.TestCase):
     def test_particles(self):
         """Test names with particles."""
 
-        self.assertTrue(authors_match("Ludwig van Beethoven", "Beethoven"))
-        self.assertTrue(authors_match("L. van Beethoven", "Beethoven"))
+        self.assertTrue(authors_match("Ludwig van Beethoven", "Beethoven"))  # -> passes
+        self.assertTrue(authors_match("L. van Beethoven", "Beethoven"))  # -> passes
+        self.assertTrue(
+            authors_match("Ludwig van Beethoven", "L. van Beethoven")
+        )  # -> passes
         self.assertTrue(
             authors_match("Ludwig van Beethoven", "van Beethoven")
         )  # -> fails
@@ -142,6 +145,14 @@ class TestAuthorMatching(unittest.TestCase):
         NOTE: Allowed by arXiv, not used often.
         """
 
+        self.assertTrue(
+            authors_match("A. S. W. Thomas Jr.", "A. Thomas Jr.")
+        )  # -> fails
+        self.assertTrue(
+            authors_match("Andrew Thomas Jr.", "A. Thomas Jr.")
+        )  # -> passes
+        self.assertTrue(authors_match("A. Thomas Jr.", "A. Thomas Jr."))  # -> passes
+        self.assertTrue(authors_match("A. Thomas Jr.", "Thomas Jr."))  # -> fails
         self.assertTrue(authors_match("A. Thomas Jr.", "Thomas"))  # -> fails
 
     def test_orders(self):
