@@ -15,6 +15,18 @@ from .xml_handling import convert_request_to_xml_root
 from .ui import pretty_sleep
 
 
+class TooManyAttempts(Exception):
+    """Exception raised if too many connection attempts are made.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
+
 class HttpClient:
     """Performs the connections to the arXiv servers."""
 
@@ -127,7 +139,7 @@ class HttpClient:
             "Maximum retries attempted. arXiv query failed.\n          "
             "Review connection error codes before trying again.\n"
         )
-        raise RuntimeError("Cancelling arXiv connection. Too many attempts.")
+        raise TooManyAttempts("Cancelling arXiv connection. Too many attempts.")
 
     def http_errorcheck(self, error: urllib.error.HTTPError, attempt: int) -> None:
         """Handles the HTTP errors that could arise.
@@ -154,6 +166,7 @@ class HttpClient:
             # Probably unnecessary, but good to check
             if not error.headers:
 
+                # Something probably went very wrong if this block is activated.
                 self.logger.debug("HTTP error header was empty.")
 
             # Else, if the header isn't empty
@@ -197,8 +210,10 @@ class HttpClient:
         else:
 
             self.logger.critical("HTTP error code %s: %s\n", error.code, error.reason)
-            for key, value in error.headers.items():
-                self.logger.debug("HTTP header: %s: %s", key, value)
+
+            if error.headers:
+                for key, value in error.headers.items():
+                    self.logger.debug("HTTP header: %s: %s", key, value)
             raise RuntimeError("Received non-retry HTTP error code.")
 
     def url_errorcheck(self, error: urllib.error.URLError) -> None:
