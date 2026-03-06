@@ -1,5 +1,8 @@
-# pycache
-__pycache__
+# python caches
+*cache*
+
+# python egg
+src/arxiv_catchup/*.egg*
 
 # mac indexing file
 .DS_Store
