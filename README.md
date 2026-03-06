@@ -24,8 +24,9 @@ It then computes an 'interest' score for every paper based on the search terms y
 
 ### Installation
 
-Install via `pip install -e /path/to/arXiv_Catchup/`.
-Some non-standard libraries are required, so it is recommended to create a new environment before installing.
+Close the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
+Go into the directory (`$ cd ./arXiv_Catchup/`) and then install the project via `$ pip install -e /path/to/arXiv_Catchup/`.
+Note that it is recommended to create a new environment before installing.
 
 ### Running
 
