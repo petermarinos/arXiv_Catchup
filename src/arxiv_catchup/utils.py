@@ -1,15 +1,15 @@
 """Utily functions."""
 
 # Import libraries
-from importlib import metadata
+from importlib.metadata import version
 import argparse
 import platform
 import logging
 import pathlib
 import sys
 
-# Import version number
-from scripts import __version__
+
+__version__ = version("arxiv-catchup")
 
 
 class FlushingStreamHandler(logging.StreamHandler):  # type: ignore
@@ -235,8 +235,8 @@ def log_environment(logger: logging.Logger) -> None:
 
     # Print package info
     for pkg in ["certifi", "pylatexenc", "PyYAML"]:
-        version = metadata.version(pkg)
-        logger.debug(f"{pkg}=={version}")
+        pkg_version = version(pkg)
+        logger.debug(f"{pkg}=={pkg_version}")
 
     logger.debug("===============================")
 

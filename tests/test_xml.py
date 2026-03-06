@@ -7,7 +7,7 @@ import logging
 import typing
 
 # Import functions to test
-from scripts.xml_handling import (
+from src.arxiv_catchup.xml_handling import (
     extract_paper_id_version,
     extract_paper_links,
     extract_paper_textfields,

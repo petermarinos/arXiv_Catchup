@@ -1,0 +1,2 @@
+[console_scripts]
+arxiv-catchup = arxiv_catchup.__main__:main

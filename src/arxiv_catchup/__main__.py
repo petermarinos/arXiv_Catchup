@@ -1,7 +1,7 @@
 """Thin entry point."""
 
-# Import libraries
-from scripts.main import main
+# Import runner
+from .runner import main
 
 if __name__ == "__main__":
 

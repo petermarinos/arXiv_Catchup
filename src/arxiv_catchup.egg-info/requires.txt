@@ -1,0 +1,12 @@
+certifi
+pylatexenc
+PyYAML
+unidecode
+
+[dev]
+pytest
+pytest-cov
+pylint
+mypy
+types-PyYAML
+black

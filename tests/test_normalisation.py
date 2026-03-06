@@ -4,7 +4,7 @@
 import unittest
 
 # Import functions to test
-from scripts.string_handling import normalise_string
+from src.arxiv_catchup.string_handling import normalise_string
 
 
 class TestStringNormalisation(unittest.TestCase):

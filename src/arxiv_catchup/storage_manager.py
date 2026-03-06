@@ -60,7 +60,9 @@ class Storage:
         """Create the object that holds all paths."""
 
         # Find the root path
-        root_dir = pathlib.Path(__file__).resolve().parent.parent
+        # .resolve().parent gives the location of this file.
+        # Go up an additional two directories to get to .../arXiv_Catchup/
+        root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
 
         if not root_dir.is_dir():
             raise ValueError(f"root_dir must be a valid directory: {root_dir}")
@@ -68,10 +70,10 @@ class Storage:
         self.logger: logging.Logger
 
         config_dir = root_dir / "config"
-        state_dir = root_dir / "state"
-        out_dir = root_dir / "outputs"
-        log_dir = root_dir / "logs"
-        tmp_dir = root_dir / "tmp"
+        state_dir = root_dir / ".run" / "state"
+        out_dir = root_dir / ".run" / "outputs"
+        log_dir = root_dir / ".run" / "logs"
+        tmp_dir = root_dir / ".run" / "tmp"
 
         self.paths = Paths(
             log=log_dir / "catchup.log",

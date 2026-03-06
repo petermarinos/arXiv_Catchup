@@ -5,7 +5,7 @@ import unittest
 import re
 
 # Import functions to test
-from scripts.string_handling import authors_match, words_match_pattern
+from src.arxiv_catchup.string_handling import authors_match, words_match_pattern
 
 
 class TestAuthorMatching(unittest.TestCase):

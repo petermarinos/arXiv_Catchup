@@ -9,7 +9,7 @@ CLI Arguments
 import argparse
 
 # Import classes
-from scripts.storage_manager import Storage
+from arxiv_catchup.storage_manager import Storage
 
 # Import packages
 from .utils import logger_setup

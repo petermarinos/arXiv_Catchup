@@ -8,17 +8,10 @@ __pycache__
 .vscode/
 
 # Temporary/logging files
-tmp/
-logs/
-
-# State files
-state/
+.run/
 
 # Config files
 config/
-
-# Outputs
-outputs/
 
 # Testing files
 TODO.txt

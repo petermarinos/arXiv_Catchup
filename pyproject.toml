@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arxiv-catchup"
+version = "1.7.5"
+description = "Searches arXiv for all papers since the previous execution. All papers with keyword/author matches from a pre-defined list are then opened in a web browser."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENCE" }
+authors = [{ name = "Peter Marinos" }]
+
+dependencies = [
+  "certifi",
+  "pylatexenc",
+  "PyYAML",
+  "unidecode",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-cov",
+  "pylint",
+  "mypy",
+  "types-PyYAML",
+  "black",
+]
+
+[project.scripts]
+arxiv-catchup = "arxiv_catchup.__main__:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
