@@ -61,6 +61,7 @@ class ArxivClient:
 
         # Obtain the logger
         self.logger = logging.getLogger(__name__)
+        self.logger.debug("Initialising %s", self.__class__.__name__)
 
         # Define the urls
         # Double braces, {{}}, used for fields that change on each search

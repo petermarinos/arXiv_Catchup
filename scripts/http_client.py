@@ -52,6 +52,7 @@ class HttpClient:
 
         # Obtain the logger
         self.logger = logging.getLogger(__name__)
+        self.logger.debug("Initialising %s", self.__class__.__name__)
 
         # Initialise wait times. Values will be modified if connection errors occur
         self.wait_time = 3.0

@@ -39,6 +39,7 @@ class Config:
 
         # Obtain the logger
         self.logger = logging.getLogger(__name__)
+        self.logger.debug("Initialising %s", self.__class__.__name__)
 
         # Obtain the current time, converted to the UTC timezone
         self.current_time = datetime.datetime.now(datetime.timezone.utc)

@@ -37,6 +37,7 @@ class Corpus:
 
         # Obtain the logger
         self.logger = logging.getLogger(__name__)
+        self.logger.debug("Initialising %s", self.__class__.__name__)
 
         self.corpus: dict[str, Paper] = {}
 
