@@ -89,18 +89,18 @@ Examples of the format required for each can be found in the provided file.
 
 ##### Notes on Author Names
 
-The script will search for all matches between the names found in the `search_terms.yaml` file and the author list for all found papers.
+The script will search for all matches between the names found in the `./config/search_terms.yaml` file and the author list for all found papers.
 Include as much information as possible for each author and **include the surname at a minimum**.
 Papers with author lists that contain more/less information than the input will still be found.
 For example, `Andrew Sydney Withiel Thomas` will work to find papers with exact matches, as well as lower-information representations such as: `Andrew S. W. Thomas`, `A. Thomas`, `Thomas`, etc., while excluding authors such as `A. S. Z. Thomas`, etc..
-However, if you include only `A. Thomas` in the `search_terms.yaml` file, you will get true positive matches for `Andrew Thomas`, as well as false positives for `Alexander Thomas`, etc..
+However, if you include only `A. Thomas` in the `./config/search_terms.yaml` file, you will get true positive matches for `Andrew Thomas`, as well as false positives for `Alexander Thomas`, etc..
 
 Accented/special characters, ligatures, and LaTeX commands for author names are handled by the script.
 Feel free to enter any representation you prefer, e.g. 'Lopez', 'López', 'L{\\'o}pez', or 'L\'opez', in the `search_terms.yaml` file.
 
 Some authors may use a spelling that is different to their preference for submissions to journals that are more restrictive on special characters.
 For example, an author may write 'ö' as 'oe'.
-For these cases it is recommended to include both representations in the `search_terms.yaml` file.
+For these cases it is recommended to include both representations in the `./config/search_terms.yaml` file.
 
 Notes on particles:
 If you want matches for `Ludwig van Beethoven` then enter `Ludwig van Beethoven`, or `Ludwig Beethoven` in the config -- `L. van Beethoven` will not work in the config.
@@ -116,19 +116,19 @@ Note that exact matches for all given/surnames will be required in these cases.
 
 #### Generated Files
 
-The script creates the file `./state/prev_search.txt`, which contains the date of the previous run in ISO format.
+The script creates the file `.run/state/prev_search.txt`, which contains the date of the previous run in ISO format.
 This file will be used as the starting point for the next search, and is ignored if manually setting the start-date of the search on the CLI.
 
-If choosing to write links/IDs to a file, they will be placed in `./outputs/catchup.txt`.
+If choosing to write links/IDs to a file, they will be placed in `.run/outputs/catchup.txt`.
 Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
-All links in this file can be opened in a browser by running `python3 /path/to/arXiv_Catchup/open_catchup.py`.
+All links in this file can be opened in a browser by running `python3 ./scripts/open_catchup.py`.
 
-During the run there are two `.xml` files that will be created in `./tmp/`.
+During the run there are two `.xml` files that will be created in `.run/tmp/`.
 These files contain the results of the queries to the arXiv servers.
 If some non-recoverable error occurs, these files can be used to restart the search.
 After successfully presenting the results, both `.xml` files will be deleted.
 
-All logs will be written to `./logs/catchup.log`.
+All logs will be written to `.run/logs/catchup.log`.
 
 ### Daily Mailings
 
@@ -152,10 +152,3 @@ Thank you to arXiv for use of its open access interoperability.
 In addition to the python standard library, we make use of the following packages:
 - `pylatexenc` - [homepage](https://github.com/phfaist/pylatexenc)
 - `yaml` - [homepage](https://pyyaml.org/)
-
-## Future Improvements
-
-Add a machine learning module:
-- Look in a directory containing `.pdf` files of all the papers the user has found interesting in the past, and use these to train a model.
-- Run the model on the titles/abstracts of each paper and rate them.
-- Only open the papers if their rating is above some threshold.

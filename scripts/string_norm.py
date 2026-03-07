@@ -9,7 +9,7 @@ CLI Arguments
 import argparse
 
 # Import functions
-from .string_handling import normalise_string
+from arxiv_catchup.string_handling import normalise_string
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(

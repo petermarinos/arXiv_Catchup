@@ -12,8 +12,8 @@ import argparse
 from arxiv_catchup.storage_manager import Storage
 
 # Import packages
-from .utils import logger_setup
-from .ui import open_links
+from arxiv_catchup.utils import logger_setup
+from arxiv_catchup.ui import open_links
 
 # The goal of this script is to save the link opening for later if the user chooses
 # However, it can also be used to automate the searches.
