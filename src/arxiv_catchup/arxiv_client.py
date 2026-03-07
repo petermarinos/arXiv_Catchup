@@ -36,11 +36,6 @@ class ArxivError(Exception):
 class ArxivClient:
     """Set up the API so that connections can be made."""
 
-    # All 8 attributes are required to ensure connections can be made to the arXiv servers,
-    #     and for error checking.
-    # Disable pylint warning for >7 attributes
-    # pylint: disable=R0902
-
     # # Constants relating to connecting to the arXiv servers.
     # DO NOT CHANGE
 

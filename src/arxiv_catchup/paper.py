@@ -58,7 +58,9 @@ class PaperInfo:
 
     # 11 attributes from the .xml
     # 4 attributes are derived
-    # Want to store *all* data. Disable linting warning for >7 attributes
+    # => 15 attributes
+    # Want to store *all* data. Even if not used now, it will simplify including later.
+    # Disable pylint warning for >7 attributes
     # pylint: disable=R0902
 
     # Values in order they are found in the .xml data
@@ -120,7 +122,8 @@ class Paper:
         # 11 variables from the .xml
         # 4 variables derived from the .xml
         # 6 variables to store future scores
-        # Want to store *all* paper information. Disable linting warning for >15 variables
+        # => 21 variables
+        # Want to store *all* paper information. Disable pylint warning for >15 variables
         # pylint: disable=R0914
 
         # Obtain the logger

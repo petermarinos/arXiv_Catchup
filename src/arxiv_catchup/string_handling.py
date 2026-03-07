@@ -24,7 +24,10 @@ def authors_match(name_1: str, name_2: str) -> bool:
 
     # If any of the if statements hits -> not a match and can return False
     # If reaching the end without any hits -> names match so return True
-    # Slight performance benefit to return as soon as *any* of these statements hit
+    # Slight performance benefit to return as soon as *any* of these statements hit.
+    # As we loop over the papers, and for each paper we loop over both the paper authors and the
+    #     authors of interest, a small performance boost can be worthwhile for large searches.
+    # Disable pylint warning for too many returns
     # pylint: disable=R0911
 
     # Strip the two names

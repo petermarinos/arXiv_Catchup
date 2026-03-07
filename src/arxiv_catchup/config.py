@@ -20,8 +20,9 @@ if TYPE_CHECKING:
 class Config:
     """Defines important parameters required for the search."""
 
-    # There are 10 attributes. All of which are required to set up the execution of the script.
-    # Disable linting warnings
+    # There are 9 attributes.
+    # Not currently seen as worthwhile to create a dataclass to store all five dates/times.
+    # Disable pylint warning for >7 attributes
     # pylint: disable=R0902
 
     # Define some datetime objects
