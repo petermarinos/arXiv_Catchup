@@ -257,3 +257,19 @@ def log_args(logger: logging.Logger, args: argparse.Namespace) -> None:
         logger.debug(f"Argument '{key}' was set to: {val}")
 
     logger.debug("===============================")
+
+
+def create_dir(path: pathlib.Path) -> None:
+    """Small helper to create a directory and check that it was successful.
+
+    inputs
+    ------
+    path: Path where the directory should be created.
+    """
+
+    # Create the directory
+    path.mkdir(parents=True, exist_ok=True)
+
+    # Check the directory was created
+    if not path.exists() or not path.is_dir():
+        raise RuntimeError(f"Failed to create directory: {path}")

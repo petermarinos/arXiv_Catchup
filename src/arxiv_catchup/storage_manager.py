@@ -9,7 +9,6 @@ import datetime
 import logging
 import pathlib
 import typing
-import os
 
 # Import non-standard libraries
 import yaml
@@ -17,6 +16,7 @@ import yaml
 # Import functions
 from .string_handling import normalise_string
 from .dates import calc_search_endtime, parse_date
+from .utils import create_dir
 
 
 # Define some small classes. Bounds the expected values and prevents errors within strings.
@@ -85,25 +85,14 @@ class Storage:
         )
 
         # Check that the config file exists
-        if not os.path.exists(self.paths.search_terms):
+        if not self.paths.search_terms.exists():
             raise RuntimeError(f"Could not find config file: {self.paths.search_terms}")
 
         # Create directories if they don't exist
-        os.makedirs(state_dir, exist_ok=True)
-        if not os.path.exists(state_dir):
-            raise RuntimeError(f"Could not find log directory file: {state_dir}")
-
-        os.makedirs(out_dir, exist_ok=True)
-        if not os.path.exists(out_dir):
-            raise RuntimeError(f"Could not find log directory file: {out_dir}")
-
-        os.makedirs(log_dir, exist_ok=True)
-        if not os.path.exists(log_dir):
-            raise RuntimeError(f"Could not find log directory file: {log_dir}")
-
-        os.makedirs(tmp_dir, exist_ok=True)
-        if not os.path.exists(tmp_dir):
-            raise RuntimeError(f"Could not find log directory file: {tmp_dir}")
+        create_dir(state_dir)
+        create_dir(log_dir)
+        create_dir(out_dir)
+        create_dir(tmp_dir)
 
     def add_logger(self) -> None:
         """
@@ -361,7 +350,7 @@ class Storage:
         self.logger.debug("No start date was input.")
 
         # If the file doesn't exist:
-        if not os.path.exists(self.paths.previous_date):
+        if not self.paths.previous_date.exists():
 
             self.logger.debug(
                 "No previous search file found. Setting to the day prior to the end_date."
@@ -445,7 +434,7 @@ class Storage:
         else:
 
             # check if the file exists
-            if not os.path.exists(self.paths.papers_xml):
+            if not self.paths.papers_xml.exists():
 
                 self.logger.debug("Saving xml to file: %s", self.paths.papers_xml)
                 tree = ET.ElementTree(xml_root)

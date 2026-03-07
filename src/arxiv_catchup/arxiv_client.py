@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 import xml.etree.ElementTree as ET
 import logging
 import math
-import os
 
 # Import functions
 from .ui import pretty_sleep, progress_bar
@@ -165,7 +164,7 @@ class ArxivClient:
         xml_root: ET.Element | None = None
 
         # Search for xml file. If found, load it
-        if os.path.exists(storage.paths.search_xml):
+        if storage.paths.search_xml.exists():
 
             self.logger.info("Found an .xml file: %s", storage.paths.search_xml)
             self.logger.info("Attempting to continue from the previous failed run.")
@@ -182,7 +181,7 @@ class ArxivClient:
         #       If the file is deleted, we want to be redownloaded.
         #       If the file never existed, we want to download.
         #       If the file existed and had the correct information, then skip below
-        if not os.path.exists(storage.paths.search_xml):
+        if not storage.paths.search_xml.exists():
 
             self.logger.info("Obtaining search information from the servers.")
 
@@ -235,7 +234,7 @@ class ArxivClient:
         """
 
         # Search for xml file. If found, load it
-        if os.path.exists(storage.paths.papers_xml):
+        if storage.paths.papers_xml.exists():
 
             self.logger.info("Found an .xml file: %s", storage.paths.papers_xml)
             self.logger.info("Attempting to continue a previous failed run.")
