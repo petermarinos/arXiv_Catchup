@@ -112,6 +112,10 @@ def open_links(papers_of_note: list[str], sleep_time: float):
 
     total = len(papers_of_note)
 
+    # Print a time estimate
+    est_time = total * sleep_time
+    print(f"Opening the papers. Estimated time: {est_time:.2f} seconds")
+
     request_count = 0
     for arxiv_id in papers_of_note:
 

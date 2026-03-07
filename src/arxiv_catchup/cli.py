@@ -248,10 +248,4 @@ class CLI:
 
         if self.open_in_browser:
 
-            # Print a time estimate
-            est_time = len(papers_of_note) * sleeptimer
-            self.logger.info(
-                "Opening the papers. Estimated time: %.2f seconds", est_time
-            )
-
             open_links(papers_of_note, sleeptimer)
