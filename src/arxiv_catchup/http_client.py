@@ -16,7 +16,7 @@ from .ui import pretty_sleep
 
 
 class TooManyAttempts(Exception):
-    """Exception raised if too many connection attempts are made.
+    """Exception raised if too many connection attempts are made to the arXiv servers.
 
     Attributes:
         message -- explanation of the error

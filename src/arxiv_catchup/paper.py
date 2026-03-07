@@ -234,7 +234,7 @@ class Paper:
         elif match_type == WordKind.EXCLUDED:
             words = key_words.excluded_words
         else:
-            raise ValueError("Could not resolve match type")
+            raise ValueError("Could not resolve match type.")
 
         # If there are no key_words to search for, skip the search
         if len(words) == 0:

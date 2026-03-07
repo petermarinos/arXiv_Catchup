@@ -10,6 +10,7 @@ import logging
 import math
 
 # Import functions
+from .xml_handling import XmlReadError
 from .ui import pretty_sleep, progress_bar
 
 # Import classes for type checking
@@ -18,6 +19,18 @@ if TYPE_CHECKING:
     from .http_client import HttpClient
     from .config import Config
     from .corpus import Corpus
+
+
+class ArxivError(Exception):
+    """Exception raised if something is wrong with the data downloaded from the arXiv servers.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
 
 
 class ArxivClient:
@@ -134,7 +147,7 @@ class ArxivClient:
                 "Refine search dates/categories and check for deferred mailings:\n          "
                 "https://info.arxiv.org/help/availability.html\n"
             )
-            raise RuntimeError("No papers were submitted to the arXiv.")
+            raise ArxivError("No papers were submitted to the arXiv.")
 
         # If there are too many papers then there can be issues with the arXiv API.
         # While the API will likely return an error, catch it here as well just in case
@@ -143,7 +156,7 @@ class ArxivClient:
             self.logger.critical(
                 "Number of papers is too large. Refine search dates and/or categories.\n"
             )
-            raise RuntimeError("Too many papers were submitted to the arXiv.")
+            raise ArxivError("Too many papers were submitted to the arXiv.")
 
         self.logger.debug("All search information tests passed!")
 
@@ -199,7 +212,7 @@ class ArxivClient:
         # This *should* never activate, but is needed for safety
         if xml_root is None:
             self.logger.critical("Issue with the xml data. Did not load correctly.\n")
-            raise TypeError("XML data was None")
+            raise XmlReadError("XML data was None")
 
         # Extract the total number of papers that were found
         max_num_temp = xml_root.find("opensearch:totalResults", self.NS)
@@ -207,13 +220,13 @@ class ArxivClient:
             self.logger.critical(
                 "arXiv data did not include a number of papers. It is corrupted.\n"
             )
-            raise RuntimeError("The arXiv results are missing critical data...?")
+            raise XmlReadError("The arXiv results are missing critical data...?")
         max_num_str = max_num_temp.text
         if max_num_str is None:
             self.logger.critical(
                 "The number of papers is corrupted (couldn't convert from Element).\n"
             )
-            raise AttributeError("Could not extract number of papers from the data...?")
+            raise XmlReadError("Could not extract number of papers from the data...?")
 
         # Set the number of papers
         self.total_papers = int(max_num_str)

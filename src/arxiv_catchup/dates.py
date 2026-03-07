@@ -29,6 +29,18 @@ import logging
 # Running the following day should work, and no papers *should* be missed (not tested)
 
 
+class InvalidDateError(Exception):
+    """Exception raised if there is something wrong with the search dates.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
+
 def is_posting_day_bool(dt: datetime.date) -> bool:
     """Determines if the input day iss an arXiv posting day.
     Does not account for deferred listings.
@@ -193,4 +205,4 @@ def parse_date(
     except ValueError as exc:
 
         logger.critical(f"{date_name} must be in the YYYY-mm-dd format.\n")
-        raise ValueError("Malformed date.") from exc
+        raise InvalidDateError("Malformed date.") from exc

@@ -10,7 +10,7 @@ import datetime
 import logging
 
 # Import functions
-from .dates import parse_date, calc_search_endtime, calc_next_posttime
+from .dates import InvalidDateError, parse_date, calc_search_endtime, calc_next_posttime
 
 # Import classes for type checking
 if TYPE_CHECKING:
@@ -197,24 +197,24 @@ class Config:
         # If the search start date is in the future:
         if deltadays_now_to_search < 0:
             self.logger.critical("Search start date is in the future.\n")
-            raise ValueError("Search start date is in the future.")
+            raise InvalidDateError("Search start date is in the future.")
 
         # If the search end date is in the future:
         if (self.current_time.date() - self.end_date).days < 0:
             self.logger.critical("Search end date is in the future.\n")
-            raise ValueError("Search end date is in the future.")
+            raise InvalidDateError("Search end date is in the future.")
 
         # If the end date is equal to the start date, tell the user to wait
         if prev_run.days == 0:
             self.logger.critical(
                 "Search start/end dates are equal.%s\n", next_post_string
             )
-            raise ValueError("Search start/end dates are equal.")
+            raise InvalidDateError("Search start/end dates are equal.")
 
         # If the end date is before the start date
         if prev_run.days < 0:
             self.logger.critical("Search start date is after the end date.\n")
-            raise ValueError(
+            raise InvalidDateError(
                 "Search start date is after the end date. Check for timezone issues."
             )
 
@@ -225,7 +225,9 @@ class Config:
             self.logger.critical(
                 "No valid search dates are included.%s\n", next_post_string
             )
-            raise ValueError(f"No valid search dates are included.{next_post_string}")
+            raise InvalidDateError(
+                f"No valid search dates are included.{next_post_string}"
+            )
 
         # If there are no issues, let the user know how many days we are searching over
         self.logger.info("Days since the previous search: %s", prev_run.days)

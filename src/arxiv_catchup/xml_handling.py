@@ -9,6 +9,18 @@ import re
 from .string_handling import normalise_string
 
 
+class XmlReadError(Exception):
+    """Exception raised if information cannot be extracted from the .xml file.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
+
+
 def extract_paper_id_version(
     logger: logging.Logger, ns: dict[str, str], entry: ET.Element
 ) -> tuple[str, int, str, str, bool]:
@@ -29,7 +41,7 @@ def extract_paper_id_version(
 
         logger.critical("Could not extract the arXiv ID number.\n")
 
-        raise TypeError("Malformed arXiv ID number.")
+        raise XmlReadError("Malformed arXiv ID number.")
 
     id_num = arxiv_id.text.split("/")[-1][:10]
     version = int(arxiv_id.text.split("/")[-1][11:])
@@ -44,7 +56,7 @@ def extract_paper_id_version(
 
         logger.critical("Could not extract the updated date.\n")
 
-        raise TypeError("Malformed updated date")
+        raise XmlReadError("Malformed updated date")
 
     updated = raw_updated.text
 
@@ -57,7 +69,7 @@ def extract_paper_id_version(
 
         logger.critical("Could not extract the published date.\n")
 
-        raise TypeError("Malformed published date.")
+        raise XmlReadError("Malformed published date.")
 
     published = raw_published.text
 
@@ -90,7 +102,7 @@ def extract_paper_links(
 
         logger.critical("Could not find all urls.\n")
 
-        raise ValueError("Malformed urls (could not find required urls).")
+        raise XmlReadError("Malformed urls (could not find required urls).")
 
     link_abs = None  # ensure type checkers know they are strings
     link_pdf = None  # ensure type checkers know they are strings
@@ -115,13 +127,13 @@ def extract_paper_links(
 
         logger.critical("Could not find the abstract url.\n")
 
-        raise TypeError("Malformed abs url")
+        raise XmlReadError("Malformed abs url")
 
     if link_pdf is None:
 
         logger.critical("Could not find the .pdf url.\n")
 
-        raise TypeError("Malformed pdf url")
+        raise XmlReadError("Malformed pdf url")
 
     # logger.debug(f"Main page: {link_abs}")
     # logger.debug(f".pdf page: {link_pdf}")
@@ -150,7 +162,7 @@ def extract_paper_textfields(
 
         logger.critical("Could not extract the title.\n")
 
-        raise TypeError("Malformed title.")
+        raise XmlReadError("Malformed title.")
 
     title = raw_title.text.strip()
 
@@ -163,7 +175,7 @@ def extract_paper_textfields(
 
         logger.critical("Could not extract the abstract.\n")
 
-        raise TypeError("Malformed abstract.")
+        raise XmlReadError("Malformed abstract.")
 
     abstract = raw_abstract.text.strip()
 
@@ -215,7 +227,7 @@ def extract_paper_cats(
 
         logger.critical("Could not extract the category.\n")
 
-        raise ValueError("Malformed categories (could not find any).")
+        raise XmlReadError("Malformed categories (could not find any).")
 
     category = [cat.attrib["term"] for cat in raw_category]
 
@@ -245,7 +257,7 @@ def extract_paper_authors(
 
         logger.critical("Count not find author list.\n")
 
-        raise ValueError("Malformed authors (could not find any).")
+        raise XmlReadError("Malformed authors (could not find any).")
 
     for author in authors:
 
@@ -255,7 +267,7 @@ def extract_paper_authors(
 
             logger.critical("Could not extract an author from the list.\n")
 
-            raise TypeError("Malformed author name. Could not extract.")
+            raise XmlReadError("Malformed author name. Could not extract.")
 
         normalised_name = normalise_string(name.text)
         author_list.append(normalised_name)
@@ -295,4 +307,4 @@ def convert_request_to_xml_root(logger: logging.Logger, arxiv_data: str) -> ET.E
         # # For now, raise an error
         logger.critical("XML parsing error. Please upload log file to github.\n")
         logger.debug(error)
-        raise ValueError("Failed to parse the XML data from the servers.") from error
+        raise XmlReadError("Failed to parse the XML data from the servers.") from error

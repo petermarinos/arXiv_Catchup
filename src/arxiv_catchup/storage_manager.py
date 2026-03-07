@@ -15,8 +15,21 @@ import yaml
 
 # Import functions
 from .string_handling import normalise_string
+from .xml_handling import XmlReadError
 from .dates import calc_search_endtime, parse_date
 from .utils import create_dir
+
+
+class SearchTermReadError(Exception):
+    """Exception raised if information cannot be extracted from the search_term.yaml file.
+
+    Attributes:
+        message -- explanation of the error
+    """
+
+    def __init__(self, message: str):
+        self.message = message
+        super().__init__(self.message)
 
 
 # Define some small classes. Bounds the expected values and prevents errors within strings.
@@ -65,7 +78,7 @@ class Storage:
         root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
 
         if not root_dir.is_dir():
-            raise ValueError(f"root_dir must be a valid directory: {root_dir}")
+            raise ValueError(f"{root_dir} is not a valid directory.")
 
         self.logger: logging.Logger
 
@@ -135,7 +148,7 @@ class Storage:
                 "No search terms were found in the 'categories' entry in the configuration file.\n"
                 "          Please check the file and add at least one item.\n"
             )
-            raise RuntimeError(
+            raise SearchTermReadError(
                 "No search categories found. Add atleast one to the .yaml."
             )
 
@@ -224,7 +237,9 @@ class Storage:
                 "          Please check the file and add at least one item to at least one of "
                 "these fields.\n"
             )
-            raise RuntimeError("No search terms found. Add atleast one to the .yaml.")
+            raise SearchTermReadError(
+                "No search terms found. Add atleast one to the .yaml."
+            )
 
         search_terms = SearchTerms(
             categories=cats,
@@ -297,7 +312,7 @@ class Storage:
             xml_tree = typing.cast(ET.ElementTree, ET.parse(filename))
         except ET.ParseError as e:
             self.logger.critical("Could not parse XML: %s", e)
-            raise ValueError(f"Malformed XML file: {filename}") from e
+            raise XmlReadError(f"Malformed XML file: {filename}") from e
 
         # Check the url from the loaded xml matches the current search url
         # Extract the url from the xml. It will *always* be the first link
@@ -306,7 +321,7 @@ class Storage:
             self.logger.critical(
                 "arXiv data did not include a search link. It is corrupted (returned None).\n"
             )
-            raise ValueError("Malformed search link.")
+            raise XmlReadError("Malformed search link.")
         returned_url = returned_urlblock.attrib["href"]
 
         url_mismatch = expected_url != returned_url
@@ -370,7 +385,9 @@ class Storage:
 
             # Do an error check. Should never error.
             if len(raw_date) != 10:
-                raise ValueError("File with previous date is corrupted.")
+                raise ValueError(
+                    f"Corrupted previous date file: {self.paths.previous_date}"
+                )
 
             start_time, start_date = parse_date(
                 self.logger, raw_date, "start-date", search_time, post_time
