@@ -8,8 +8,6 @@ from typing import TYPE_CHECKING
 import logging
 import pathlib
 
-# import sys
-
 # Import functions
 from .utils import cli_args
 from .ui import open_links
