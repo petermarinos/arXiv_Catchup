@@ -30,15 +30,15 @@ Note that it is recommended to create a new environment before installing.
 
 ### Running
 
-The script can be executed from any directory with the command:
+As long as you are using the correct environment, the search can be executed from any directory with the command:
 
 `$ python -m arxiv_catchup {flags}`
 
 For frequent execution, add the following to your bash file:
 
-`alias arxiv='python3 /path/to/arXiv_Catchup/catchup.py {flags}'`
+`alias arxiv='python -m arxiv_catchup {flags}'`
 
-As long as you are using the correct environment, the search can then be performed in the CLI from any directory by running:
+he search can then be performed with your chosen flags in the CLI from any directory by running:
 
 `$ arxiv`
 
@@ -80,7 +80,7 @@ Examples of the format required for each can be found in the provided file.
 
 > [!TIP]
 > Lines starting with `#` are ignored.
-> Multi-word terms can be used, as can author names with spaces.
+> Multi-word terms can be used.
 > If adding acronyms, include their pluralised forms (e.g. SN and SNe or CR and CRs).
 > If including terms that are frequently displayed with a symbol, include all possibilities (e.g. gamma, ɣ, and γ). 
 
@@ -103,7 +103,7 @@ For example, an author may write 'ö' as 'oe'.
 For these cases it is recommended to include both representations in the `./config/search_terms.yaml` file.
 
 Notes on particles:
-If you want matches for `Ludwig van Beethoven` then enter `Ludwig van Beethoven`, or `Ludwig Beethoven` in the config -- `L. van Beethoven` will not work in the config.
+If you want matches for `Ludwig van Beethoven` then enter `Ludwig van Beethoven`, or `Ludwig Beethoven` in the config -- `L. van Beethoven` **will not work**.
 
 Notes on suffixes:
 Currently not supported.
@@ -112,7 +112,7 @@ Notes on non-Eurocentric name ordering:
 arXiv asks all authors to write their names as "Givenname(s) Familyname".
 Still, some authors do not obey these rules.
 If you want matches for authors that may write their names as "Familyname Givenname(s)" then include both orderings.
-Note that exact matches for all given/surnames will be required in these cases.
+Note that exact matches for all given/surnames will be required in these cases, and the false-positive rate may be large.
 
 #### Generated Files
 
