@@ -150,5 +150,7 @@ The next deferred mailing where this can be tested will be on Friday 2026/06/19.
 Thank you to arXiv for use of its open access interoperability.
 
 In addition to the python standard library, we make use of the following packages:
+- `certifi` - [homepage](https://github.com/certifi/python-certifi)
 - `pylatexenc` - [homepage](https://github.com/phfaist/pylatexenc)
+- `unidecode` - [homepage](https://github.com/avian2/unidecode)
 - `yaml` - [homepage](https://pyyaml.org/)
