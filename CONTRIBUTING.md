@@ -5,7 +5,9 @@ However, if there is something small, feel free to contribute!
 
 ## Installation
 
-Use the command `$ python -m pip install -e ".[dev]"` to install with the development tools (black, plint, etc.).
+Clone the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
+Then, use the command `$ python -m pip install -e ".[dev]"` to install with the development tools (black, plint, etc.).
+As with installing the non-dev version, it is recommended to create a new python environment.
 
 Tests can be performed by running `python3 -m pytest tests` from the top directory.
 

@@ -24,7 +24,7 @@ It then computes an 'interest' score for every paper based on the search terms y
 
 ### Installation
 
-Close the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
+Clone the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
 The project can then be installed via `$ pip install -e /path/to/arXiv_Catchup/`.
 Note that it is recommended to create a new environment before installing.
 
