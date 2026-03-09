@@ -550,6 +550,8 @@ class Storage:
 
         # Ask the user if they would like to open the links in the browser. Default is no
         self.logger.warning("There are %s links in %s.", len(links), self.paths.catchup)
+        self.logger.debug("Prompting user | Delete all links? [y/N]")
+
         user_prompt = (
             input(
                 "         Delete all links? This action cannot be reversed. "
@@ -561,6 +563,8 @@ class Storage:
 
         # If the user says yes, delete the file
         if user_prompt == "y":
+
+            self.logger.debug("User prompt | Replied 'y', deleting file")
 
             # Check that the file is of the correct format to prevent deleting some other file
             # Loop through all lines, ensuring they begin with the correct text
@@ -583,5 +587,7 @@ class Storage:
 
         # Else, do nothing
         else:
+
+            self.logger.debug("User prompt | Did not reply with 'y'")
 
             self.logger.info("Doing nothing.")

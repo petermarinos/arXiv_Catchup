@@ -96,6 +96,8 @@ class CLI:
         # Prompt the user if it is going to take a really long time.
         elif time_to_search_minutes >= 5:
 
+            self.logger.debug("Prompting user | Long search time, continue? [y/N]")
+
             user_prompt = (
                 input(
                     f"There are {arxiv_client.total_papers:d} papers. "
@@ -109,6 +111,10 @@ class CLI:
             # If they want to continue, do nothing.
             # If they do not want to continue, end the search
             if user_prompt != "y":
+
+                self.logger.debug(
+                    "User prompt | did not reply with 'y'. Cancelling search."
+                )
 
                 # Delete the .xml file
                 storage.delete_file(xml_path)
@@ -176,6 +182,8 @@ class CLI:
 
                 est_time = len(corpus.papers_of_note) * arxiv_client.SLEEP_OPENING
 
+                self.logger.debug("Prompting user | Open in browser? [y/N]")
+
                 # Ask the user if they would like to open the links in the browser
                 user_prompt_browser = (
                     input(
@@ -189,10 +197,18 @@ class CLI:
                 # If they say yes to opening in the browser
                 if user_prompt_browser == "y":
 
+                    self.logger.debug(
+                        "User prompt | Replied with 'y'. Will open links."
+                    )
+
                     self.open_in_browser = True
 
                 # If they say no to opening in the browser
                 else:
+
+                    self.logger.debug("User prompt | Did not reply with 'y'.")
+
+                    self.logger.debug("Prompting user | Write links to file? [y/N]")
 
                     # Ask the user if they would like to save the links to a file or the terminal.
                     user_prompt_file = (
@@ -207,10 +223,18 @@ class CLI:
                     # If they want to save the output
                     if user_prompt_file == "y":
 
+                        self.logger.debug(
+                            "User prompt | Replied with 'y'. Will write links to file."
+                        )
+
                         self.write_to_file = True
 
                     # If they want the output in the terminal
                     else:
+
+                        self.logger.debug(
+                            "User prompt | Did not reply with 'y'. Will write links to the CLI."
+                        )
 
                         print("Printing all links to the terminal:\n")
                         for arxiv_id in corpus.papers_of_note:
