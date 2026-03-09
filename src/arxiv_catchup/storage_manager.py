@@ -536,7 +536,7 @@ class Storage:
         self.delete_file(self.paths.search_xml)
         self.delete_file(self.paths.papers_xml)
 
-    def delete_catchup_file(self, links: list[str]) -> None:
+    def delete_catchup_file(self, delete_flag: bool) -> None:
         """Deletes the `catchup.txt` file (contains all links that have been saved over previous
         runs). Only used by the auxiliary script `open_catchup.py`.
         NOTE: This function checks to ensure the file is formatted correctly to prevent deletions
@@ -545,26 +545,13 @@ class Storage:
 
         inputs
         ------
-        links : List containing all arXiv links in the file.
+        delete_flag : If True, delete file, otherwise do nothing
         """
 
-        # Ask the user if they would like to open the links in the browser. Default is no
-        self.logger.warning("There are %s links in %s.", len(links), self.paths.catchup)
-        self.logger.debug("Prompting user | Delete all links? [y/N]")
-
-        user_prompt = (
-            input(
-                "         Delete all links? This action cannot be reversed. "
-                "Only do so if the papers have been reviewed. [y/N]: "
-            )
-            .strip()
-            .lower()
-        )
-
         # If the user says yes, delete the file
-        if user_prompt == "y":
+        if delete_flag:
 
-            self.logger.debug("User prompt | Replied 'y', deleting file")
+            self.logger.debug("Deleting file: %s", self.paths.catchup)
 
             # Check that the file is of the correct format to prevent deleting some other file
             # Loop through all lines, ensuring they begin with the correct text
@@ -587,7 +574,5 @@ class Storage:
 
         # Else, do nothing
         else:
-
-            self.logger.debug("User prompt | Did not reply with 'y'")
 
             self.logger.info("Doing nothing.")

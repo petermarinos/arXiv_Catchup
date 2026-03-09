@@ -53,6 +53,8 @@ class CLI:
         else:
             self.write_to_file = False  # May be mutated later
 
+        self.delete_catchup = False  # May be mutated later
+
     def add_logger(self) -> None:
         """
         Setting up the logger requires knowlegde of the storage manager. Add the logger to this
@@ -244,6 +246,46 @@ class CLI:
 
                         # After printing all the papers, also print a blank space.
                         print("")
+
+    def get_delete_catchup_bool(self, storage: Storage, links: list[str]) -> None:
+        """Prompt the user to ask if the catchup file should be deleted.
+
+        inputs
+        ------
+        storage : Storage object
+        links : List containing all arXiv links in the file.
+        """
+
+        # Ask the user if they would like to open the links in the browser. Default is no
+        self.logger.warning(
+            "There are %s links in %s.", len(links), storage.paths.catchup
+        )
+        self.logger.debug("Prompting user | Delete all links? [y/N]")
+
+        user_prompt = (
+            input(
+                "         Delete all links? This action cannot be reversed. "
+                "Only do so if the papers have been reviewed. [y/N]: "
+            )
+            .strip()
+            .lower()
+        )
+
+        # If the user says yes, set deletion flag to True
+        if user_prompt == "y":
+
+            self.logger.debug("User prompt | Replied 'y', will delete file")
+
+            self.delete_catchup = True
+
+        # Else, set deletion flag to False
+        else:
+
+            self.logger.debug(
+                "User prompt | Did not reply with 'y'. Will not delete file."
+            )
+
+            self.delete_catchup = False
 
     def display(
         self,
