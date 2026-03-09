@@ -25,20 +25,6 @@ from arxiv_catchup.ui import open_links
 # The only impact to you would be the 0.25s per filtered paper opened in the browser.
 # If you rarely want to open all papers, this is the recommended method.
 
-# # Parse command-line arguments
-# parser = argparse.ArgumentParser(
-#     prog="Catchup file opening",
-#     description="Opens all links in the catchup text file, then clears it.",
-# )
-# parser.add_argument(
-#     "-v",
-#     "--verbosity",
-#     type=int,
-#     default=3,
-#     help="Set the verbosity level.\n0 => critical errors\n...\n4 => ... and debug messages",
-# )
-# args = parser.parse_args()
-
 
 # # Parse command-line arguments
 cli = CLI()
