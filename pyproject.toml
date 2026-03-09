@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "arxiv-catchup"
 description = "Searches arXiv for all papers since the previous execution. All papers with keyword/author matches from a pre-defined list are then opened in a web browser."
-version = "1.7.5"
+version = "1.7.6"
 dependencies = ["certifi", "pylatexenc", "PyYAML", "unidecode"]
 requires-python = ">=3.10"
 authors = [{ name = "Peter Marinos", email = "peter_marinos@hotmail.com.au" }]
