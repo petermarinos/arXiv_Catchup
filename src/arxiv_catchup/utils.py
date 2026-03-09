@@ -80,6 +80,14 @@ def cli_args() -> argparse.Namespace:
         help="Will only write the arXiv ID numbers to the file (if writing).",
     )
 
+    # Keep temp files
+    parser.add_argument(
+        "-k",
+        "--keep-temp",
+        action="store_true",
+        help="Keep all temporary files.",
+    )
+
     # Manually set the start date of the search
     parser.add_argument(
         "-s",

@@ -537,11 +537,23 @@ class Storage:
         file = pathlib.Path(filename)
         file.unlink()
 
-    def delete_temp_files(self) -> None:
-        """Clear the temporary files created by the script."""
+    def delete_temp_files(self, keep_flag: bool) -> None:
+        """Clear the temporary files created by the script.
 
-        self.delete_file(self.paths.search_xml)
-        self.delete_file(self.paths.papers_xml)
+        inputs
+        ------
+        keep_flag : Delete temp files if false, otherwise keep the temp files.
+        """
+
+        # Only delete the files if keep_flag is False
+        if not keep_flag:
+
+            self.delete_file(self.paths.search_xml)
+            self.delete_file(self.paths.papers_xml)
+
+        else:
+
+            self.logger.info("Not deleting temporary files.")
 
     def delete_catchup_file(self, delete_flag: bool) -> None:
         """Deletes the `catchup.txt` file (contains all links that have been saved over previous
