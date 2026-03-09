@@ -199,6 +199,9 @@ def logger_setup(args: argparse.Namespace, filename: pathlib.Path):
     if args.verbosity < 0:
         logger.warning("Input verbosity was negative. Defaulting to show debug.")
 
+    # Log the location of the log file
+    logger.debug("Log file created at: %s", filename)
+
     # State the verbosity level
     logger.debug(
         "Log file verbosity level set to: %s", logging.getLevelName(logger.level)
