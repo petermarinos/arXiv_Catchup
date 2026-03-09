@@ -9,6 +9,7 @@ import datetime
 import logging
 import pathlib
 import typing
+import sys
 
 # Import non-standard libraries
 import yaml
@@ -74,7 +75,7 @@ class Storage:
 
         # Find the root path
         # .resolve().parent gives the location of this file.
-        # Go up an additional two directories to get to .../arXiv_Catchup/
+        # Go up an additional two directories to get to /path/to/arXiv_Catchup/
         root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
 
         if not root_dir.is_dir():
@@ -88,8 +89,14 @@ class Storage:
         log_dir = root_dir / ".run" / "logs"
         tmp_dir = root_dir / ".run" / "tmp"
 
+        logfile_name = pathlib.Path(sys.argv[0]).stem
+        if logfile_name == "__main__":
+            logfile_name = "main.log"
+        else:
+            logfile_name += ".log"
+
         self.paths = Paths(
-            log=log_dir / "catchup.log",
+            log=log_dir / logfile_name,
             previous_date=state_dir / "prev_search.txt",
             search_terms=config_dir / "search_terms.yaml",
             catchup=out_dir / "catchup.txt",
@@ -101,7 +108,7 @@ class Storage:
         if not self.paths.search_terms.exists():
             raise RuntimeError(f"Could not find config file: {self.paths.search_terms}")
 
-        # Create directories if they don't exist
+        # Create directories (if they don't already exist)
         create_dir(state_dir)
         create_dir(log_dir)
         create_dir(out_dir)
