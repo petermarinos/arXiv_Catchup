@@ -1,8 +1,8 @@
 """arxiv_catchup
 
-catchup.py -> thin entrypoint
+__main__.py -> thin entrypoint
 
-./scripts/main.py -> runner
+runner.py -> runner
 
 Included classes in ./scripts:
 ArxivClient : Connects to arXiv servers

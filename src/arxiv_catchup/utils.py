@@ -80,6 +80,14 @@ def cli_args() -> argparse.Namespace:
         help="Will only write the arXiv ID numbers to the file (if writing).",
     )
 
+    # Keep temp files
+    parser.add_argument(
+        "-k",
+        "--keep-temp",
+        action="store_true",
+        help="Keep all temporary files.",
+    )
+
     # Manually set the start date of the search
     parser.add_argument(
         "-s",
@@ -198,6 +206,9 @@ def logger_setup(args: argparse.Namespace, filename: pathlib.Path):
     # Warn if a negative verbosity was entered on the CLI
     if args.verbosity < 0:
         logger.warning("Input verbosity was negative. Defaulting to show debug.")
+
+    # Log the location of the log file
+    logger.debug("Log file created at: %s", filename)
 
     # State the verbosity level
     logger.debug(

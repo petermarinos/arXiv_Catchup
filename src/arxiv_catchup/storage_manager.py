@@ -9,6 +9,7 @@ import datetime
 import logging
 import pathlib
 import typing
+import sys
 
 # Import non-standard libraries
 import yaml
@@ -74,7 +75,7 @@ class Storage:
 
         # Find the root path
         # .resolve().parent gives the location of this file.
-        # Go up an additional two directories to get to .../arXiv_Catchup/
+        # Go up an additional two directories to get to /path/to/arXiv_Catchup/
         root_dir = pathlib.Path(__file__).resolve().parent.parent.parent
 
         if not root_dir.is_dir():
@@ -88,8 +89,14 @@ class Storage:
         log_dir = root_dir / ".run" / "logs"
         tmp_dir = root_dir / ".run" / "tmp"
 
+        logfile_name = pathlib.Path(sys.argv[0]).stem
+        if logfile_name == "__main__":
+            logfile_name = "main.log"
+        else:
+            logfile_name += ".log"
+
         self.paths = Paths(
-            log=log_dir / "catchup.log",
+            log=log_dir / logfile_name,
             previous_date=state_dir / "prev_search.txt",
             search_terms=config_dir / "search_terms.yaml",
             catchup=out_dir / "catchup.txt",
@@ -101,7 +108,7 @@ class Storage:
         if not self.paths.search_terms.exists():
             raise RuntimeError(f"Could not find config file: {self.paths.search_terms}")
 
-        # Create directories if they don't exist
+        # Create directories (if they don't already exist)
         create_dir(state_dir)
         create_dir(log_dir)
         create_dir(out_dir)
@@ -530,13 +537,25 @@ class Storage:
         file = pathlib.Path(filename)
         file.unlink()
 
-    def delete_temp_files(self) -> None:
-        """Clear the temporary files created by the script."""
+    def delete_temp_files(self, keep_flag: bool) -> None:
+        """Clear the temporary files created by the script.
 
-        self.delete_file(self.paths.search_xml)
-        self.delete_file(self.paths.papers_xml)
+        inputs
+        ------
+        keep_flag : Delete temp files if false, otherwise keep the temp files.
+        """
 
-    def delete_catchup_file(self, links: list[str]) -> None:
+        # Only delete the files if keep_flag is False
+        if not keep_flag:
+
+            self.delete_file(self.paths.search_xml)
+            self.delete_file(self.paths.papers_xml)
+
+        else:
+
+            self.logger.info("Not deleting temporary files.")
+
+    def delete_catchup_file(self, delete_flag: bool) -> None:
         """Deletes the `catchup.txt` file (contains all links that have been saved over previous
         runs). Only used by the auxiliary script `open_catchup.py`.
         NOTE: This function checks to ensure the file is formatted correctly to prevent deletions
@@ -545,22 +564,13 @@ class Storage:
 
         inputs
         ------
-        links : List containing all arXiv links in the file.
+        delete_flag : If True, delete file, otherwise do nothing
         """
 
-        # Ask the user if they would like to open the links in the browser. Default is no
-        self.logger.warning("There are %s links in %s.", len(links), self.paths.catchup)
-        user_prompt = (
-            input(
-                "         Delete all links? This action cannot be reversed. "
-                "Only do so if the papers have been reviewed. [y/N]: "
-            )
-            .strip()
-            .lower()
-        )
-
         # If the user says yes, delete the file
-        if user_prompt == "y":
+        if delete_flag:
+
+            self.logger.debug("Deleting file: %s", self.paths.catchup)
 
             # Check that the file is of the correct format to prevent deleting some other file
             # Loop through all lines, ensuring they begin with the correct text

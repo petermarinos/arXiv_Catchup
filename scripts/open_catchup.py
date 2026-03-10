@@ -5,14 +5,13 @@ CLI Arguments
 -v: int -> verbosity level
 """
 
-# Import standard libraries
-import argparse
+# # Import standard libraries
+# import argparse
 
 # Import classes
 from arxiv_catchup.storage_manager import Storage
-
-# Import packages
 from arxiv_catchup.utils import logger_setup
+from arxiv_catchup.cli import CLI
 from arxiv_catchup.ui import open_links
 
 # The goal of this script is to save the link opening for later if the user chooses
@@ -26,19 +25,9 @@ from arxiv_catchup.ui import open_links
 # The only impact to you would be the 0.25s per filtered paper opened in the browser.
 # If you rarely want to open all papers, this is the recommended method.
 
-# Parse command-line arguments
-parser = argparse.ArgumentParser(
-    prog="Catchup file opening",
-    description="Opens all links in the catchup text file, then clears it.",
-)
-parser.add_argument(
-    "-v",
-    "--verbosity",
-    type=int,
-    default=3,
-    help="Set the verbosity level.\n0 => critical errors\n...\n4 => ... and debug messages",
-)
-args = parser.parse_args()
+
+# # Parse command-line arguments
+cli = CLI()
 
 # Extract some of the required constants
 storage = Storage()
@@ -54,7 +43,8 @@ ns = {
 SLEEP_OPENING = 0.25  # 0.25 seconds between opening links
 
 # Setup logging
-logger_setup(args, storage.paths.log)
+logger_setup(cli.args, storage.paths.log)
+cli.add_logger()
 storage.add_logger()
 
 # Read the catchup file
@@ -64,4 +54,5 @@ papers = storage.read_catchup_file()
 open_links(papers, SLEEP_OPENING)
 
 # Ask the user if the file should be deleted
-storage.delete_catchup_file(papers)
+cli.get_delete_catchup_bool(storage, papers)
+storage.delete_catchup_file(cli.delete_catchup)

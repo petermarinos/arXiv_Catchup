@@ -53,6 +53,8 @@ class CLI:
         else:
             self.write_to_file = False  # May be mutated later
 
+        self.delete_catchup = False  # May be mutated later
+
     def add_logger(self) -> None:
         """
         Setting up the logger requires knowlegde of the storage manager. Add the logger to this
@@ -96,6 +98,8 @@ class CLI:
         # Prompt the user if it is going to take a really long time.
         elif time_to_search_minutes >= 5:
 
+            self.logger.debug("Prompting user | Long search time, continue? [y/N]")
+
             user_prompt = (
                 input(
                     f"There are {arxiv_client.total_papers:d} papers. "
@@ -109,6 +113,10 @@ class CLI:
             # If they want to continue, do nothing.
             # If they do not want to continue, end the search
             if user_prompt != "y":
+
+                self.logger.debug(
+                    "User prompt | did not reply with 'y'. Cancelling search."
+                )
 
                 # Delete the .xml file
                 storage.delete_file(xml_path)
@@ -176,6 +184,8 @@ class CLI:
 
                 est_time = len(corpus.papers_of_note) * arxiv_client.SLEEP_OPENING
 
+                self.logger.debug("Prompting user | Open in browser? [y/N]")
+
                 # Ask the user if they would like to open the links in the browser
                 user_prompt_browser = (
                     input(
@@ -189,10 +199,18 @@ class CLI:
                 # If they say yes to opening in the browser
                 if user_prompt_browser == "y":
 
+                    self.logger.debug(
+                        "User prompt | Replied with 'y'. Will open links."
+                    )
+
                     self.open_in_browser = True
 
                 # If they say no to opening in the browser
                 else:
+
+                    self.logger.debug("User prompt | Did not reply with 'y'.")
+
+                    self.logger.debug("Prompting user | Write links to file? [y/N]")
 
                     # Ask the user if they would like to save the links to a file or the terminal.
                     user_prompt_file = (
@@ -207,10 +225,18 @@ class CLI:
                     # If they want to save the output
                     if user_prompt_file == "y":
 
+                        self.logger.debug(
+                            "User prompt | Replied with 'y'. Will write links to file."
+                        )
+
                         self.write_to_file = True
 
                     # If they want the output in the terminal
                     else:
+
+                        self.logger.debug(
+                            "User prompt | Did not reply with 'y'. Will write links to the CLI."
+                        )
 
                         print("Printing all links to the terminal:\n")
                         for arxiv_id in corpus.papers_of_note:
@@ -220,6 +246,46 @@ class CLI:
 
                         # After printing all the papers, also print a blank space.
                         print("")
+
+    def get_delete_catchup_bool(self, storage: Storage, links: list[str]) -> None:
+        """Prompt the user to ask if the catchup file should be deleted.
+
+        inputs
+        ------
+        storage : Storage object
+        links : List containing all arXiv links in the file.
+        """
+
+        # Ask the user if they would like to open the links in the browser. Default is no
+        self.logger.warning(
+            "There are %s links in %s.", len(links), storage.paths.catchup
+        )
+        self.logger.debug("Prompting user | Delete all links? [y/N]")
+
+        user_prompt = (
+            input(
+                "         Delete all links? This action cannot be reversed. "
+                "Only do so if the papers have been reviewed. [y/N]: "
+            )
+            .strip()
+            .lower()
+        )
+
+        # If the user says yes, set deletion flag to True
+        if user_prompt == "y":
+
+            self.logger.debug("User prompt | Replied 'y', will delete file")
+
+            self.delete_catchup = True
+
+        # Else, set deletion flag to False
+        else:
+
+            self.logger.debug(
+                "User prompt | Did not reply with 'y'. Will not delete file."
+            )
+
+            self.delete_catchup = False
 
     def display(
         self,

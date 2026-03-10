@@ -79,9 +79,8 @@ def main():
     # # Write some auxiliary file(s) for the next run
     storage.write_aux_files(search_params.end_date, corpus.length)
 
-    # print("TESTING: Not deleting temp. files.")
     # # Delete xmls/other supplemental files if successfull
-    storage.delete_temp_files()
+    storage.delete_temp_files(cli.args.keep_temp)
 
     # # Print a summary
     corpus.summary()

@@ -24,7 +24,7 @@ It then computes an 'interest' score for every paper based on the search terms y
 
 ### Installation
 
-Close the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
+Clone the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
 The project can then be installed via `$ pip install -e /path/to/arXiv_Catchup/`.
 Note that it is recommended to create a new environment before installing.
 
@@ -50,6 +50,7 @@ There are additional arguments that can be used:
 - `-n`, `--new-window` opens all links in a new window (does not work on mac).
 - `-w`, `--write-to-file` skips all confirmation dialogues and writes all links to a file.
 - `--only-ids` will only write the arXiv ID numbers to a file (instead of the url).
+- `-k`, `--keep-temp` keep the temp files, otherwise they will be deleted.
 - `-s str`, `--start-date str` manually set the start date for the search.
 - `-e str`, `--end-date str` manually set the end date for the search.
 - `--filter-on-matches` use the basic matching algorithm to filter the papers, rather than the 'interest' score
