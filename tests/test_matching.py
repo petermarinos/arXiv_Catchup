@@ -1,4 +1,4 @@
-"""Unit tests on all matching related function."""
+"""Unit tests on all matching related functions."""
 
 # Import libraries
 import unittest
