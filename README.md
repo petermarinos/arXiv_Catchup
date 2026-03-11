@@ -44,9 +44,11 @@ For frequent execution, the search can be performed with your chosen flags in th
 
 `alias arxiv='python -m arxiv_catchup {flags}'`
 
-or, if using an environment and the conda environment manager, include the line:
+If you want the bash alias while also using a separate environment for this project then there are a few options:
 
-`alias arxiv='conda run -n {arxiv environment name} python -m arxiv_catchup {flags}'`
+1. Set your default environment to the one you created for this project by adding `conda activate {arxiv env name}` as a new line somewhere in your bash file.
+2. Activate the relevant environment (then switch back to your preferred one after) by adding `alias arxiv='conda activate {arxiv env name} && python -m arxiv_catchup {flags} && conda activate {preferred env name}'` to your bash file.
+3. Write a bash function that will activate the relevant environments before/after the script executes. This is left as an exercise for the user.
 
 ### CLI Arguments
 
