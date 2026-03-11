@@ -1,8 +1,11 @@
 # python caches
 *cache*
 
-# python egg
-src/arxiv_catchup/*.egg*
+# python eggs
+*.egg*
+
+# build directories
+build/
 
 # mac indexing file
 .DS_Store
