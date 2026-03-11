@@ -44,7 +44,7 @@ For frequent execution, the search can be performed with your chosen flags in th
 
 `alias arxiv='python -m arxiv_catchup {flags}'`
 
-or, if using an environment, include the line:
+or, if using an environment and the conda environment manager, include the line:
 
 `alias arxiv='conda run -n {arxiv environment name} python -m arxiv_catchup {flags}'`
 
