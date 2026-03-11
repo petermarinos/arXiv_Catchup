@@ -25,7 +25,9 @@ It then computes an 'interest' score for every paper based on the search terms y
 ### Installation
 
 Clone the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
-The project can then be installed via `$ pip install -e /path/to/arXiv_Catchup/`.
+Change into the cloned directory via `$ cd ./arXiv_Catchup`, then project can then be installed via `$ python -m pip install .`.
+If you want to use the GUI, then the project can be installed via `$ python -m pip install -e ".[gui]"`.
+
 Note that it is recommended to create a new environment before installing.
 
 ### Running
@@ -38,9 +40,13 @@ For frequent execution, add the following to your bash file:
 
 `alias arxiv='python -m arxiv_catchup {flags}'`
 
-he search can then be performed with your chosen flags in the CLI from any directory by running:
+the search can then be performed with your chosen flags in the CLI from any directory by running:
 
 `$ arxiv`
+
+If you installed the GUI, then the script can be executed via the command:
+
+`$ python -m arxiv_catchup.gui`
 
 ### CLI Arguments
 
