@@ -1,8 +1,8 @@
-# README
+# arXiv Catchup
 
 Tired of reading all the Titles/Abstracts/Author Lists of every paper posted on the arXiv every single day?
 
-This script searches the [arXiv](https://arxiv.org/) (within the categories of interest) for **all papers since the previous execution**.
+This project searches the [arXiv](https://arxiv.org/) (within the categories of interest) for **all papers since the previous execution**.
 It then computes an 'interest' score for every paper based on the search terms you supply, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
 
 > [!NOTE]
@@ -25,28 +25,28 @@ It then computes an 'interest' score for every paper based on the search terms y
 ### Installation
 
 Clone the repo via the command `$ git clone https://github.com/petermarinos/arXiv_Catchup.git`.
-Change into the cloned directory via `$ cd ./arXiv_Catchup`, then project can then be installed via `$ python -m pip install .`.
+Change into the cloned directory via `$ cd ./arXiv_Catchup/`, then instal the project via `$ python -m pip install .`.
 If you want to use the GUI, then the project can be installed via `$ python -m pip install -e ".[gui]"`.
 
-Note that it is recommended to create a new environment before installing.
+It is recommended to create and activate a new python environment before installing.
 
 ### Running
 
-As long as you are using the correct environment, the search can be executed from any directory with the command:
+The search can be executed from any directory, as long as the appropriate python environment is activated, via the command:
 
 `$ python -m arxiv_catchup {flags}`
 
-For frequent execution, add the following to your bash file:
+If you also installed the GUI, then the GUI-script can be executed via the command:
+
+`$ python -m arxiv_catchup.gui`
+
+For frequent execution, the search can be performed with your chosen flags in the CLI from any directory by adding the following to your bash file:
 
 `alias arxiv='python -m arxiv_catchup {flags}'`
 
-the search can then be performed with your chosen flags in the CLI from any directory by running:
+or, if using an environment, include the line:
 
-`$ arxiv`
-
-If you installed the GUI, then the script can be executed via the command:
-
-`$ python -m arxiv_catchup.gui`
+`alias arxiv='conda run -n {arxiv environment name} python -m arxiv_catchup {flags}'`
 
 ### CLI Arguments
 
@@ -72,7 +72,7 @@ If both `-f` and `-w` are passed, then the script will do both.
 If neither are passed, then the script will prompt the user for their preference.
 These CLI arguments can be added to the bash alias.
 
-### Auxiliary Files
+### Configuration Files
 
 #### Search Term File
 
@@ -121,7 +121,9 @@ Still, some authors do not obey these rules.
 If you want matches for authors that may write their names as "Familyname Givenname(s)" then include both orderings.
 Note that exact matches for all given/surnames will be required in these cases, and the false-positive rate may be large.
 
-#### Generated Files
+### Other Notes
+
+#### Run Files
 
 The script creates the file `.run/state/prev_search.txt`, which contains the date of the previous run in ISO format.
 This file will be used as the starting point for the next search, and is ignored if manually setting the start-date of the search on the CLI.
@@ -133,11 +135,11 @@ All links in this file can be opened in a browser by running `python3 ./scripts/
 During the run there are two `.xml` files that will be created in `.run/tmp/`.
 These files contain the results of the queries to the arXiv servers.
 If some non-recoverable error occurs, these files can be used to restart the search.
-After successfully presenting the results, both `.xml` files will be deleted.
+After successfully presenting the results, both `.xml` files will be deleted unless the runtime flag `-k` is used.
 
-All logs will be written to `.run/logs/catchup.log`.
+The logs for the main script will be written to `.run/logs/main.log`, and logs from any auxiliary scripts will be written to `.run/logs/{name_of_script}.log`.
 
-### Daily Mailings
+#### Daily Mailings
 
 There are no daily listings posted over the weekend or on some USA public holidays.
 
@@ -158,6 +160,7 @@ Thank you to arXiv for use of its open access interoperability.
 
 In addition to the python standard library, we make use of the following packages:
 - `certifi` - [homepage](https://github.com/certifi/python-certifi)
+- `customtkinter` - [homepage](https://customtkinter.tomschimansky.com/)
 - `pylatexenc` - [homepage](https://github.com/phfaist/pylatexenc)
 - `unidecode` - [homepage](https://github.com/avian2/unidecode)
 - `yaml` - [homepage](https://pyyaml.org/)
