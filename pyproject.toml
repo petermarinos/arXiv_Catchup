@@ -14,9 +14,13 @@ license = { file = "LICENCE" }
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov", "pylint", "mypy", "types-PyYAML", "black"]
+gui = ["customtkinter"]
 
 [project.scripts]
 arxiv-catchup = "arxiv_catchup.__main__:main"
+
+[project.gui-scripts]
+arxiv-catchup-gui = "arxiv_catchup.gui.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/petermarinos/arXiv_Catchup.git"
@@ -30,5 +34,5 @@ where = ["src"]
 
 [tool.mypy]
 [[tool.mypy.overrides]]
-module = ["pylatexenc.*"]
+module = ["pylatexenc.*", "customtkinter.*"]
 ignore_missing_imports = true
