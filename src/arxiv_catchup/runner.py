@@ -14,7 +14,7 @@ from .utils import logger_setup
 
 # The main script
 # Performs the entire pipeline
-def main():
+def main() -> None:
     """Pipeline that runs from start to finish."""
 
     # # Parse command-line arguments
