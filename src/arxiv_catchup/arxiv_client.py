@@ -275,13 +275,21 @@ class ArxivClient:
             self.logger.info("All papers found in the .xml file!")
 
         # If the xml file had more papers than expected, discard and redownload
-        # Only possible if the temp xml file is altered manually
+        # Only possible if the temp xml file is altered manually, or there is a strange user
+        #     interaction in the GUI
         elif corpus.length > self.total_papers:
 
-            self.logger.info("Too many papers found in the .xml file. Redownloading")
+            self.logger.info(
+                "Too many papers found in the .xml file. Redownloading. Found %s, expected %s",
+                corpus.length,
+                self.total_papers,
+            )
 
             # Clear the entries from the list.
             corpus.clear_corpus()
+
+            # Delete the file to start again
+            storage.delete_file(storage.paths.papers_xml)
 
         # If there were fewer papers in the xml than we expected, connect to arXiv
         # NOTE: Not an elif in the case that the above statement clears the corpus
