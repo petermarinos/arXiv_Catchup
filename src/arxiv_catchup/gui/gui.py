@@ -4,31 +4,111 @@
 # Disable all unknown member types for this script
 # pyright: reportUnknownMemberType = false
 
+from collections.abc import Callable
+
+# import datetime
+
 import customtkinter  # pyright: ignore[reportMissingTypeStubs]
+
+from arxiv_catchup.config import Config
 
 
 # Helper functions
-def create_frame(
-    app: customtkinter.CTk | customtkinter.CTkScrollableFrame,
-    frame_text: str,
-    row_count: int,
-) -> customtkinter.CTkFrame:
+def create_button(
+    frame: customtkinter.CTkFrame,
+    width: int,
+    text: str,
+    row_index: int,
+    col_index: int,
+    command: Callable[[], None],
+    disabled: bool = True,
+    col_span: bool = False,
+) -> customtkinter.CTkButton:
     """WIP"""
 
-    # Create the frame
-    frame = customtkinter.CTkFrame(master=app, width=480)
-    frame.grid(row=row_count, column=0, pady=10, padx=20, sticky="ew")
+    button = customtkinter.CTkButton(
+        master=frame,
+        width=width,
+        text=text,
+        command=command,
+    )
 
-    # Set three columns
-    frame.grid_columnconfigure(0, minsize=220, weight=0)
-    frame.grid_columnconfigure(1, minsize=0, weight=1)
-    frame.grid_columnconfigure(2, minsize=220, weight=0)
+    if col_span:
+        button.grid(row=row_index, columnspan=3, pady=10, padx=10)
+    else:
+        button.grid(row=row_index, column=col_index, pady=10, padx=10)
 
-    # Create a label that spans all columns at the top of the frame
-    frame_label = customtkinter.CTkLabel(master=frame, text=frame_text)
-    frame_label.grid(row=0, columnspan=3, pady=10, padx=0, sticky="")
+    if disabled:
+        button.configure(state="disabled")
 
-    return frame
+    return button
+
+
+def create_checkbox(
+    frame: customtkinter.CTkFrame,
+    text: str,
+    row_index: int,
+    col_index: int,
+    command: Callable[[], None],
+) -> customtkinter.CTkCheckBox:
+    """WIP"""
+
+    checkbox = customtkinter.CTkCheckBox(master=frame, text=text, command=command)
+    checkbox.grid(row=row_index, column=col_index, pady=10, padx=10)
+
+    return checkbox
+
+
+def create_entry(
+    frame: customtkinter.CTkFrame,
+    variable_text: str,
+    placeholder_text: str,
+    row_index: int,
+    col_index: int,
+) -> customtkinter.CTkEntry:
+    """WIP"""
+
+    entry = customtkinter.CTkEntry(
+        master=frame,
+        width=220,
+        justify=customtkinter.LEFT,
+        textvariable=customtkinter.StringVar(value=variable_text),
+        placeholder_text=placeholder_text,
+    )
+    entry.grid(row=row_index, column=col_index, pady=10, padx=10)
+
+    return entry
+
+
+def create_progressbar(
+    frame: customtkinter.CTkFrame, row_index: int
+) -> customtkinter.CTkProgressBar:
+    """WIP"""
+
+    progressbar = customtkinter.CTkProgressBar(master=frame)
+    progressbar.grid(row=row_index, columnspan=3, pady=10, padx=10)
+    progressbar.set(0)
+
+    return progressbar
+
+
+def create_optionmenu(
+    frame: customtkinter.CTkFrame,
+    width: int,
+    values: list[str],
+    row_index: int,
+    col_index: int,
+) -> customtkinter.CTkOptionMenu:
+    """WIP"""
+
+    optionmenu = customtkinter.CTkOptionMenu(
+        frame,
+        width=width,
+        values=values,
+    )
+    optionmenu.grid(row=row_index, column=col_index, pady=10, padx=10)
+
+    return optionmenu
 
 
 class GUI:
@@ -36,18 +116,49 @@ class GUI:
 
     BUTTON_WIDTH = 180
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        search_params: Config,
+        on_keep_temp: Callable[[], None],
+        on_check_dates: Callable[[], None],
+        on_search_info: Callable[[], None],
+        on_download: Callable[[], None],
+        on_score: Callable[[], None],
+        on_filter: Callable[[], None],
+        on_open: Callable[[], None],
+        on_new_window: Callable[[], None],
+        on_write: Callable[[], None],
+    ) -> None:
         """Create the GUI."""
+
+        # Input callables
+        self._on_keep_temp = on_keep_temp
+        self._on_check_dates = on_check_dates
+        self._on_search_info = on_search_info
+        self._on_download = on_download
+        self._on_score = on_score
+        self._on_filter = on_filter
+        self._on_open = on_open
+        self._on_new_window = on_new_window
+        self._on_write = on_write
+
+        # GUI Elements
+        self._frames: dict[str, customtkinter.CTkFrame] = {}
+        self._buttons: dict[str, customtkinter.CTkButton] = {}
+        self._checkboxes: dict[str, customtkinter.CTkCheckBox] = {}
+        self._entries: dict[str, customtkinter.CTkEntry] = {}
+        self._progressbars: dict[str, customtkinter.CTkProgressBar] = {}
+        self._optionmenus: dict[str, customtkinter.CTkOptionMenu] = {}
 
         # Set appearance
         customtkinter.set_appearance_mode("dark")
         customtkinter.set_default_color_theme("dark-blue")
 
         # Define the top-level widget
-        self.app = customtkinter.CTk()
+        self._app = customtkinter.CTk()
 
         # Name the window
-        self.app.title("arXiv Catchup")
+        self._app.title("arXiv Catchup")
 
         # Set the window size
         # Cheapest displays as of 2026 have resolutions of 1360 x 768
@@ -56,33 +167,26 @@ class GUI:
         # Current width:
         #     column_widths + column_padding + app padding + scroll_width
         #     2*220         + 2*2*10         + 2*20        + 20
-        self.app.geometry("540x760")
+        self._app.geometry("540x760")
 
         # Bring the GUI to the font
-        self.app.lift()
-        self.app.attributes("-topmost", True)
+        self._app.lift()
+        self._app.attributes("-topmost", True)
 
         # Create a scollable interface
-        self.app.grid_rowconfigure(0, weight=1)
-        self.app.grid_columnconfigure(0, weight=1)
-        self.scroll = customtkinter.CTkScrollableFrame(
-            master=self.app,
+        self._app.grid_rowconfigure(0, weight=1)
+        self._app.grid_columnconfigure(0, weight=1)
+        self._scroll = customtkinter.CTkScrollableFrame(
+            master=self._app,
             bg_color="transparent",
             fg_color="transparent",
         )
-        self.scroll.grid(row=0, column=0, pady=0, padx=0, sticky="nsew")
+        self._scroll.grid(row=0, column=0, pady=0, padx=0, sticky="nsew")
 
         # # Create interface
 
-        # Create the frames
+        # # Config
         # self.frame_config = create_frame(self.scroll, "Config", 0)
-        self.frame_options = create_frame(self.scroll, "Options", 1)
-        self.frame_dates = create_frame(self.scroll, "Date Setup", 2)
-        self.frame_server = create_frame(self.scroll, "arXiv Server Connections", 3)
-        self.frame_filter = create_frame(self.scroll, "Corpus Filtering", 4)
-        self.frame_results = create_frame(self.scroll, "Results", 5)
-
-        # # Add elements to config
         # self.tabview_config = customtkinter.CTkTabview(
         #     master=self.frame_config, width=460
         # )
@@ -91,112 +195,193 @@ class GUI:
         # self.tabview_config.add("Included Words")
         # self.tabview_config.add("Excluded Words")
 
-        # Add elements to options
-        self.checkbox_tempfiles = customtkinter.CTkCheckBox(
-            master=self.frame_options, text="Keep Temporary Files"
-        )
-        self.checkbox_tempfiles.grid(row=1, column=0, pady=10, padx=10)
+        # # Options
+        self._frames["options"] = self.create_frame(None, 1)
 
-        # Add elements to dates
-        self.entry_start_date = customtkinter.CTkEntry(
-            master=self.frame_dates,
-            width=220,
-            justify=customtkinter.LEFT,
-            placeholder_text="Search Start Date (YYYY-mm-dd)",
+        self._checkboxes["keep_temp"] = create_checkbox(
+            self._frames["options"], "Keep Temporary Files", 1, 0, self._on_keep_temp
         )
-        self.entry_start_date.grid(row=1, column=0, pady=10, padx=10)
 
-        self.entry_end_date = customtkinter.CTkEntry(
-            master=self.frame_dates,
-            width=220,
-            justify=customtkinter.LEFT,
-            placeholder_text="Search End Date (YYYY-mm-dd)",
+        # # Dates
+        self._frames["dates"] = self.create_frame("Date Setup", 2)
+
+        self._entries["start_date"] = create_entry(
+            self._frames["dates"],
+            search_params.start_date.isoformat(),
+            "Search Start Date (YYYY-mm-dd)",
+            1,
+            0,
         )
-        self.entry_end_date.grid(row=1, column=2, pady=10, padx=10)
 
-        # Add elements to server
-        self.progressbar_download = customtkinter.CTkProgressBar(
-            master=self.frame_server
+        self._entries["end_date"] = create_entry(
+            self._frames["dates"],
+            search_params.end_date.isoformat(),
+            "Search End Date (YYYY-mm-dd)",
+            1,
+            2,
         )
-        self.progressbar_download.grid(row=1, columnspan=3, pady=10, padx=10)
-        self.progressbar_download.set(0)
 
-        self.button_search_info = customtkinter.CTkButton(
-            master=self.frame_server,
-            width=self.BUTTON_WIDTH,
-            text="Obtain Search Info",
+        self._buttons["check_dates"] = create_button(
+            self._frames["dates"],
+            self.BUTTON_WIDTH,
+            "Check Search Dates",
+            3,
+            0,
+            self._on_check_dates,
+            disabled=False,
+            col_span=True,
         )
-        self.button_search_info.grid(row=2, column=0, pady=10, padx=10)
 
-        self.button_download_papers = customtkinter.CTkButton(
-            master=self.frame_server,
-            width=self.BUTTON_WIDTH,
-            text="Download Papers",
+        # # Server
+        self._frames["server"] = self.create_frame("arXiv Server Connections", 3)
+
+        self._progressbars["download"] = create_progressbar(self._frames["server"], 1)
+
+        self._buttons["search_info"] = create_button(
+            self._frames["server"],
+            self.BUTTON_WIDTH,
+            "Obtain Search Info",
+            2,
+            0,
+            self._on_search_info,
         )
-        self.button_download_papers.grid(row=2, column=2, pady=10, padx=10)
-
-        # Add elements to filter
-        self.button_score = customtkinter.CTkButton(
-            master=self.frame_filter,
-            width=self.BUTTON_WIDTH,
-            text="Score Papers",
+        self._buttons["download_papers"] = create_button(
+            self._frames["server"],
+            self.BUTTON_WIDTH,
+            "Download Papers",
+            2,
+            2,
+            self._on_download,
         )
-        self.button_score.grid(row=1, column=0, pady=10, padx=10)
 
-        self.optionmenu_score = customtkinter.CTkOptionMenu(
-            self.frame_filter,
-            width=self.BUTTON_WIDTH,
-            values=["Score via Matches", "Score via ML"],
+        # # Filter
+        self._frames["filter"] = self.create_frame("Corpus Filtering", 4)
+
+        self._buttons["score_papers"] = create_button(
+            self._frames["filter"],
+            self.BUTTON_WIDTH,
+            "Score Papers",
+            1,
+            0,
+            self._on_score,
         )
-        self.optionmenu_score.grid(row=2, column=0, pady=10, padx=10)
-
-        self.button_filter = customtkinter.CTkButton(
-            master=self.frame_filter,
-            width=self.BUTTON_WIDTH,
-            text="Filter papers",
+        self._buttons["filter_papers"] = create_button(
+            self._frames["filter"],
+            self.BUTTON_WIDTH,
+            "Filter Papers",
+            1,
+            2,
+            self._on_filter,
         )
-        self.button_filter.grid(row=1, column=2, pady=10, padx=10)
 
-        self.optionmenu_filter = customtkinter.CTkOptionMenu(
-            self.frame_filter,
-            width=self.BUTTON_WIDTH,
-            values=["Filter via Score", "Filter via Matches"],
+        self._optionmenus["score"] = create_optionmenu(
+            self._frames["filter"],
+            self.BUTTON_WIDTH,
+            ["Score via Matches", "Score via ML"],
+            2,
+            0,
         )
-        self.optionmenu_filter.grid(row=2, column=2, pady=10, padx=10)
 
-        # Add elements to results
-        self.progressbar_results = customtkinter.CTkProgressBar(
-            master=self.frame_results
+        self._optionmenus["filter"] = create_optionmenu(
+            self._frames["filter"],
+            self.BUTTON_WIDTH,
+            ["Filter via Score", "Filter via Matches"],
+            2,
+            2,
         )
-        self.progressbar_results.grid(row=1, columnspan=3, pady=10, padx=10)
-        self.progressbar_results.set(0)
 
-        self.button_open = customtkinter.CTkButton(
-            master=self.frame_results,
-            width=self.BUTTON_WIDTH,
-            text="Open Papers",
+        # # Results
+        self._frames["results"] = self.create_frame("Results", 5)
+
+        self._buttons["open_papers"] = create_button(
+            self._frames["results"],
+            self.BUTTON_WIDTH,
+            "Open Papers",
+            2,
+            0,
+            self._on_open,
         )
-        self.button_open.grid(row=2, column=0, pady=10, padx=10)
-
-        self.checkbox_newwindow = customtkinter.CTkCheckBox(
-            master=self.frame_results,
-            width=self.BUTTON_WIDTH,
-            text="Open in New Window",
+        self._buttons["write_papers"] = create_button(
+            self._frames["results"],
+            self.BUTTON_WIDTH,
+            "Write to File",
+            2,
+            2,
+            self._on_write,
         )
-        self.checkbox_newwindow.grid(row=3, column=0, pady=10, padx=10)
 
-        self.button_write = customtkinter.CTkButton(
-            master=self.frame_results,
-            width=self.BUTTON_WIDTH,
-            text="Write to File",
+        self._progressbars["results"] = create_progressbar(self._frames["results"], 1)
+
+        self._checkboxes["new_window"] = create_checkbox(
+            self._frames["results"], "Open in New Window", 3, 0, self._on_new_window
         )
-        self.button_write.grid(row=2, column=2, pady=10, padx=10)
 
-        self.optionmenu_write = customtkinter.CTkOptionMenu(
-            self.frame_results,
-            width=self.BUTTON_WIDTH,
-            values=["Links", "ID Numbers"],
+        self._optionmenus["write"] = create_optionmenu(
+            self._frames["results"],
+            self.BUTTON_WIDTH,
+            ["Links", "ID Numbers"],
+            3,
+            2,
         )
-        self.optionmenu_write.grid(row=3, column=2, pady=10, padx=10)
 
-        self.app.mainloop()
+    def create_frame(
+        self,
+        frame_text: str | None,
+        row_count: int,
+    ) -> customtkinter.CTkFrame:
+        """WIP"""
+
+        # Create the frame
+        frame = customtkinter.CTkFrame(master=self._scroll, width=480)
+        frame.grid(row=row_count, column=0, pady=10, padx=20, sticky="ew")
+
+        # Set three columns
+        frame.grid_columnconfigure(0, minsize=220, weight=0)
+        frame.grid_columnconfigure(1, minsize=0, weight=1)
+        frame.grid_columnconfigure(2, minsize=220, weight=0)
+
+        # Create a label that spans all columns at the top of the frame
+        if frame_text:
+            frame_label = customtkinter.CTkLabel(master=frame, text=frame_text)
+            frame_label.grid(row=0, columnspan=3, pady=10, padx=0, sticky="")
+
+        return frame
+
+    def get_bool_from_checkbox(self, key: str) -> bool:
+        """Extract the date from the entry named 'key'."""
+
+        return bool(self._checkboxes[key].get())
+
+    def get_state_from_optionmenu(self, key: str) -> str:
+        """Obtain the state of an option menu element."""
+
+        value = self._optionmenus[key].get()
+
+        return value
+
+    def update_progress_bar(self, key: str, fraction: float) -> None:
+        """Update the progress bar named 'key'."""
+
+        self._progressbars[key].set(fraction)
+
+    def get_date_from_entry(self, key: str) -> str:
+        """Extract the date from the entry named 'key'."""
+
+        return self._entries[key].get().strip()
+
+    def button_set_state(self, key: str, state: bool) -> None:
+        """Set the state of the button named 'key' to either 'normal' or 'disabled'."""
+
+        if state:
+            self._buttons[key].configure(state="normal")
+        else:
+            self._buttons[key].configure(state="disabled")
+
+    def after(self, ms: int, func: Callable[[], None]) -> None:
+        """small wrapper to expose after"""
+        self._app.after(ms, func)
+
+    def run(self) -> None:
+        """Run the GUI."""
+
+        self._app.mainloop()
