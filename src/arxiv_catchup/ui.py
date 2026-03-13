@@ -33,7 +33,7 @@ def progress_bar(
         progress_cb(ii, total)
 
     # Compute the percent through the loop
-    percent_progress = 100 * ii / total
+    percent_progress = 0 if total == 0 else 100 * ii / total
 
     # Compute the contents of the bar
     bar_string = ("■" * math.floor(percent_progress * WIDTH / 100)) + (
