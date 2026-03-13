@@ -310,8 +310,12 @@ class CLI:
 
         if self.write_to_file:
 
+            self.logger.debug("Writing links to file.")
+
             storage.write_catchup_file(self.args, papers_of_note)
 
         if self.open_in_browser:
+
+            self.logger.debug("Opening links in browser.")
 
             open_links(papers_of_note, sleeptimer, progress_cb)
