@@ -15,7 +15,14 @@ from arxiv_catchup.storage_manager import Storage
 from arxiv_catchup.arxiv_client import ArxivClient, ArxivError
 from arxiv_catchup.xml_handling import XmlReadError
 from arxiv_catchup.http_client import HttpClient
-from arxiv_catchup.gui.gui import GUI
+from arxiv_catchup.gui.gui import (
+    GUI,
+    ButtonKind,
+    CheckboxKind,
+    EntryKind,
+    OptionmenuKind,
+    ProgressbarKind,
+)
 from arxiv_catchup.config import Config, InvalidDateError
 from arxiv_catchup.corpus import Corpus
 from arxiv_catchup.cli import CLI
@@ -127,7 +134,9 @@ class Controller:
 
         self.logger.debug("Toggled keep_temp checkbox.")
 
-        self.runner.cli.args.keep_temp = self.gui.get_bool_from_checkbox("keep_temp")
+        self.runner.cli.args.keep_temp = self.gui.get_bool_from_checkbox(
+            CheckboxKind.KEEPTEMP
+        )
 
         self.logger.debug("keep_temp set to %s", self.runner.cli.args.keep_temp)
 
@@ -136,7 +145,9 @@ class Controller:
 
         self.logger.debug("Toggled new_window checkbox.")
 
-        self.runner.cli.args.new_window = self.gui.get_bool_from_checkbox("new_window")
+        self.runner.cli.args.new_window = self.gui.get_bool_from_checkbox(
+            CheckboxKind.NEWWINDOW
+        )
 
         self.logger.debug("new_window set to %s", self.runner.cli.args.new_window)
 
@@ -155,7 +166,7 @@ class Controller:
                 self.runner.search_params.start_date,
             ) = parse_date(
                 self.logger,
-                self.gui.get_date_from_entry("start_date"),
+                self.gui.get_date_from_entry(EntryKind.STARTDATE),
                 "start-date",
                 self.runner.search_params.SEARCH_TIME,
                 self.runner.search_params.POST_TIME,
@@ -164,7 +175,7 @@ class Controller:
             self.runner.search_params.end_time, self.runner.search_params.end_date = (
                 parse_date(
                     self.logger,
-                    self.gui.get_date_from_entry("end_date"),
+                    self.gui.get_date_from_entry(EntryKind.ENDDATE),
                     "end-date",
                     self.runner.search_params.SEARCH_TIME,
                     self.runner.search_params.POST_TIME,
@@ -179,23 +190,23 @@ class Controller:
                 temp_start_date != self.runner.search_params.start_date
                 or temp_end_date != self.runner.search_params.end_date
             ):
-                self.gui.button_set_state("download_papers", False)
-                self.gui.button_set_state("score_papers", False)
-                self.gui.button_set_state("filter_papers", False)
-                self.gui.button_set_state("open_papers", False)
-                self.gui.button_set_state("write_papers", False)
+                self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
+                self.gui.button_set_state(ButtonKind.SCORE, False)
+                self.gui.button_set_state(ButtonKind.FILTER, False)
+                self.gui.button_set_state(ButtonKind.OPEN, False)
+                self.gui.button_set_state(ButtonKind.WRITE, False)
 
         except InvalidDateError as exc:
 
             self.logger.error("Date check failed: %s", exc)
 
             # Disable all buttons except 'check_dates'
-            self.gui.button_set_state("search_info", False)
-            self.gui.button_set_state("download_papers", False)
-            self.gui.button_set_state("score_papers", False)
-            self.gui.button_set_state("filter_papers", False)
-            self.gui.button_set_state("open_papers", False)
-            self.gui.button_set_state("write_papers", False)
+            self.gui.button_set_state(ButtonKind.SEARCHINFO, False)
+            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
+            self.gui.button_set_state(ButtonKind.SCORE, False)
+            self.gui.button_set_state(ButtonKind.FILTER, False)
+            self.gui.button_set_state(ButtonKind.OPEN, False)
+            self.gui.button_set_state(ButtonKind.WRITE, False)
 
             return
 
@@ -209,7 +220,7 @@ class Controller:
         )
         self.logger.info(date_string)
 
-        self.gui.button_set_state("search_info", True)
+        self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
 
         # If the search information is good, then the ArXiv client can be created
         self.runner.api = ArxivClient(
@@ -244,11 +255,11 @@ class Controller:
 
             self.logger.error("search info check failed: %s", exc)
 
-            self.gui.button_set_state("download_papers", False)
-            self.gui.button_set_state("score_papers", False)
-            self.gui.button_set_state("filter_papers", False)
-            self.gui.button_set_state("open_papers", False)
-            self.gui.button_set_state("write_papers", False)
+            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
+            self.gui.button_set_state(ButtonKind.SCORE, False)
+            self.gui.button_set_state(ButtonKind.FILTER, False)
+            self.gui.button_set_state(ButtonKind.OPEN, False)
+            self.gui.button_set_state(ButtonKind.WRITE, False)
 
             return
 
@@ -256,22 +267,22 @@ class Controller:
 
             self.logger.error("search info check failed: %s", exc)
 
-            self.gui.button_set_state("download_papers", False)
-            self.gui.button_set_state("score_papers", False)
-            self.gui.button_set_state("filter_papers", False)
-            self.gui.button_set_state("open_papers", False)
-            self.gui.button_set_state("write_papers", False)
+            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
+            self.gui.button_set_state(ButtonKind.SCORE, False)
+            self.gui.button_set_state(ButtonKind.FILTER, False)
+            self.gui.button_set_state(ButtonKind.OPEN, False)
+            self.gui.button_set_state(ButtonKind.WRITE, False)
 
             return
 
         self.state.info_found = True
 
         self.logger.info("Ready to download papers.")
-        self.gui.button_set_state("download_papers", True)
-        self.gui.button_set_state("score_papers", False)
-        self.gui.button_set_state("filter_papers", False)
-        self.gui.button_set_state("open_papers", False)
-        self.gui.button_set_state("write_papers", False)
+        self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
+        self.gui.button_set_state(ButtonKind.SCORE, False)
+        self.gui.button_set_state(ButtonKind.FILTER, False)
+        self.gui.button_set_state(ButtonKind.OPEN, False)
+        self.gui.button_set_state(ButtonKind.WRITE, False)
 
     def on_download(self) -> None:
         """Callback for the 'Download' button."""
@@ -285,7 +296,7 @@ class Controller:
         self.logger.debug("Clearing the corpus.")
         self.runner.corpus.clear_corpus()
 
-        download_cb = self.make_progress_cb("download")
+        download_cb = self.make_progress_cb(ProgressbarKind.DOWNLOAD)
 
         api = self.runner.get_api()
 
@@ -308,12 +319,12 @@ class Controller:
         self.logger.info("Ready to score papers.")
 
         # Re-enable previous buttons
-        self.gui.button_set_state("check_dates", True)
-        self.gui.button_set_state("search_info", True)
-        self.gui.button_set_state("download_papers", True)
+        self.gui.button_set_state(ButtonKind.CHECKDATES, True)
+        self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
+        self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
 
         # Enable the next button
-        self.gui.button_set_state("score_papers", True)
+        self.gui.button_set_state(ButtonKind.SCORE, True)
 
         self.state.papers_downloaded = True
 
@@ -325,7 +336,7 @@ class Controller:
         self.runner.corpus.find_matches(self.runner.search_params.search_terms)
 
         # Obtain state of the option menu
-        score_algo = self.gui.get_state_from_optionmenu("score")
+        score_algo = self.gui.get_state_from_optionmenu(OptionmenuKind.SCORE)
         if score_algo == "Score via Matches":
             self.runner.cli.args.score_on_matches = True
         elif score_algo == "Score via ML":
@@ -341,9 +352,9 @@ class Controller:
         self.state.papers_scored = True
 
         self.logger.info("Ready to filter papers.")
-        self.gui.button_set_state("filter_papers", True)
-        self.gui.button_set_state("open_papers", False)
-        self.gui.button_set_state("write_papers", False)
+        self.gui.button_set_state(ButtonKind.FILTER, True)
+        self.gui.button_set_state(ButtonKind.OPEN, False)
+        self.gui.button_set_state(ButtonKind.WRITE, False)
 
     def on_filter(self) -> None:
         """Callback for the 'Filter' button."""
@@ -351,7 +362,7 @@ class Controller:
         self.logger.debug("Selected filter_papers button.")
 
         # Obtain state of the option menu
-        filter_algo = self.gui.get_state_from_optionmenu("filter")
+        filter_algo = self.gui.get_state_from_optionmenu(OptionmenuKind.FILTER)
         if filter_algo == "Filter via Score":
             self.runner.cli.args.filter_on_matches = False
         elif filter_algo == "Filter via Matches":
@@ -362,8 +373,8 @@ class Controller:
         self.state.papers_filtered = True
 
         self.logger.info("Ready for output.")
-        self.gui.button_set_state("open_papers", True)
-        self.gui.button_set_state("write_papers", True)
+        self.gui.button_set_state(ButtonKind.OPEN, True)
+        self.gui.button_set_state(ButtonKind.WRITE, True)
 
     def on_open(self) -> None:
         """Callback for the 'Open in Browser' button."""
@@ -376,7 +387,7 @@ class Controller:
         self.runner.cli.open_in_browser = True
         self.runner.cli.write_to_file = False
 
-        results_cb = self.make_progress_cb("results")
+        results_cb = self.make_progress_cb(ProgressbarKind.RESULTS)
 
         api = self.runner.get_api()
 
@@ -413,7 +424,7 @@ class Controller:
         self.runner.cli.write_to_file = True
 
         # Obtain state of the option menu
-        write_style = self.gui.get_state_from_optionmenu("write_style")
+        write_style = self.gui.get_state_from_optionmenu(OptionmenuKind.WRITESTYLE)
         if write_style == "Links":
             self.runner.cli.args.only_ids = False
         elif write_style == "ID Numbers":
@@ -427,7 +438,7 @@ class Controller:
             api.SLEEP_OPENING,
         )
 
-    def make_progress_cb(self, key: str) -> Callable[[int, int], None]:
+    def make_progress_cb(self, key: ProgressbarKind) -> Callable[[int, int], None]:
         """Create a callback function that will update a progress bar."""
 
         def _cb(ii: int, total: int) -> None:
