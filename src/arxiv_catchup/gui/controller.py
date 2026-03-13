@@ -50,7 +50,14 @@ class GuiState:
 
 
 class Controller:
-    """WIP"""
+    """Controller of the GUI."""
+
+    # This Controller class must hold all attributes as the CLI runner (6),
+    #     plus a logger for this class, plus the GUI, plus the GuiState.
+    # The runner objects could be put into a dataclass, but that is not seen as required at this
+    #     point.
+    # Disable the pylint warning for >7 attributes.
+    # pylint: disable=R0902
 
     def __init__(self) -> None:
         """WIP"""
