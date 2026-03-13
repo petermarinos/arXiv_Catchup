@@ -48,6 +48,10 @@ class GuiState:
 #     disable all buttons during an operation, then enable ONLY THE APPROPRIATE ONES after
 #     if the user goes backwards in the pupeline, disable buttons that may need to be disabled
 
+# Other notes:
+#     Put runner attributes into a dataclass
+#     Put callables passed into GUI as a dataclass?
+
 
 class Controller:
     """Controller of the GUI."""
