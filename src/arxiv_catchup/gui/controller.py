@@ -84,7 +84,6 @@ class GuiState:
 #     if the user goes backwards in the pupeline, disable buttons that may need to be disabled
 
 # Other notes:
-#     Put runner attributes into a dataclass
 #     Put callables passed into GUI as a dataclass?
 
 
@@ -122,14 +121,14 @@ class Controller:
         # Create GUI and wire callbacks
         self.gui = GUI(
             self.runner.search_params,
-            on_keep_temp=self.on_keep_temp,
+            on_toggle_keep_temp=self.on_toggle_keep_temp,
             on_check_dates=self.on_check_dates,
             on_search_info=self.on_search_info,
             on_download=self.on_download,
             on_score=self.on_score,
             on_filter=self.on_filter,
             on_open=self.on_open,
-            on_new_window=self.on_new_window,
+            on_toggle_new_window=self.on_toggle_new_window,
             on_write=self.on_write,
         )
 
@@ -152,7 +151,7 @@ class Controller:
         # # Print a summary
         self.runner.corpus.summary()
 
-    def on_keep_temp(self) -> None:
+    def on_toggle_keep_temp(self) -> None:
         """WIP"""
 
         self.logger.debug("Toggled keep_temp checkbox.")
@@ -161,7 +160,7 @@ class Controller:
 
         self.logger.debug("keep_temp set to %s", self.runner.cli.args.keep_temp)
 
-    def on_new_window(self) -> None:
+    def on_toggle_new_window(self) -> None:
         """WIP"""
 
         self.logger.debug("Toggled new_window checkbox.")

@@ -119,27 +119,27 @@ class GUI:
     def __init__(
         self,
         search_params: Config,
-        on_keep_temp: Callable[[], None],
+        on_toggle_keep_temp: Callable[[], None],
         on_check_dates: Callable[[], None],
         on_search_info: Callable[[], None],
         on_download: Callable[[], None],
         on_score: Callable[[], None],
         on_filter: Callable[[], None],
         on_open: Callable[[], None],
-        on_new_window: Callable[[], None],
+        on_toggle_new_window: Callable[[], None],
         on_write: Callable[[], None],
     ) -> None:
         """Create the GUI."""
 
         # Input callables
-        self._on_keep_temp = on_keep_temp
+        self._on_toggle_keep_temp = on_toggle_keep_temp
         self._on_check_dates = on_check_dates
         self._on_search_info = on_search_info
         self._on_download = on_download
         self._on_score = on_score
         self._on_filter = on_filter
         self._on_open = on_open
-        self._on_new_window = on_new_window
+        self._on_toggle_new_window = on_toggle_new_window
         self._on_write = on_write
 
         # GUI Elements
@@ -199,7 +199,11 @@ class GUI:
         self._frames["options"] = self.create_frame(None, 1)
 
         self._checkboxes["keep_temp"] = create_checkbox(
-            self._frames["options"], "Keep Temporary Files", 1, 0, self._on_keep_temp
+            self._frames["options"],
+            "Keep Temporary Files",
+            1,
+            0,
+            self._on_toggle_keep_temp,
         )
 
         # # Dates
@@ -313,7 +317,11 @@ class GUI:
         self._progressbars["results"] = create_progressbar(self._frames["results"], 1)
 
         self._checkboxes["new_window"] = create_checkbox(
-            self._frames["results"], "Open in New Window", 3, 0, self._on_new_window
+            self._frames["results"],
+            "Open in New Window",
+            3,
+            0,
+            self._on_toggle_new_window,
         )
 
         self._optionmenus["write"] = create_optionmenu(
