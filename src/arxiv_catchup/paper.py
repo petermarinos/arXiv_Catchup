@@ -4,14 +4,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-# Import libraries
+# Import standard libraries
 from dataclasses import dataclass
 from enum import Enum
 import xml.etree.ElementTree as ET
 import logging
 import re
 
-# Import functions
+# Import project functions
 from .xml_handling import (
     extract_paper_id_version,
     extract_paper_links,
