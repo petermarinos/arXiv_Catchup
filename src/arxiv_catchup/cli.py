@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Import libraries
+from collections.abc import Callable
 import logging
 import pathlib
 
@@ -292,6 +293,7 @@ class CLI:
         storage: Storage,
         papers_of_note: list[str],
         sleeptimer: float,
+        progress_cb: Callable[[int, int], None] | None = None,
     ) -> None:
         """Displays the results to the user, based on their preference.
 
@@ -312,4 +314,4 @@ class CLI:
 
         if self.open_in_browser:
 
-            open_links(papers_of_note, sleeptimer)
+            open_links(papers_of_note, sleeptimer, progress_cb)
