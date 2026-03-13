@@ -11,6 +11,7 @@ from collections.abc import Callable
 import customtkinter  # pyright: ignore[reportMissingTypeStubs]
 
 from arxiv_catchup.config import Config
+from arxiv_catchup.gui.actions import GuiActions
 
 
 # Helper functions
@@ -119,28 +120,12 @@ class GUI:
     def __init__(
         self,
         search_params: Config,
-        on_toggle_keep_temp: Callable[[], None],
-        on_check_dates: Callable[[], None],
-        on_search_info: Callable[[], None],
-        on_download: Callable[[], None],
-        on_score: Callable[[], None],
-        on_filter: Callable[[], None],
-        on_open: Callable[[], None],
-        on_toggle_new_window: Callable[[], None],
-        on_write: Callable[[], None],
+        actions: GuiActions,
     ) -> None:
         """Create the GUI."""
 
         # Input callables
-        self._on_toggle_keep_temp = on_toggle_keep_temp
-        self._on_check_dates = on_check_dates
-        self._on_search_info = on_search_info
-        self._on_download = on_download
-        self._on_score = on_score
-        self._on_filter = on_filter
-        self._on_open = on_open
-        self._on_toggle_new_window = on_toggle_new_window
-        self._on_write = on_write
+        self._actions = actions
 
         # GUI Elements
         self._frames: dict[str, customtkinter.CTkFrame] = {}
@@ -203,7 +188,7 @@ class GUI:
             "Keep Temporary Files",
             1,
             0,
-            self._on_toggle_keep_temp,
+            self._actions.on_toggle_keep_temp,
         )
 
         # # Dates
@@ -231,7 +216,7 @@ class GUI:
             "Check Search Dates",
             3,
             0,
-            self._on_check_dates,
+            self._actions.on_check_dates,
             disabled=False,
             col_span=True,
         )
@@ -247,7 +232,7 @@ class GUI:
             "Obtain Search Info",
             2,
             0,
-            self._on_search_info,
+            self._actions.on_search_info,
         )
         self._buttons["download_papers"] = create_button(
             self._frames["server"],
@@ -255,7 +240,7 @@ class GUI:
             "Download Papers",
             2,
             2,
-            self._on_download,
+            self._actions.on_download,
         )
 
         # # Filter
@@ -267,7 +252,7 @@ class GUI:
             "Score Papers",
             1,
             0,
-            self._on_score,
+            self._actions.on_score,
         )
         self._buttons["filter_papers"] = create_button(
             self._frames["filter"],
@@ -275,7 +260,7 @@ class GUI:
             "Filter Papers",
             1,
             2,
-            self._on_filter,
+            self._actions.on_filter,
         )
 
         self._optionmenus["score"] = create_optionmenu(
@@ -303,7 +288,7 @@ class GUI:
             "Open Papers",
             2,
             0,
-            self._on_open,
+            self._actions.on_open,
         )
         self._buttons["write_papers"] = create_button(
             self._frames["results"],
@@ -311,7 +296,7 @@ class GUI:
             "Write to File",
             2,
             2,
-            self._on_write,
+            self._actions.on_write,
         )
 
         self._progressbars["results"] = create_progressbar(self._frames["results"], 1)
@@ -321,7 +306,7 @@ class GUI:
             "Open in New Window",
             3,
             0,
-            self._on_toggle_new_window,
+            self._actions.on_toggle_new_window,
         )
 
         self._optionmenus["write"] = create_optionmenu(

@@ -83,19 +83,9 @@ class GuiState:
 #     disable all buttons during an operation, then enable ONLY THE APPROPRIATE ONES after
 #     if the user goes backwards in the pupeline, disable buttons that may need to be disabled
 
-# Other notes:
-#     Put callables passed into GUI as a dataclass?
-
 
 class Controller:
     """Controller of the GUI."""
-
-    # This Controller class must hold all attributes as the CLI runner (6),
-    #     plus a logger for this class, plus the GUI, plus the GuiState.
-    # The runner objects could be put into a dataclass, but that is not seen as required at this
-    #     point.
-    # Disable the pylint warning for >7 attributes.
-    # pylint: disable=R0902
 
     def __init__(self) -> None:
         """WIP"""
@@ -121,15 +111,7 @@ class Controller:
         # Create GUI and wire callbacks
         self.gui = GUI(
             self.runner.search_params,
-            on_toggle_keep_temp=self.on_toggle_keep_temp,
-            on_check_dates=self.on_check_dates,
-            on_search_info=self.on_search_info,
-            on_download=self.on_download,
-            on_score=self.on_score,
-            on_filter=self.on_filter,
-            on_open=self.on_open,
-            on_toggle_new_window=self.on_toggle_new_window,
-            on_write=self.on_write,
+            actions=self,
         )
 
     def run(self) -> None:
