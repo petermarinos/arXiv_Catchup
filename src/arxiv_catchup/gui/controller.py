@@ -4,27 +4,23 @@ from __future__ import annotations
 
 # Import standard libraries
 from collections.abc import Callable
-
 from dataclasses import dataclass
-import logging
 import threading
-
-# from typing import Optional
+import logging
 
 # Import non-standard libraries
 
 # Import project classes
 from arxiv_catchup.storage_manager import Storage
 from arxiv_catchup.arxiv_client import ArxivClient, ArxivError
+from arxiv_catchup.xml_handling import XmlReadError
 from arxiv_catchup.http_client import HttpClient
+from arxiv_catchup.gui.gui import GUI
 from arxiv_catchup.config import Config, InvalidDateError
 from arxiv_catchup.corpus import Corpus
 from arxiv_catchup.cli import CLI
 
-from arxiv_catchup.gui.gui import GUI
-
 # Import project functions
-from arxiv_catchup.xml_handling import XmlReadError
 from arxiv_catchup.dates import parse_date, split_date
 from arxiv_catchup.utils import logger_setup
 
