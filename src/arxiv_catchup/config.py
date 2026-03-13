@@ -10,7 +10,13 @@ import datetime
 import logging
 
 # Import functions
-from .dates import InvalidDateError, parse_date, calc_search_endtime, calc_next_posttime
+from .dates import (
+    InvalidDateError,
+    parse_date,
+    calc_search_endtime,
+    calc_next_posttime,
+    split_date,
+)
 
 # Import classes for type checking
 if TYPE_CHECKING:
@@ -150,15 +156,11 @@ class Config:
         # Compute the string first. Too many values to be readable with lazy-formatting, and the
         #     values are guaranteed to be of the correct type if they are extracted from the
         #     datetime objects.
-        s_yyyy = self.start_date.year
-        s_mm = self.start_date.month
-        s_dd = self.start_date.day
-        e_yyyy = self.end_date.year
-        e_mm = self.end_date.month
-        e_dd = self.end_date.day
+        s_yyyy, s_mm, s_dd = split_date(self.start_date)
+        e_yyyy, e_mm, e_dd = split_date(self.end_date)
         date_string = (
-            f"Searching from {s_yyyy}/{s_mm}/{s_dd} 19:00 UTC "
-            f"to {e_yyyy}/{e_mm}/{e_dd} 19:00 UTC"
+            f"Searching from {s_yyyy}-{s_mm}-{s_dd} 19:00 UTC "
+            f"to {e_yyyy}-{e_mm}-{e_dd} 19:00 UTC"
         )
         self.logger.info(date_string)
 

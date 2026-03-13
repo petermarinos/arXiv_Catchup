@@ -206,3 +206,13 @@ def parse_date(
 
         logger.critical(f"{date_name} must be in the YYYY-mm-dd format.\n")
         raise InvalidDateError("Malformed date.") from exc
+
+
+def split_date(date: datetime.date) -> tuple[int, int, int]:
+    """Split a datetime object into three separate integers."""
+
+    y = date.year
+    m = date.month
+    d = date.day
+
+    return y, m, d
