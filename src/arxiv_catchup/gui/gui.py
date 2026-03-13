@@ -81,6 +81,13 @@ def create_button(
 ) -> customtkinter.CTkButton:
     """WIP"""
 
+    # There are 8 arguments
+    # Want this helper function to have the freedom to control these aspects of the button, and to
+    #     set them to reasonable default values if the attribute is not passed.
+    # Disable pylint for >5 arguments and >5 positional arguments
+    # pylint: disable=R0913
+    # pylint: disable=R0917
+
     button = customtkinter.CTkButton(
         master=frame,
         width=width,
