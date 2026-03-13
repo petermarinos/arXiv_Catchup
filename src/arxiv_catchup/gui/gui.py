@@ -169,6 +169,17 @@ def create_optionmenu(
 class GUI:
     """Creates and controls the GUI"""
 
+    # There are two popular ways to create the GUI:
+    #     1) store each element type (frame, button, etc.) in their own dictionary
+    #     2) store each frame and all elements within in a dataclass
+    # Currently using (1). While it is not as clean, it simplifies the disabling/enabling of
+    #     buttons (which occurs often in this GUI)
+    # Hence, there are six element types
+    # Plus actions, app, scroll
+    # => nine attributes
+    # Disable pylint warning for >7 attributes
+    # pylint: disable=R0902
+
     BUTTON_WIDTH = 180
 
     def __init__(
@@ -177,12 +188,6 @@ class GUI:
         actions: GuiActions,
     ) -> None:
         """Create the GUI."""
-
-        # There are two popular ways to create the GUI:
-        #     1) store each element type (frame, button, etc.) in their own dictionary
-        #     2) store each frame and all elements within in a dataclass
-        # Currently using (1). While it is not as clean, it simplifies the disabling/enabling of
-        #     buttons (which occurs often in this GUI)
 
         # Input callables
         self._actions = actions
