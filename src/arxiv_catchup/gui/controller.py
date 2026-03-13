@@ -370,7 +370,7 @@ class Controller:
         def _cb(ii: int, total: int) -> None:
 
             # Compute the progress as a fraction
-            frac = ii / total
+            frac = 0 if total == 0 else ii / total
 
             # Update the progress bar named by 'key'
             self.gui.after(0, lambda: self.gui.update_progress_bar(key, frac))
