@@ -4,14 +4,15 @@
 # Disable all unknown member types for this script
 # pyright: reportUnknownMemberType = false
 
+# Import standard libraries
 from collections.abc import Callable
 
-# import datetime
-
+# Import non-standard libraries
 import customtkinter  # pyright: ignore[reportMissingTypeStubs]
 
-from arxiv_catchup.config import Config
+# Import project classes
 from arxiv_catchup.gui.actions import GuiActions
+from arxiv_catchup.config import Config
 
 
 # Helper functions
