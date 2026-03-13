@@ -124,6 +124,12 @@ class GUI:
     ) -> None:
         """Create the GUI."""
 
+        # There are two popular ways to create the GUI:
+        #     1) store each element type (frame, button, etc.) in their own dictionary
+        #     2) store each frame and all elements within in a dataclass
+        # Currently using (1). While it is not as clean, it simplifies the disabling/enabling of
+        #     buttons (which occurs often in this GUI)
+
         # Input callables
         self._actions = actions
 
@@ -309,7 +315,7 @@ class GUI:
             self._actions.on_toggle_new_window,
         )
 
-        self._optionmenus["write"] = create_optionmenu(
+        self._optionmenus["write_style"] = create_optionmenu(
             self._frames["results"],
             self.BUTTON_WIDTH,
             ["Links", "ID Numbers"],
@@ -369,6 +375,13 @@ class GUI:
             self._buttons[key].configure(state="normal")
         else:
             self._buttons[key].configure(state="disabled")
+
+    def all_buttons_set_state(self, state: bool) -> None:
+        """Set the state of all buttons."""
+
+        for key, _ in self._buttons.items():
+
+            self.button_set_state(key, state)
 
     def after(self, ms: int, func: Callable[[], None]) -> None:
         """small wrapper to expose after"""

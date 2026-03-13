@@ -77,13 +77,6 @@ class GuiState:
     papers_filtered: bool = False
 
 
-###########
-
-# Need to implement:
-#     disable all buttons during an operation, then enable ONLY THE APPROPRIATE ONES after
-#     if the user goes backwards in the pupeline, disable buttons that may need to be disabled
-
-
 class Controller:
     """Controller of the GUI."""
 
@@ -279,11 +272,18 @@ class Controller:
 
         self.logger.info("Ready to download papers.")
         self.gui.button_set_state("download_papers", True)
+        self.gui.button_set_state("score_papers", False)
+        self.gui.button_set_state("filter_papers", False)
+        self.gui.button_set_state("open_papers", False)
+        self.gui.button_set_state("write_papers", False)
 
     def on_download(self) -> None:
         """Callback for the 'Download' button."""
 
         self.logger.debug("Selected download_papers button.")
+
+        # Disable all GUI buttons
+        self.gui.all_buttons_set_state(False)
 
         # *always ensure the corpus has been cleared first*
         self.logger.debug("Clearing the corpus.")
@@ -310,6 +310,13 @@ class Controller:
     def _on_download_finished(self):
 
         self.logger.info("Ready to score papers.")
+
+        # Re-enable previous buttons
+        self.gui.button_set_state("check_dates", True)
+        self.gui.button_set_state("search_info", True)
+        self.gui.button_set_state("download_papers", True)
+
+        # Enable the next button
         self.gui.button_set_state("score_papers", True)
 
         self.state.papers_downloaded = True
@@ -339,6 +346,8 @@ class Controller:
 
         self.logger.info("Ready to filter papers.")
         self.gui.button_set_state("filter_papers", True)
+        self.gui.button_set_state("open_papers", False)
+        self.gui.button_set_state("write_papers", False)
 
     def on_filter(self) -> None:
         """Callback for the 'Filter' button."""
@@ -365,6 +374,9 @@ class Controller:
 
         self.logger.debug("Selected open_in_browser button.")
 
+        # Disable all GUI buttons
+        self.gui.all_buttons_set_state(False)
+
         self.runner.cli.open_in_browser = True
         self.runner.cli.write_to_file = False
 
@@ -382,9 +394,19 @@ class Controller:
                 progress_cb=results_cb,
             )
 
+            # Once get_papers finishes on the thread, then run the last few on-finish functions
+            self.gui.after(0, self._on_open_finished)
+
         # Download the papers in a thread so that the GUI remains responsive and so that the
         #     progress bar will update
         threading.Thread(target=worker, daemon=True).start()
+
+    def _on_open_finished(self):
+
+        self.logger.info("Opening papers finished.")
+
+        # Re-enable all buttons buttons
+        self.gui.all_buttons_set_state(True)
 
     def on_write(self) -> None:
         """Callback for the Write to File button."""
@@ -395,7 +417,7 @@ class Controller:
         self.runner.cli.write_to_file = True
 
         # Obtain state of the option menu
-        write_style = self.gui.get_state_from_optionmenu("write")
+        write_style = self.gui.get_state_from_optionmenu("write_style")
         if write_style == "Links":
             self.runner.cli.args.only_ids = False
         elif write_style == "ID Numbers":
