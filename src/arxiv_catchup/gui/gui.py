@@ -18,7 +18,7 @@ from arxiv_catchup.config import Config
 
 # Define some small classes. Bounds the expected values and prevents errors within strings.
 class ButtonKind(Enum):
-    """Define the kinds of frames created for the GUI."""
+    """Define the kinds of buttons created for the GUI."""
 
     CHECKDATES = "check_Dates"
     SEARCHINFO = "search_info"
@@ -30,14 +30,14 @@ class ButtonKind(Enum):
 
 
 class CheckboxKind(Enum):
-    """Define the kinds of frames created for the GUI."""
+    """Define the kinds of checkboxes created for the GUI."""
 
     KEEPTEMP = "keep_temp"
     NEWWINDOW = "new_window"
 
 
 class EntryKind(Enum):
-    """Define the kinds of frames created for the GUI."""
+    """Define the kinds of enties created for the GUI."""
 
     STARTDATE = "start_date"
     ENDDATE = "end_date"
@@ -54,7 +54,7 @@ class FrameKind(Enum):
 
 
 class OptionmenuKind(Enum):
-    """Define the kinds of frames created for the GUI."""
+    """Define the kinds of option menus created for the GUI."""
 
     SCORE = "score_options"
     FILTER = "filter_options"
@@ -62,7 +62,7 @@ class OptionmenuKind(Enum):
 
 
 class ProgressbarKind(Enum):
-    """Define the kinds of frames created for the GUI."""
+    """Define the kinds of progress bars created for the GUI."""
 
     DOWNLOAD = "download"
     RESULTS = "results"
