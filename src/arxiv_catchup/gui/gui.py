@@ -344,6 +344,21 @@ class GUI:
 
         return self._entries[key].get().strip()
 
+    def checkbox_set_state(self, key: CheckboxKind, state: bool) -> None:
+        """Set the state of the checkbox named 'key' to either 'normal' or 'disabled'."""
+
+        if state:
+            self._checkboxes[key].configure(state="normal")
+        else:
+            self._checkboxes[key].configure(state="disabled")
+
+    def all_checkboxes_set_state(self, state: bool) -> None:
+        """Set the state of all checkboxes."""
+
+        for key, _ in self._checkboxes.items():
+
+            self.checkbox_set_state(key, state)
+
     def button_set_state(self, key: ButtonKind, state: bool) -> None:
         """Set the state of the button named 'key' to either 'normal' or 'disabled'."""
 

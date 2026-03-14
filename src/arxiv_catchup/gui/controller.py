@@ -289,8 +289,9 @@ class Controller:
 
         self.logger.debug("Selected download_papers button.")
 
-        # Disable all GUI buttons
+        # Disable all GUI buttons and checkboxes
         self.gui.all_buttons_set_state(False)
+        self.gui.all_checkboxes_set_state(False)
 
         # *always ensure the corpus has been cleared first*
         self.logger.debug("Clearing the corpus.")
@@ -323,7 +324,10 @@ class Controller:
         self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
         self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
 
-        # Enable the next button
+        # Re-enable the checkboxes
+        self.gui.all_checkboxes_set_state(True)
+
+        # Enable the next button in the pipeline
         self.gui.button_set_state(ButtonKind.SCORE, True)
 
         self.state.papers_downloaded = True
@@ -383,6 +387,7 @@ class Controller:
 
         # Disable all GUI buttons
         self.gui.all_buttons_set_state(False)
+        self.gui.all_checkboxes_set_state(False)
 
         self.runner.cli.open_in_browser = True
         self.runner.cli.write_to_file = False
@@ -412,8 +417,9 @@ class Controller:
 
         self.logger.info("Opening papers finished.")
 
-        # Re-enable all buttons buttons
+        # Re-enable all buttons and checkboxes
         self.gui.all_buttons_set_state(True)
+        self.gui.all_checkboxes_set_state(True)
 
     def on_write(self) -> None:
         """Callback for the Write to File button."""
