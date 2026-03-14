@@ -246,58 +246,72 @@ class Controller:
 
         self.logger.debug("Selected search_info button.")
 
-        try:
+        # Disable all buttons/checkboxes
+        self.gui.all_buttons_set_state(False)
+        self.gui.all_checkboxes_set_state(False)
 
-            api = self.runner.get_api()
+        def worker() -> None:
+            """inner function that will connect to the servers"""
 
-            api.get_search_info(self.runner.storage)
+            try:
 
-            api.arxiv_search_error_check()
+                api = self.runner.get_api()
 
-        except ArxivError as exc:
+                api.get_search_info(self.runner.storage)
 
-            self.logger.error("search info check failed: %s", exc)
+                api.arxiv_search_error_check()
 
-            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
-            self.gui.button_set_state(ButtonKind.SCORE, False)
-            self.gui.button_set_state(ButtonKind.FILTER, False)
-            self.gui.button_set_state(ButtonKind.OPEN, False)
-            self.gui.button_set_state(ButtonKind.WRITE, False)
+                self.gui.after(0, self._on_search_info_finished)
 
-            return
+            except ArxivError as exc:
 
-        except XmlReadError as exc:
+                self.logger.error("search info check failed: %s", exc)
 
-            self.logger.error("search info check failed: %s", exc)
+                self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
+                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
 
-            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
-            self.gui.button_set_state(ButtonKind.SCORE, False)
-            self.gui.button_set_state(ButtonKind.FILTER, False)
-            self.gui.button_set_state(ButtonKind.OPEN, False)
-            self.gui.button_set_state(ButtonKind.WRITE, False)
+                return
 
-            return
+            except XmlReadError as exc:
 
-        except TooManyAttempts as exc:
+                self.logger.error("search info check failed: %s", exc)
 
-            self.logger.error("Could not connect, servers may be down: %s", exc)
+                self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
+                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
 
-            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
-            self.gui.button_set_state(ButtonKind.SCORE, False)
-            self.gui.button_set_state(ButtonKind.FILTER, False)
-            self.gui.button_set_state(ButtonKind.OPEN, False)
-            self.gui.button_set_state(ButtonKind.WRITE, False)
+                return
 
-            return
+            except TooManyAttempts as exc:
+
+                self.logger.error("Could not connect, servers may be down: %s", exc)
+
+                self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
+                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
+
+                return
+
+        threading.Thread(target=worker, daemon=True).start()
+
+        self.gui.after(0, lambda: self.gui.start_spinner(ButtonKind.SEARCHINFO))
+
+    def _on_search_info_finished(self) -> None:
+        """Callback for the 'Obtain Search Info' button."""
 
         self.state.info_found = True
 
+        # Remove the spinner
+        self.gui.stop_spinner(ButtonKind.SEARCHINFO)
+
+        # Re-enable the checkboxes
+        self.gui.all_checkboxes_set_state(True)
+
         self.logger.info("Ready to download papers.")
+        self.gui.button_set_state(ButtonKind.CHECKDATES, True)
+        self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
         self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
-        self.gui.button_set_state(ButtonKind.SCORE, False)
-        self.gui.button_set_state(ButtonKind.FILTER, False)
-        self.gui.button_set_state(ButtonKind.OPEN, False)
-        self.gui.button_set_state(ButtonKind.WRITE, False)
 
     def on_download(self) -> None:
         """Callback for the 'Download' button."""
@@ -319,10 +333,33 @@ class Controller:
         def worker() -> None:
             """inner function that will download the papers"""
 
-            # THIS SHOULD BE IN A TRY/EXCEPT
-            api.get_papers(
-                self.runner.corpus, self.runner.storage, progress_cb=download_cb
-            )
+            try:
+
+                api.get_papers(
+                    self.runner.corpus, self.runner.storage, progress_cb=download_cb
+                )
+
+            except XmlReadError as exc:
+
+                self.logger.error("search info check failed: %s", exc)
+
+                self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
+                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
+                self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
+
+                return
+
+            except TooManyAttempts as exc:
+
+                self.logger.error("Could not connect, servers may be down: %s", exc)
+
+                self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
+                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
+                self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
+
+                return
 
             # Once get_papers finishes on the thread, then run the last few on-finish functions
             self.gui.after(0, self._on_download_finished)
@@ -337,16 +374,14 @@ class Controller:
 
         self.logger.info("Ready to score papers.")
 
-        # Re-enable previous buttons
+        # Re-enable previous buttons and the next one
         self.gui.button_set_state(ButtonKind.CHECKDATES, True)
         self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
         self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
+        self.gui.button_set_state(ButtonKind.SCORE, True)
 
         # Re-enable the checkboxes
         self.gui.all_checkboxes_set_state(True)
-
-        # Enable the next button in the pipeline
-        self.gui.button_set_state(ButtonKind.SCORE, True)
 
         # Remove the spinner
         self.gui.stop_spinner(ButtonKind.DOWNLOAD)

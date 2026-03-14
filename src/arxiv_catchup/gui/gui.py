@@ -9,7 +9,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from itertools import cycle
 from tkinter import Event
-from typing import cast
 from enum import Enum
 
 # Import non-standard libraries
@@ -92,7 +91,9 @@ class Spinner:
 
 
 class GUI:
-    """Creates and controls the GUI"""
+    """Creates and controls the GUI."""
+
+    # Most methods/attributes are protected and should not be accessed outside of this class
 
     # There are two popular ways to create the GUI:
     #     1) store each element type (frame, button, etc.) in their own dictionary
@@ -433,8 +434,18 @@ class GUI:
         self._app.after_cancel(self._spinner.spin_id)
 
         # Remove the spinner text
-        base_text = cast(str, self._buttons[button].cget("text"))
-        self._buttons[button].configure(text=base_text[:-6])
+        # If it is the search_info button, the text was completely overwritten
+        # Other buttons just had some characters appended
+        if button == ButtonKind.SEARCHINFO:
+            base_text = "Obtain Search Info"
+        elif button == ButtonKind.DOWNLOAD:
+            base_text = "Download Papers"
+        elif button == ButtonKind.OPEN:
+            base_text = "Open Papers"
+        else:
+            base_text = "..."
+
+        self._buttons[button].configure(text=base_text)
 
     def get_date_from_entry(self, key: EntryKind) -> str:
         """Extract the date from the entry named 'key'."""
