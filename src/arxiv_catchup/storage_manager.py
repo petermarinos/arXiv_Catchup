@@ -89,11 +89,17 @@ class Storage:
         log_dir = root_dir / ".run" / "logs"
         tmp_dir = root_dir / ".run" / "tmp"
 
-        logfile_name = pathlib.Path(sys.argv[0]).stem
-        if logfile_name == "__main__":
-            logfile_name = "main.log"
+        script_name = pathlib.Path(sys.argv[0]).stem
+        script_dir = str(pathlib.Path(sys.argv[0]).parent.name)
+        if script_name == "__main__":
+            if script_dir == "arxiv_catchup":
+                logfile_name = "main.log"
+            elif script_dir == "gui":
+                logfile_name = "gui.log"
+            else:
+                raise RuntimeError("Unknown entry point")
         else:
-            logfile_name += ".log"
+            logfile_name = f"{script_name}.log"
 
         self.paths = Paths(
             log=log_dir / logfile_name,
