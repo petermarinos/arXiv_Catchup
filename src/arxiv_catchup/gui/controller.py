@@ -434,9 +434,14 @@ class Controller:
         #     progress bar will update
         threading.Thread(target=worker, daemon=True).start()
 
+        self.gui.after(0, lambda: self.gui.start_spinner(ButtonKind.OPEN))
+
     def _on_open_finished(self):
 
         self.logger.info("Opening papers finished.")
+
+        # Remove the spinner
+        self.gui.stop_spinner(ButtonKind.OPEN)
 
         # Re-enable all buttons and checkboxes
         self.gui.all_buttons_set_state(True)
