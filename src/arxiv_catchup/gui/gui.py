@@ -6,6 +6,7 @@
 
 # Import standard libraries
 from collections.abc import Callable
+from tkinter import Event
 from enum import Enum
 
 # Import non-standard libraries
@@ -185,6 +186,8 @@ class GUI:
             1,
             2,
         )
+        # Bind tab to switch between the two entries
+        self._bind_tab_to_switch_entries()
 
         self._buttons[ButtonKind.CHECKDATES] = create_button(
             self._frames[FrameKind.DATES],
@@ -196,6 +199,8 @@ class GUI:
             disabled=False,
             col_span=True,
         )
+        # Bind enter to the check dates button
+        self._bind_enter_to_check_dates()
 
         # # Server
         self._frames[FrameKind.SERVER] = self.create_frame(
@@ -298,6 +303,39 @@ class GUI:
             3,
             2,
         )
+
+    def default_focus(self) -> None:
+        """Change focus to the main window."""
+
+        self._app.focus_set()
+
+    def _bind_tab_to_switch_entries(self) -> None:
+
+        def _on_tab_start_to_end(_: Event):
+
+            self._entries[EntryKind.ENDDATE].focus_set()
+
+            return "break"
+
+        def _on_tab_end_to_start(_: Event):
+
+            self._entries[EntryKind.STARTDATE].focus_set()
+
+            return "break"
+
+        self._entries[EntryKind.STARTDATE].bind("<Return>", _on_tab_start_to_end)
+        self._entries[EntryKind.ENDDATE].bind("<Return>", _on_tab_end_to_start)
+
+    def _bind_enter_to_check_dates(self) -> None:
+
+        def _on_enter(_: Event):
+
+            self._actions.on_check_dates()
+
+            return "break"
+
+        self._entries[EntryKind.STARTDATE].bind("<Return>", _on_enter)
+        self._entries[EntryKind.ENDDATE].bind("<Return>", _on_enter)
 
     def create_frame(
         self,

@@ -158,6 +158,9 @@ class Controller:
 
         try:
 
+            # Change focus to the main window (in case the dates were changed manually)
+            self.gui.default_focus()
+
             temp_start_date = self.runner.search_params.start_date
             temp_end_date = self.runner.search_params.end_date
 
