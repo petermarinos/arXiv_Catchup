@@ -14,7 +14,7 @@ import logging
 from arxiv_catchup.storage_manager import Storage
 from arxiv_catchup.arxiv_client import ArxivClient, ArxivError
 from arxiv_catchup.xml_handling import XmlReadError
-from arxiv_catchup.http_client import HttpClient
+from arxiv_catchup.http_client import HttpClient, TooManyAttempts
 from arxiv_catchup.gui.gui import (
     GUI,
     ButtonKind,
@@ -278,6 +278,18 @@ class Controller:
 
             return
 
+        except TooManyAttempts as exc:
+
+            self.logger.error("Could not connect, servers may be down: %s", exc)
+
+            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
+            self.gui.button_set_state(ButtonKind.SCORE, False)
+            self.gui.button_set_state(ButtonKind.FILTER, False)
+            self.gui.button_set_state(ButtonKind.OPEN, False)
+            self.gui.button_set_state(ButtonKind.WRITE, False)
+
+            return
+
         self.state.info_found = True
 
         self.logger.info("Ready to download papers.")
@@ -307,6 +319,7 @@ class Controller:
         def worker() -> None:
             """inner function that will download the papers"""
 
+            # THIS SHOULD BE IN A TRY/EXCEPT
             api.get_papers(
                 self.runner.corpus, self.runner.storage, progress_cb=download_cb
             )
@@ -317,6 +330,8 @@ class Controller:
         # Download the papers in a thread so that the GUI remains responsive and so that the
         #     progress bar will update
         threading.Thread(target=worker, daemon=True).start()
+
+        self.gui.after(0, lambda: self.gui.start_spinner(ButtonKind.DOWNLOAD))
 
     def _on_download_finished(self):
 
@@ -332,6 +347,9 @@ class Controller:
 
         # Enable the next button in the pipeline
         self.gui.button_set_state(ButtonKind.SCORE, True)
+
+        # Remove the spinner
+        self.gui.stop_spinner(ButtonKind.DOWNLOAD)
 
         self.state.papers_downloaded = True
 
