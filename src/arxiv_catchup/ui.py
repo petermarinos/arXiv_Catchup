@@ -1,6 +1,7 @@
 """Functions relating to the UI"""
 
 # Import libraries
+from collections.abc import Callable
 import webbrowser
 import logging
 import random
@@ -13,7 +14,12 @@ import sys
 WIDTH = 50
 
 
-def progress_bar(ii: int, total: int, time_estimate: float | None = None) -> None:
+def progress_bar(
+    ii: int,
+    total: int,
+    time_estimate: float | None = None,
+    progress_cb: Callable[[int, int], None] | None = None,
+) -> None:
     """Prints a progress bar that updates as the loop progresses.
 
     inputs
@@ -23,8 +29,11 @@ def progress_bar(ii: int, total: int, time_estimate: float | None = None) -> Non
     time_estimate : Estimate of the remaining time of the loop.
     """
 
+    if progress_cb is not None:
+        progress_cb(ii, total)
+
     # Compute the percent through the loop
-    percent_progress = 100 * ii / total
+    percent_progress = 0 if total == 0 else 100 * ii / total
 
     # Compute the contents of the bar
     bar_string = ("■" * math.floor(percent_progress * WIDTH / 100)) + (
@@ -98,7 +107,11 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
         progress_bar(n_steps, n_steps)
 
 
-def open_links(papers_of_note: list[str], sleep_time: float):
+def open_links(
+    papers_of_note: list[str],
+    sleep_time: float,
+    progress_cb: Callable[[int, int], None] | None = None,
+):
     """Open all links in the webbrowser.
     NOTE: While we extract the abs links from the downloaded data, we reconstruct the links here
           using the arXiv ID numbers. This is done to slightly reduce complexity while giving the
@@ -121,7 +134,9 @@ def open_links(papers_of_note: list[str], sleep_time: float):
 
         link = f"https://arxiv.org/abs/{arxiv_id}"
 
-        progress_bar(request_count, total, (total - request_count) * sleep_time)
+        progress_bar(
+            request_count, total, (total - request_count) * sleep_time, progress_cb
+        )
 
         if request_count > 0:
 
@@ -137,4 +152,4 @@ def open_links(papers_of_note: list[str], sleep_time: float):
 
         request_count += 1
 
-    progress_bar(total, total)
+    progress_bar(total, total, None, progress_cb)

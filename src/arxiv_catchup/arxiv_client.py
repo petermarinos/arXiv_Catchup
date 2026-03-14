@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # Import standard libraries
+from collections.abc import Callable
 import xml.etree.ElementTree as ET
 import logging
 import math
@@ -228,7 +229,12 @@ class ArxivClient:
 
         self.logger.info("Will search over %s papers.", self.total_papers)
 
-    def get_papers(self, corpus: Corpus, storage: Storage) -> None:
+    def get_papers(
+        self,
+        corpus: Corpus,
+        storage: Storage,
+        progress_cb: Callable[[int, int], None] | None = None,
+    ) -> None:
         """Obtains all Papers and places them in the Corpus.
         Will attempt to load the Corpus from an .xml file.
         Will fall back to connecting to the arXiv servers if:
@@ -237,8 +243,9 @@ class ArxivClient:
 
         inputs
         ------
-        corpus  : The corpus of all papers.
-        storage : The storage object.
+        corpus      : The corpus of all papers.
+        storage     : The storage object.
+        progress_cb : callback function to expose the progress of the for-loop
         """
 
         # Search for xml file. If found, load it
@@ -246,6 +253,8 @@ class ArxivClient:
 
             self.logger.info("Found an .xml file: %s", storage.paths.papers_xml)
             self.logger.info("Attempting to continue a previous failed run.")
+
+            progress_bar(0, 1, None, progress_cb)
 
             # Define the url we expect from the file
             expected_url = self.apiquery.format(
@@ -258,19 +267,29 @@ class ArxivClient:
             # Extract the papers from the xml
             corpus.extract_papers(self.NS, xml_tree)
 
+            progress_bar(1, 1, None, progress_cb)
+
         # If all papers were found, log a message and continue
         if corpus.length == self.total_papers:
 
             self.logger.info("All papers found in the .xml file!")
 
         # If the xml file had more papers than expected, discard and redownload
-        # Only possible if the temp xml file is altered manually
+        # Only possible if the temp xml file is altered manually, or there is a strange user
+        #     interaction in the GUI
         elif corpus.length > self.total_papers:
 
-            self.logger.info("Too many papers found in the .xml file. Redownloading")
+            self.logger.info(
+                "Too many papers found in the .xml file. Redownloading. Found %s, expected %s",
+                corpus.length,
+                self.total_papers,
+            )
 
             # Clear the entries from the list.
             corpus.clear_corpus()
+
+            # Delete the file to start again
+            storage.delete_file(storage.paths.papers_xml)
 
         # If there were fewer papers in the xml than we expected, connect to arXiv
         # NOTE: Not an elif in the case that the above statement clears the corpus
@@ -316,6 +335,7 @@ class ArxivClient:
                     ii,
                     num_steps,
                     remaining_steps * (self.SLEEP_SEARCH + self.SLEEP_FUDGE),
+                    progress_cb,
                 )
 
                 # Debug messages
@@ -325,7 +345,9 @@ class ArxivClient:
 
                 # Sleep before the query so that there is no dead time on the last query.
                 # Also need to sleep here as we do not wait after the initial API call
-                progress_bar(ii, num_steps, remaining_steps * self.SLEEP_SEARCH)
+                progress_bar(
+                    ii, num_steps, remaining_steps * self.SLEEP_SEARCH, progress_cb
+                )
                 pretty_sleep(self.logger, self.SLEEP_SEARCH)
 
                 # Query the API
@@ -342,7 +364,7 @@ class ArxivClient:
                 corpus.extract_papers(self.NS, xml_root)
 
             # Close the progress bar
-            progress_bar(self.total_papers, self.total_papers)
+            progress_bar(self.total_papers, self.total_papers, None, progress_cb)
 
             self.logger.info(
                 "All paper information successfully downloaded from the arXiv servers!"
