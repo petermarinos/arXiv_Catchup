@@ -6,6 +6,8 @@
 
 # Import standard libraries
 from collections.abc import Callable
+
+from itertools import cycle
 from tkinter import Event
 from enum import Enum
 
@@ -92,7 +94,10 @@ class GUI:
     # Disable pylint warning for >7 attributes
     # pylint: disable=R0902
 
+    # Width of the buttons
     BUTTON_WIDTH = 180
+
+    SPINNER_CYCLER = cycle(["-", "\\", "|", "/"])
 
     def __init__(
         self,
@@ -100,6 +105,9 @@ class GUI:
         actions: GuiActions,
     ) -> None:
         """Create the GUI."""
+
+        #
+        self.is_spinning = False
 
         # Input callables
         self._actions = actions
@@ -323,8 +331,8 @@ class GUI:
 
             return "break"
 
-        self._entries[EntryKind.STARTDATE].bind("<Return>", _on_tab_start_to_end)
-        self._entries[EntryKind.ENDDATE].bind("<Return>", _on_tab_end_to_start)
+        self._entries[EntryKind.STARTDATE].bind("<Tab>", _on_tab_start_to_end)
+        self._entries[EntryKind.ENDDATE].bind("<Tab>", _on_tab_end_to_start)
 
     def _bind_enter_to_check_dates(self) -> None:
 
@@ -376,6 +384,43 @@ class GUI:
         """Update the progress bar named 'key'."""
 
         self._progressbars[key].set(fraction)
+
+    def _tick(self, button: ButtonKind) -> None:
+        """Updates the spinner."""
+
+        s = next(self.SPINNER_CYCLER)
+
+        if button == ButtonKind.SEARCHINFO:
+            base_text = "Connecting ... "
+        elif button == ButtonKind.DOWNLOAD:
+            base_text = "Downloading ... "
+        elif button == ButtonKind.OPEN:
+            base_text = "Opening ... "
+        else:
+            base_text = "... "
+
+        self._buttons[button].configure(text=base_text + s)
+
+        if self.is_spinning:
+            self.after(500, lambda: self._tick(button))
+        else:
+            return
+
+    def start_spinner(self, button: ButtonKind) -> None:
+        """Starts the spinner."""
+
+        self.is_spinning = True
+
+        self._tick(button)
+
+    def stop_spinner(self, button: ButtonKind) -> None:
+        """Clears the spinner."""
+
+        self.is_spinning = False
+
+        # Remove the spinner text
+        current_text = str(self._buttons[button].cget("text"))
+        self._buttons[button].configure(text=current_text[:-6])
 
     def get_date_from_entry(self, key: EntryKind) -> str:
         """Extract the date from the entry named 'key'."""
