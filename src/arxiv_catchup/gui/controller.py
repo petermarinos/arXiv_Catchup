@@ -106,6 +106,7 @@ class Controller:
 
         # Create GUI and wire callbacks
         self.gui = GUI(
+            self.runner.cli.args,
             self.runner.search_params,
             actions=self,
         )

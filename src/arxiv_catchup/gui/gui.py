@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from itertools import cycle
 from tkinter import Event
 from enum import Enum
+import argparse
 
 # Import non-standard libraries
 import customtkinter  # pyright: ignore[reportMissingTypeStubs]
@@ -111,6 +112,7 @@ class GUI:
 
     def __init__(
         self,
+        args: argparse.Namespace,
         search_params: Config,
         actions: GuiActions,
     ) -> None:
@@ -183,6 +185,7 @@ class GUI:
             "Keep Temporary Files",
             1,
             0,
+            args.keep_temp,
             self._actions.on_toggle_keep_temp,
         )
 
@@ -311,6 +314,7 @@ class GUI:
             "Open in New Window",
             3,
             0,
+            args.new_window,
             self._actions.on_toggle_new_window,
         )
 

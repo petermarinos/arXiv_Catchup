@@ -53,12 +53,25 @@ def create_checkbox(
     text: str,
     row_index: int,
     col_index: int,
+    pre_check: bool,
     command: Callable[[], None],
 ) -> customtkinter.CTkCheckBox:
     """WIP"""
 
+    # There are 6 arguments
+    # Want this helper function to have the freedom to control these aspects of the checkbox, and to
+    #     set them to the default value.
+    # Disable pylint for >5 arguments and >5 positional arguments
+    # pylint: disable=R0913
+    # pylint: disable=R0917
+
     checkbox = customtkinter.CTkCheckBox(master=frame, text=text, command=command)
     checkbox.grid(row=row_index, column=col_index, pady=10, padx=10)
+
+    if pre_check:
+        checkbox.select()
+    else:
+        checkbox.deselect()
 
     return checkbox
 
