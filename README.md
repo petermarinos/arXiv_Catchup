@@ -44,15 +44,16 @@ For frequent execution, the search can be performed with your chosen flags in th
 
 `alias arxiv='python -m arxiv_catchup {flags}'`
 
-If you want the bash alias while also using a separate environment for this project then there are a few options:
+Dealing with python environments is an exercise left to the user.
+
+<!-- If you want the bash alias while also using a separate environment for this project then there are a few options:
 
 1. Set your default environment to the one you created for this project by adding `conda activate {arxiv env name}` as a new line somewhere in your bash file.
 2. Activate the relevant environment (then switch back to your preferred one after) by adding `alias arxiv='conda activate {arxiv env name} && python -m arxiv_catchup {flags} && conda activate {preferred env name}'` to your bash file.
-3. Write a bash function that will activate the relevant environments before/after the script executes. This is left as an exercise for the user.
+3. Write a bash function that will activate the relevant environments before/after the script executes. This is left as an exercise for the user. -->
 
 ### CLI Arguments
 
-There are additional arguments that can be used:
 - `-h`, `--help` show the help message.
 - `-f`, `--force-open` skips all confirmation dialogues and opens all links.
 - `-n`, `--new-window` opens all links in a new window (does not work on mac).
@@ -104,8 +105,7 @@ Papers with author lists that contain more/less information than the input will 
 For example, `Andrew Sydney Withiel Thomas` will work to find papers with exact matches, as well as lower-information representations such as: `Andrew S. W. Thomas`, `A. Thomas`, `Thomas`, etc., while excluding authors such as `A. S. Z. Thomas`, etc..
 However, if you include only `A. Thomas` in the `./config/search_terms.yaml` file, you will get true positive matches for `Andrew Thomas`, as well as false positives for `Alexander Thomas`, etc..
 
-Accented/special characters, ligatures, and LaTeX commands for author names are handled by the script.
-Feel free to enter any representation you prefer, e.g. 'Lopez', 'López', 'L{\\'o}pez', or 'L\'opez', in the `search_terms.yaml` file.
+Accented/special characters, ligatures, and LaTeX commands for author names can be included -- enter any representation you prefer in the `search_terms.yaml` file. For example, 'Lopez', 'López', 'L{\\'o}pez', or 'L\'opez' all work.
 
 Some authors may use a spelling that is different to their preference for submissions to journals that are more restrictive on special characters.
 For example, an author may write 'ö' as 'oe'.
@@ -134,10 +134,10 @@ If choosing to write links/IDs to a file, they will be placed in `.run/outputs/c
 Each arXiv link is written on a new line, and the script will always append the new results to the end of the file.
 All links in this file can be opened in a browser by running `python3 ./scripts/open_catchup.py`.
 
-During the run there are two `.xml` files that will be created in `.run/tmp/`.
+<!-- During the run there are two `.xml` files that will be created in `.run/tmp/`.
 These files contain the results of the queries to the arXiv servers.
 If some non-recoverable error occurs, these files can be used to restart the search.
-After successfully presenting the results, both `.xml` files will be deleted unless the runtime flag `-k` is used.
+After successfully presenting the results, both `.xml` files will be deleted unless the runtime flag `-k` is used. -->
 
 The logs for the main script will be written to `.run/logs/main.log`, and logs from any auxiliary scripts will be written to `.run/logs/{name_of_script}.log`.
 
