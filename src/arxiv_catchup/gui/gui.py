@@ -323,12 +323,16 @@ class GUI:
         def _on_tab_start_to_end(_: Event):
 
             self._entries[EntryKind.ENDDATE].focus_set()
+            self._entries[EntryKind.ENDDATE].selection_clear()
+            self._entries[EntryKind.ENDDATE].icursor("end")
 
             return "break"
 
         def _on_tab_end_to_start(_: Event):
 
             self._entries[EntryKind.STARTDATE].focus_set()
+            self._entries[EntryKind.STARTDATE].selection_clear()
+            self._entries[EntryKind.STARTDATE].icursor("end")
 
             return "break"
 
