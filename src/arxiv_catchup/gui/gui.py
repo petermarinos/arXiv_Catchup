@@ -6,6 +6,7 @@
 
 # Import standard libraries
 from collections.abc import Callable
+from dataclasses import dataclass
 from itertools import cycle
 from tkinter import Event
 from typing import cast
@@ -80,6 +81,16 @@ class ProgressbarKind(Enum):
     RESULTS = "results"
 
 
+@dataclass
+class Spinner:
+    """Holds the spinner."""
+
+    CYCLER = cycle(["-", "\\", "|", "/"])
+
+    is_spinning: bool = False
+    spin_id: str = ""
+
+
 class GUI:
     """Creates and controls the GUI"""
 
@@ -89,15 +100,13 @@ class GUI:
     # Currently using (1). While it is not as clean, it simplifies the disabling/enabling of
     #     buttons (which occurs often in this GUI)
     # Hence, there are six element types
-    # Plus actions, app, scroll
+    # Plus actions, app, scroll, and spinner
     # => nine attributes
     # Disable pylint warning for >7 attributes
     # pylint: disable=R0902
 
     # Width of the buttons
     BUTTON_WIDTH = 180
-
-    SPINNER_CYCLER = cycle(["-", "\\", "|", "/"])
 
     def __init__(
         self,
@@ -106,9 +115,8 @@ class GUI:
     ) -> None:
         """Create the GUI."""
 
-        #
-        self.is_spinning = False
-        self.spin_id: str
+        # Create the spinner
+        self._spinner = Spinner()
 
         # Input callables
         self._actions = actions
@@ -393,7 +401,7 @@ class GUI:
     def _tick(self, button: ButtonKind) -> None:
         """Updates the spinner."""
 
-        s = next(self.SPINNER_CYCLER)
+        s = next(self._spinner.CYCLER)
 
         if button == ButtonKind.SEARCHINFO:
             base_text = "Connecting ... "
@@ -406,23 +414,23 @@ class GUI:
 
         self._buttons[button].configure(text=base_text + s)
 
-        if self.is_spinning:
-            self.spin_id = self.after(500, lambda: self._tick(button))
+        if self._spinner.is_spinning:
+            self._spinner.spin_id = self.after(500, lambda: self._tick(button))
 
     def start_spinner(self, button: ButtonKind) -> None:
         """Starts the spinner."""
 
-        self.is_spinning = True
+        self._spinner.is_spinning = True
 
         self._tick(button)
 
     def stop_spinner(self, button: ButtonKind) -> None:
         """Clears the spinner."""
 
-        self.is_spinning = False
+        self._spinner.is_spinning = False
 
         # Cancel the previous call to after() which may be scheduled
-        self._app.after_cancel(self.spin_id)
+        self._app.after_cancel(self._spinner.spin_id)
 
         # Remove the spinner text
         base_text = cast(str, self._buttons[button].cget("text"))
