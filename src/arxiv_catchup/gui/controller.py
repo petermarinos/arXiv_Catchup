@@ -152,6 +152,14 @@ class Controller:
 
         self.logger.debug("new_window set to %s", self.runner.cli.args.new_window)
 
+    def on_refresh(self) -> None:
+        """Refresh the search terms"""
+
+        self.logger.debug("Selected refresh_search_terms button.")
+
+        # Reload the config file
+        self.runner.search_params.get_searchterms(self.runner.storage)
+
     def on_check_dates(self) -> None:
         """Callback for the 'Check Search Dates' button."""
 
@@ -269,6 +277,7 @@ class Controller:
                 self.logger.error("search info check failed: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.REFRESH, True)
                 self.gui.button_set_state(ButtonKind.CHECKDATES, True)
                 self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
 
@@ -279,6 +288,7 @@ class Controller:
                 self.logger.error("search info check failed: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.REFRESH, True)
                 self.gui.button_set_state(ButtonKind.CHECKDATES, True)
                 self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
 
@@ -289,6 +299,7 @@ class Controller:
                 self.logger.error("Could not connect, servers may be down: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.REFRESH, True)
                 self.gui.button_set_state(ButtonKind.CHECKDATES, True)
                 self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
 
@@ -310,6 +321,7 @@ class Controller:
         self.gui.all_checkboxes_set_state(True)
 
         self.logger.info("Ready to download papers.")
+        self.gui.button_set_state(ButtonKind.REFRESH, True)
         self.gui.button_set_state(ButtonKind.CHECKDATES, True)
         self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
         self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
@@ -345,6 +357,7 @@ class Controller:
                 self.logger.error("search info check failed: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.REFRESH, True)
                 self.gui.button_set_state(ButtonKind.CHECKDATES, True)
                 self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
                 self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
@@ -356,6 +369,7 @@ class Controller:
                 self.logger.error("Could not connect, servers may be down: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
+                self.gui.button_set_state(ButtonKind.REFRESH, True)
                 self.gui.button_set_state(ButtonKind.CHECKDATES, True)
                 self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
                 self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
@@ -376,6 +390,7 @@ class Controller:
         self.logger.info("Ready to score papers.")
 
         # Re-enable previous buttons and the next one
+        self.gui.button_set_state(ButtonKind.REFRESH, True)
         self.gui.button_set_state(ButtonKind.CHECKDATES, True)
         self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
         self.gui.button_set_state(ButtonKind.DOWNLOAD, True)

@@ -33,7 +33,8 @@ from arxiv_catchup.gui.gui_elements import (
 class ButtonKind(Enum):
     """Define the kinds of buttons created for the GUI."""
 
-    CHECKDATES = "check_Dates"
+    REFRESH = "refresh_config"
+    CHECKDATES = "check_dates"
     SEARCHINFO = "search_info"
     DOWNLOAD = "download_papers"
     SCORE = "score_papers"
@@ -187,6 +188,16 @@ class GUI:
             0,
             args.keep_temp,
             self._actions.on_toggle_keep_temp,
+        )
+
+        self._buttons[ButtonKind.REFRESH] = create_button(
+            self._frames[FrameKind.OPTIONS],
+            self.BUTTON_WIDTH,
+            "Refresh Search Pars.",
+            1,
+            2,
+            self._actions.on_refresh,
+            disabled=False,
         )
 
         # # Dates
