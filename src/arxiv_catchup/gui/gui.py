@@ -6,9 +6,9 @@
 
 # Import standard libraries
 from collections.abc import Callable
-
 from itertools import cycle
 from tkinter import Event
+from typing import cast
 from enum import Enum
 
 # Import non-standard libraries
@@ -108,6 +108,7 @@ class GUI:
 
         #
         self.is_spinning = False
+        self.spin_id: str
 
         # Input callables
         self._actions = actions
@@ -402,9 +403,7 @@ class GUI:
         self._buttons[button].configure(text=base_text + s)
 
         if self.is_spinning:
-            self.after(500, lambda: self._tick(button))
-        else:
-            return
+            self.spin_id = self.after(500, lambda: self._tick(button))
 
     def start_spinner(self, button: ButtonKind) -> None:
         """Starts the spinner."""
@@ -418,9 +417,12 @@ class GUI:
 
         self.is_spinning = False
 
+        # Cancel the previous call to after() which may be scheduled
+        self._app.after_cancel(self.spin_id)
+
         # Remove the spinner text
-        current_text = str(self._buttons[button].cget("text"))
-        self._buttons[button].configure(text=current_text[:-6])
+        base_text = cast(str, self._buttons[button].cget("text"))
+        self._buttons[button].configure(text=base_text[:-6])
 
     def get_date_from_entry(self, key: EntryKind) -> str:
         """Extract the date from the entry named 'key'."""
@@ -457,9 +459,9 @@ class GUI:
 
             self.button_set_state(key, state)
 
-    def after(self, ms: int, func: Callable[[], None]) -> None:
+    def after(self, ms: int, func: Callable[[], None]) -> str:
         """small wrapper to expose after"""
-        self._app.after(ms, func)
+        return self._app.after(ms, func)
 
     def run(self) -> None:
         """Run the GUI."""
