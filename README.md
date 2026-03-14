@@ -2,8 +2,8 @@
 
 Tired of reading all the Titles/Abstracts/Author Lists of every paper posted on the arXiv every single day?
 
-This project searches the [arXiv](https://arxiv.org/) (within the categories of interest) for **all papers since the previous execution**.
-It then computes an 'interest' score for every paper based on the search terms you supply, and opens all papers with matches in the web browser, and/or prints the links to a file and/or terminal.
+This project searches the [arXiv](https://arxiv.org/) for **all interesting papers**.
+The interesting papers are them opened automatically in a web browser and/or their links are written to a file.
 
 > [!NOTE]
 > This project exists to open all unread papers of interest in the browser with minimal user input.
