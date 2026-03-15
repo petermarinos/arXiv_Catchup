@@ -198,10 +198,36 @@ class Controller:
 
         if temp_search_terms != self.runner.search_params.search_terms:
             self.logger.info("Search parameters updated.")
-            self.state.info_found = False
-            self.update_gui_state()
+
+            # If search categories changed, will need to re-obtain search info
+            if (
+                temp_search_terms.categories
+                != self.runner.search_params.search_terms.categories
+            ):
+                self.state.info_found = False
+
+            # If only the authors/words changed, will need to re-score
+            if (
+                (
+                    temp_search_terms.authors
+                    != self.runner.search_params.search_terms.authors
+                )
+                or (
+                    temp_search_terms.included_words
+                    != self.runner.search_params.search_terms.included_words
+                )
+                or (
+                    temp_search_terms.excluded_words
+                    != self.runner.search_params.search_terms.excluded_words
+                )
+            ):
+
+                self.state.papers_scored = False
+
         else:
             self.logger.info("Search parameters were unchanged.")
+
+        self.update_gui_state()
 
     def on_check_dates(self) -> None:
         """Callback for the 'Check Search Dates' button."""
