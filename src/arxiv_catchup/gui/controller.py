@@ -152,6 +152,9 @@ class Controller:
             actions=self,
         )
 
+        # Set the GUI state
+        self.update_gui_state()
+
     def run(self) -> None:
         """Method to run the GUI."""
 
