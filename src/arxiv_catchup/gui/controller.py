@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import threading
 import logging
+import copy
 
 # Import non-standard libraries
 
@@ -69,15 +70,49 @@ class Runner:
 
 @dataclass
 class GuiState:
-    """Small dataclass to hold the states of the GUI.
-    Currently under-utilised, but left in case it is useful later.
-    """
+    """Small dataclass to hold the states of the GUI and obtains button states."""
 
     dates_checked: bool = False
     info_found: bool = False
     papers_downloaded: bool = False
     papers_scored: bool = False
     papers_filtered: bool = False
+
+    def get_button_states(self) -> dict[ButtonKind, bool]:
+        """Return a dict of button states based on current flags.
+        NOTE: Use 'and' statements to simplify enabling/disabling all future buttons in the
+              pipeline.
+        """
+
+        return {
+            ButtonKind.REFRESH: True,  # Always available
+            ButtonKind.CHECKDATES: True,  # Always available
+            ButtonKind.SEARCHINFO: self.dates_checked,
+            ButtonKind.DOWNLOAD: (self.dates_checked and self.info_found),
+            ButtonKind.SCORE: (
+                self.dates_checked and self.info_found and self.papers_downloaded
+            ),
+            ButtonKind.FILTER: (
+                self.dates_checked
+                and self.info_found
+                and self.papers_downloaded
+                and self.papers_scored
+            ),
+            ButtonKind.OPEN: (
+                self.dates_checked
+                and self.info_found
+                and self.papers_downloaded
+                and self.papers_scored
+                and self.papers_filtered
+            ),
+            ButtonKind.WRITE: (
+                self.dates_checked
+                and self.info_found
+                and self.papers_downloaded
+                and self.papers_scored
+                and self.papers_filtered
+            ),
+        }
 
 
 class Controller:
@@ -158,7 +193,15 @@ class Controller:
         self.logger.debug("Selected refresh_search_terms button.")
 
         # Reload the config file
+        temp_search_terms = copy.deepcopy(self.runner.search_params.search_terms)
         self.runner.search_params.get_searchterms(self.runner.storage)
+
+        if temp_search_terms != self.runner.search_params.search_terms:
+            self.logger.info("Search parameters updated.")
+            self.state.info_found = False
+            self.update_gui_state()
+        else:
+            self.logger.info("Search parameters were unchanged.")
 
     def on_check_dates(self) -> None:
         """Callback for the 'Check Search Dates' button."""
@@ -202,23 +245,12 @@ class Controller:
                 temp_start_date != self.runner.search_params.start_date
                 or temp_end_date != self.runner.search_params.end_date
             ):
-                self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
-                self.gui.button_set_state(ButtonKind.SCORE, False)
-                self.gui.button_set_state(ButtonKind.FILTER, False)
-                self.gui.button_set_state(ButtonKind.OPEN, False)
-                self.gui.button_set_state(ButtonKind.WRITE, False)
+
+                self.state.info_found = False
 
         except InvalidDateError as exc:
 
             self.logger.error("Date check failed: %s", exc)
-
-            # Disable all buttons except 'check_dates'
-            self.gui.button_set_state(ButtonKind.SEARCHINFO, False)
-            self.gui.button_set_state(ButtonKind.DOWNLOAD, False)
-            self.gui.button_set_state(ButtonKind.SCORE, False)
-            self.gui.button_set_state(ButtonKind.FILTER, False)
-            self.gui.button_set_state(ButtonKind.OPEN, False)
-            self.gui.button_set_state(ButtonKind.WRITE, False)
 
             return
 
@@ -232,8 +264,6 @@ class Controller:
         )
         self.logger.info(date_string)
 
-        self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
-
         # If the search information is good, then the ArXiv client can be created
         self.runner.api = ArxivClient(
             self.runner.search_params, self.runner.http_client
@@ -243,10 +273,14 @@ class Controller:
         self.runner.corpus.clear_corpus()
 
         self.state.dates_checked = True
+        self.update_gui_state()
 
         # If papers were downloaded previously, then the dates were changed, delete the temp file
         if self.state.papers_downloaded:
+
             self.runner.storage.delete_file(self.runner.storage.paths.papers_xml)
+
+        self.update_gui_state()
 
         self.logger.info("Ready to connect to the arXiv servers.")
 
@@ -277,9 +311,7 @@ class Controller:
                 self.logger.error("search info check failed: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
-                self.gui.button_set_state(ButtonKind.REFRESH, True)
-                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
-                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
+                self.update_gui_state()
 
                 return
 
@@ -288,9 +320,7 @@ class Controller:
                 self.logger.error("search info check failed: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
-                self.gui.button_set_state(ButtonKind.REFRESH, True)
-                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
-                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
+                self.update_gui_state()
 
                 return
 
@@ -299,9 +329,7 @@ class Controller:
                 self.logger.error("Could not connect, servers may be down: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
-                self.gui.button_set_state(ButtonKind.REFRESH, True)
-                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
-                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
+                self.update_gui_state()
 
                 return
 
@@ -312,19 +340,17 @@ class Controller:
     def _on_search_info_finished(self) -> None:
         """Callback for the 'Obtain Search Info' button."""
 
-        self.state.info_found = True
-
         # Remove the spinner
         self.gui.stop_spinner(ButtonKind.SEARCHINFO)
 
         # Re-enable the checkboxes
         self.gui.all_checkboxes_set_state(True)
 
+        self.state.info_found = True
+        self.state.papers_downloaded = False
+        self.update_gui_state()
+
         self.logger.info("Ready to download papers.")
-        self.gui.button_set_state(ButtonKind.REFRESH, True)
-        self.gui.button_set_state(ButtonKind.CHECKDATES, True)
-        self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
-        self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
 
     def on_download(self) -> None:
         """Callback for the 'Download' button."""
@@ -357,10 +383,7 @@ class Controller:
                 self.logger.error("search info check failed: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
-                self.gui.button_set_state(ButtonKind.REFRESH, True)
-                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
-                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
-                self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
+                self.update_gui_state()
 
                 return
 
@@ -369,10 +392,7 @@ class Controller:
                 self.logger.error("Could not connect, servers may be down: %s", exc)
 
                 self.gui.all_checkboxes_set_state(True)
-                self.gui.button_set_state(ButtonKind.REFRESH, True)
-                self.gui.button_set_state(ButtonKind.CHECKDATES, True)
-                self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
-                self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
+                self.update_gui_state()
 
                 return
 
@@ -387,22 +407,17 @@ class Controller:
 
     def _on_download_finished(self):
 
-        self.logger.info("Ready to score papers.")
-
-        # Re-enable previous buttons and the next one
-        self.gui.button_set_state(ButtonKind.REFRESH, True)
-        self.gui.button_set_state(ButtonKind.CHECKDATES, True)
-        self.gui.button_set_state(ButtonKind.SEARCHINFO, True)
-        self.gui.button_set_state(ButtonKind.DOWNLOAD, True)
-        self.gui.button_set_state(ButtonKind.SCORE, True)
+        # Remove the spinner
+        self.gui.stop_spinner(ButtonKind.DOWNLOAD)
 
         # Re-enable the checkboxes
         self.gui.all_checkboxes_set_state(True)
 
-        # Remove the spinner
-        self.gui.stop_spinner(ButtonKind.DOWNLOAD)
-
         self.state.papers_downloaded = True
+        self.state.papers_scored = False
+        self.update_gui_state()
+
+        self.logger.info("Ready to score papers.")
 
     def on_score(self) -> None:
         """Callback for the 'Score Papers' button."""
@@ -426,11 +441,10 @@ class Controller:
             return
 
         self.state.papers_scored = True
+        self.state.papers_filtered = False
+        self.update_gui_state()
 
         self.logger.info("Ready to filter papers.")
-        self.gui.button_set_state(ButtonKind.FILTER, True)
-        self.gui.button_set_state(ButtonKind.OPEN, False)
-        self.gui.button_set_state(ButtonKind.WRITE, False)
 
     def on_filter(self) -> None:
         """Callback for the 'Filter' button."""
@@ -447,10 +461,9 @@ class Controller:
         self.runner.cli.filter_papers(self.runner.corpus)
 
         self.state.papers_filtered = True
+        self.update_gui_state()
 
         self.logger.info("Ready for output.")
-        self.gui.button_set_state(ButtonKind.OPEN, True)
-        self.gui.button_set_state(ButtonKind.WRITE, True)
 
     def on_open(self) -> None:
         """Callback for the 'Open in Browser' button."""
@@ -489,14 +502,14 @@ class Controller:
 
     def _on_open_finished(self):
 
-        self.logger.info("Opening papers finished.")
-
         # Remove the spinner
         self.gui.stop_spinner(ButtonKind.OPEN)
 
         # Re-enable all buttons and checkboxes
         self.gui.all_buttons_set_state(True)
         self.gui.all_checkboxes_set_state(True)
+
+        self.logger.info("Opening papers finished.")
 
     def on_write(self) -> None:
         """Callback for the Write to File button."""
@@ -520,6 +533,17 @@ class Controller:
             self.runner.corpus.papers_of_note,
             api.SLEEP_OPENING,
         )
+
+        self.logger.info("Writing papers to file finished.")
+
+    def update_gui_state(self) -> None:
+        """WIP Update all button states based on the current GuiState."""
+
+        states = self.state.get_button_states()
+
+        for button_kind, enabled in states.items():
+
+            self.gui.button_set_state(button_kind, enabled)
 
     def make_progress_cb(self, key: ProgressbarKind) -> Callable[[int, int], None]:
         """Create a callback function that will update a progress bar."""
