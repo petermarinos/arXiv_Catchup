@@ -22,6 +22,9 @@ from arxiv_catchup.gui.gui import (
     CheckboxKind,
     EntryKind,
     OptionmenuKind,
+    OptionsFilterKind,
+    OptionsScoreKind,
+    OptionsWriteKind,
     ProgressbarKind,
 )
 from arxiv_catchup.config import Config, InvalidDateError
@@ -510,13 +513,17 @@ class Controller:
 
         # The score function uses the CLI arguments to check how to score
         # Overwrite the arguments based on the score option menu
-        if score_algo == "Score via Matches":
+        if score_algo == OptionsScoreKind.MATCHES.value:
 
             self.runner.cli.args.score_on_matches = True
 
-        elif score_algo == "Score via ML":
+        elif score_algo == OptionsScoreKind.ML.value:
 
             self.runner.cli.args.score_on_matches = False
+
+        else:
+
+            raise NotImplementedError(f"{score_algo} has not yet been implemented")
 
         self.logger.debug("Using the %s scoring algorithm.", score_algo)
 
@@ -555,13 +562,17 @@ class Controller:
 
         # The filter function uses the CLI arguments to check how to filter
         # Overwrite the arguments based on the filter option menu
-        if filter_algo == "Filter via Score":
+        if filter_algo == OptionsFilterKind.SCORE.value:
 
             self.runner.cli.args.filter_on_matches = False
 
-        elif filter_algo == "Filter via Matches":
+        elif filter_algo == OptionsFilterKind.MATCHES.value:
 
             self.runner.cli.args.filter_on_matches = True
+
+        else:
+
+            raise NotImplementedError(f"{filter_algo} has not yet been implemented")
 
         self.logger.debug("Using the %s filtering algorithm.", filter_algo)
 
@@ -645,13 +656,17 @@ class Controller:
         self.runner.cli.open_in_browser = False
         self.runner.cli.write_to_file = True
         # Overwrite the argument to set the write style
-        if write_style == "Links":
+        if write_style == OptionsWriteKind.LINKS.value:
 
             self.runner.cli.args.only_ids = False
 
-        elif write_style == "ID Numbers":
+        elif write_style == OptionsWriteKind.IDS.value:
 
             self.runner.cli.args.only_ids = True
+
+        else:
+
+            raise NotImplementedError(f"{write_style} has not yet been implemented")
 
         # Extract the arxiv client
         api = self.runner.get_api()
