@@ -541,7 +541,12 @@ class Storage:
 
         self.logger.info("Deleting file: %s", filename)
         file = pathlib.Path(filename)
-        file.unlink()
+
+        # Check if file exists. If it does, delete, otherwise do nothing.
+        if file.exists():
+            file.unlink()
+        else:
+            self.logger.debug("Could not find file, skipping delete operation.")
 
     def delete_temp_files(self, keep_flag: bool) -> None:
         """Clear the temporary files created by the script.
