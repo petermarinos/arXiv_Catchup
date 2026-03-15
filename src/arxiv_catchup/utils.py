@@ -1,7 +1,7 @@
 """Utily functions."""
 
 # Import libraries
-from importlib.metadata import version
+from importlib.metadata import version, PackageNotFoundError
 import argparse
 import platform
 import logging
@@ -245,9 +245,22 @@ def log_environment(logger: logging.Logger) -> None:
     logger.debug(f"arXiv_Catchup=={__version__}")
 
     # Print package info
-    for pkg in ["certifi", "pylatexenc", "PyYAML"]:
-        pkg_version = version(pkg)
-        logger.debug(f"{pkg}=={pkg_version}")
+    for pkg in [
+        "certifi",
+        "pylatexenc",
+        "PyYAML",
+        "unidecode",
+        "customtkinter",
+        "types-PyYAML",
+    ]:
+
+        try:
+            pkg_version = version(pkg)
+            logger.debug(f"{pkg}=={pkg_version}")
+
+        except PackageNotFoundError:
+
+            logger.debug("Package '%s' not installed.", pkg)
 
     logger.debug("===============================")
 
