@@ -1,4 +1,4 @@
-"""GUI class"""
+"""GUI class."""
 
 # customtkinter does not have typing fully implemented.
 # Disable all unknown member types for this script
@@ -21,11 +21,14 @@ from arxiv_catchup.config import Config
 
 # Import project functions
 from arxiv_catchup.gui.gui_elements import (
+    create_app,
     create_button,
     create_checkbox,
     create_entry,
+    create_frame,
     create_optionmenu,
     create_progressbar,
+    create_scrollable_frame,
 )
 
 
@@ -75,6 +78,28 @@ class OptionmenuKind(Enum):
     WRITESTYLE = "write_style"
 
 
+class OptionsScoreKind(Enum):
+    """Define the valid options that can be placed in the score-option menus."""
+
+    MATCHES = "Score via Matches"
+    ML = "Score via ML"
+
+
+class OptionsFilterKind(Enum):
+    """Define the valid options that can be placed in the filter-option menus."""
+
+    SCORE = "Filter via Score"
+    MATCHES = "Filter via Matches"
+
+
+class OptionsWriteKind(Enum):
+    """Define the valid options that can be placed in the write-option menus."""
+
+    LINKS = "Links"
+    IDS = "ID Numbers"
+    OTHER = "hflksjdfsljdf"
+
+
 class ProgressbarKind(Enum):
     """Define the kinds of progress bars created for the GUI."""
 
@@ -104,12 +129,9 @@ class GUI:
     #     buttons (which occurs often in this GUI)
     # Hence, there are six element types
     # Plus actions, app, scroll, and spinner
-    # => nine attributes
+    # => 10 attributes
     # Disable pylint warning for >7 attributes
     # pylint: disable=R0902
-
-    # Width of the buttons
-    BUTTON_WIDTH = 180
 
     def __init__(
         self,
@@ -137,39 +159,14 @@ class GUI:
         customtkinter.set_appearance_mode("dark")
         customtkinter.set_default_color_theme("dark-blue")
 
-        # Define the top-level widget
-        self._app = customtkinter.CTk()
+        # # Create app
+        self._app = create_app("arXiv Catchup")
 
-        # Name the window
-        self._app.title("arXiv Catchup")
-
-        # Set the window size
-        # Cheapest displays as of 2026 have resolutions of 1360 x 768
-        # Set the window height to be smaller than the smallest displays
-        # TO-DO: check if this still be visible on large displays. Introduce scaling?
-        # Current width:
-        #     column_widths + column_padding + app padding + scroll_width
-        #     2*220         + 2*2*10         + 2*20        + 20
-        self._app.geometry("540x760")
-
-        # Bring the GUI to the font
-        self._app.lift()
-        self._app.attributes("-topmost", True)
-
-        # Create a scollable interface
-        self._app.grid_rowconfigure(0, weight=1)
-        self._app.grid_columnconfigure(0, weight=1)
-        self._scroll = customtkinter.CTkScrollableFrame(
-            master=self._app,
-            bg_color="transparent",
-            fg_color="transparent",
-        )
-        self._scroll.grid(row=0, column=0, pady=0, padx=0, sticky="nsew")
-
-        # # Create interface
+        # # Create scollable frame that all sub-frames will be placed in
+        self._scroll = create_scrollable_frame(self._app)
 
         # # Config
-        # self.frame_config = create_frame(self.scroll, "Config", 0)
+        # self.frame_config = create_frame(self.scroll, "Config", len(self._frames.items()))
         # self.tabview_config = customtkinter.CTkTabview(
         #     master=self.frame_config, width=460
         # )
@@ -179,29 +176,32 @@ class GUI:
         # self.tabview_config.add("Excluded Words")
 
         # # Options
-        self._frames[FrameKind.OPTIONS] = self.create_frame(None, 1)
+        self._frames[FrameKind.OPTIONS] = create_frame(
+            self._scroll, None, len(self._frames.items())
+        )
 
         self._checkboxes[CheckboxKind.KEEPTEMP] = create_checkbox(
             self._frames[FrameKind.OPTIONS],
             "Keep Temporary Files",
             1,
             0,
-            args.keep_temp,
             self._actions.on_toggle_keep_temp,
         )
+        if args.keep_temp:
+            self._checkboxes[CheckboxKind.KEEPTEMP].select()
 
         self._buttons[ButtonKind.REFRESH] = create_button(
             self._frames[FrameKind.OPTIONS],
-            self.BUTTON_WIDTH,
             "Refresh Search Pars.",
             1,
             2,
             self._actions.on_refresh,
-            disabled=False,
         )
 
         # # Dates
-        self._frames[FrameKind.DATES] = self.create_frame("Date Setup", 2)
+        self._frames[FrameKind.DATES] = create_frame(
+            self._scroll, "Date Setup", len(self._frames.items())
+        )
 
         self._entries[EntryKind.STARTDATE] = create_entry(
             self._frames[FrameKind.DATES],
@@ -223,20 +223,17 @@ class GUI:
 
         self._buttons[ButtonKind.CHECKDATES] = create_button(
             self._frames[FrameKind.DATES],
-            self.BUTTON_WIDTH,
             "Check Search Dates",
             3,
-            0,
+            None,
             self._actions.on_check_dates,
-            disabled=False,
-            col_span=True,
         )
         # Bind enter to the check dates button
         self._bind_enter_to_check_dates()
 
         # # Server
-        self._frames[FrameKind.SERVER] = self.create_frame(
-            "arXiv Server Connections", 3
+        self._frames[FrameKind.SERVER] = create_frame(
+            self._scroll, "arXiv Server Connections", len(self._frames.items())
         )
 
         self._progressbars[ProgressbarKind.DOWNLOAD] = create_progressbar(
@@ -245,7 +242,6 @@ class GUI:
 
         self._buttons[ButtonKind.SEARCHINFO] = create_button(
             self._frames[FrameKind.SERVER],
-            self.BUTTON_WIDTH,
             "Obtain Search Info",
             2,
             0,
@@ -253,7 +249,6 @@ class GUI:
         )
         self._buttons[ButtonKind.DOWNLOAD] = create_button(
             self._frames[FrameKind.SERVER],
-            self.BUTTON_WIDTH,
             "Download Papers",
             2,
             2,
@@ -261,11 +256,12 @@ class GUI:
         )
 
         # # Filter
-        self._frames[FrameKind.ANALYSIS] = self.create_frame("Corpus Filtering", 4)
+        self._frames[FrameKind.ANALYSIS] = create_frame(
+            self._scroll, "Corpus Filtering", len(self._frames.items())
+        )
 
         self._buttons[ButtonKind.SCORE] = create_button(
             self._frames[FrameKind.ANALYSIS],
-            self.BUTTON_WIDTH,
             "Score Papers",
             1,
             0,
@@ -273,35 +269,34 @@ class GUI:
         )
         self._buttons[ButtonKind.FILTER] = create_button(
             self._frames[FrameKind.ANALYSIS],
-            self.BUTTON_WIDTH,
             "Filter Papers",
             1,
             2,
             self._actions.on_filter,
         )
 
+        print()
         self._optionmenus[OptionmenuKind.SCORE] = create_optionmenu(
             self._frames[FrameKind.ANALYSIS],
-            self.BUTTON_WIDTH,
-            ["Score via Matches", "Score via ML"],
+            [sk.value for sk in OptionsScoreKind],
             2,
             0,
         )
 
         self._optionmenus[OptionmenuKind.FILTER] = create_optionmenu(
             self._frames[FrameKind.ANALYSIS],
-            self.BUTTON_WIDTH,
-            ["Filter via Score", "Filter via Matches"],
+            [fk.value for fk in OptionsFilterKind],
             2,
             2,
         )
 
         # # Results
-        self._frames[FrameKind.RESULTS] = self.create_frame("Results", 5)
+        self._frames[FrameKind.RESULTS] = create_frame(
+            self._scroll, "Results", len(self._frames.items())
+        )
 
         self._buttons[ButtonKind.OPEN] = create_button(
             self._frames[FrameKind.RESULTS],
-            self.BUTTON_WIDTH,
             "Open Papers",
             2,
             0,
@@ -309,7 +304,6 @@ class GUI:
         )
         self._buttons[ButtonKind.WRITE] = create_button(
             self._frames[FrameKind.RESULTS],
-            self.BUTTON_WIDTH,
             "Write to File",
             2,
             2,
@@ -325,14 +319,14 @@ class GUI:
             "Open in New Window",
             3,
             0,
-            args.new_window,
             self._actions.on_toggle_new_window,
         )
+        if args.new_window:
+            self._checkboxes[CheckboxKind.NEWWINDOW].select()
 
         self._optionmenus[OptionmenuKind.WRITESTYLE] = create_optionmenu(
             self._frames[FrameKind.RESULTS],
-            self.BUTTON_WIDTH,
-            ["Links", "ID Numbers"],
+            [wk.value for wk in OptionsWriteKind],
             3,
             2,
         )
@@ -373,29 +367,6 @@ class GUI:
 
         self._entries[EntryKind.STARTDATE].bind("<Return>", _on_enter)
         self._entries[EntryKind.ENDDATE].bind("<Return>", _on_enter)
-
-    def create_frame(
-        self,
-        frame_text: str | None,
-        row_count: int,
-    ) -> customtkinter.CTkFrame:
-        """WIP"""
-
-        # Create the frame
-        frame = customtkinter.CTkFrame(master=self._scroll, width=480)
-        frame.grid(row=row_count, column=0, pady=10, padx=20, sticky="ew")
-
-        # Set three columns
-        frame.grid_columnconfigure(0, minsize=220, weight=0)
-        frame.grid_columnconfigure(1, minsize=0, weight=1)
-        frame.grid_columnconfigure(2, minsize=220, weight=0)
-
-        # Create a label that spans all columns at the top of the frame
-        if frame_text:
-            frame_label = customtkinter.CTkLabel(master=frame, text=frame_text)
-            frame_label.grid(row=0, columnspan=3, pady=10, padx=0, sticky="")
-
-        return frame
 
     def get_bool_from_checkbox(self, key: CheckboxKind) -> bool:
         """Extract the date from the entry named 'key'."""
