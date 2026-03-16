@@ -9,6 +9,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from itertools import cycle
 from tkinter import Event
+from typing import Literal
 from enum import Enum
 import argparse
 
@@ -32,50 +33,200 @@ from arxiv_catchup.gui.gui_elements import (
 )
 
 
-# Define some small classes. Bounds the expected values and prevents errors within strings.
-class ButtonKind(Enum):
-    """Define the kinds of buttons created for the GUI."""
-
-    REFRESH = "refresh_config"
-    CHECKDATES = "check_dates"
-    SEARCHINFO = "search_info"
-    DOWNLOAD = "download_papers"
-    SCORE = "score_papers"
-    FILTER = "filter_papers"
-    OPEN = "open_papers"
-    WRITE = "write_papers"
-
-
-class CheckboxKind(Enum):
-    """Define the kinds of checkboxes created for the GUI."""
-
-    KEEPTEMP = "keep_temp"
-    NEWWINDOW = "new_window"
+ActionName = Literal[
+    "on_refresh",
+    "on_check_dates",
+    "on_search_info",
+    "on_download",
+    "on_score",
+    "on_filter",
+    "on_open",
+    "on_write",
+    "on_toggle_keep_temp",
+    "on_toggle_new_window",
+]
 
 
-class EntryKind(Enum):
-    """Define the kinds of entries created for the GUI."""
+# Define classes for each type of element. Each GUI element has two classes:
+# 1) Small dataclass to define the parameters required to create the element
+# 2) Dataclass to define all elements of that type
 
-    STARTDATE = "start_date"
-    ENDDATE = "end_date"
+
+@dataclass(frozen=True)
+class FrameSpec:
+    """Defines all the parameters required to create a frame."""
+
+    name: str
+    text: str | None
+    pos: int
 
 
 class FrameKind(Enum):
-    """Define the kinds of frames created for the GUI."""
+    """Define all frames that will be placed in the GUI."""
 
-    OPTIONS = "options"
-    DATES = "dates"
-    SERVER = "server"
-    ANALYSIS = "analysis"
-    RESULTS = "results"
+    OPTIONS = FrameSpec(name="options", text=None, pos=0)
+    DATES = FrameSpec(name="dates", text="Date Setup", pos=1)
+    SERVER = FrameSpec(name="server", text="arXiv Server Connections", pos=2)
+    ANALYSIS = FrameSpec(name="analysis", text="Corpus Filtering", pos=3)
+    RESULTS = FrameSpec(name="results", text="Results", pos=4)
 
 
-class OptionmenuKind(Enum):
-    """Define the kinds of option menus created for the GUI."""
+@dataclass(frozen=True)
+class ButtonSpec:
+    """Defines all parameters required to create and place a button."""
 
-    SCORE = "score_options"
-    FILTER = "filter_options"
-    WRITESTYLE = "write_style"
+    frame: FrameKind
+    name: str
+    text: str
+    row: int
+    col: int | None
+    action: ActionName
+
+
+class ButtonKind(Enum):
+    """Define all buttons that will placed in the GUI."""
+
+    REFRESH = ButtonSpec(
+        frame=FrameKind.OPTIONS,
+        name="refresh_config",
+        text="Refresh Search Pars.",
+        row=1,
+        col=2,
+        action="on_refresh",
+    )
+    CHECKDATES = ButtonSpec(
+        frame=FrameKind.DATES,
+        name="check_dates",
+        text="Check Search Dates",
+        row=3,
+        col=None,
+        action="on_check_dates",
+    )
+    SEARCHINFO = ButtonSpec(
+        frame=FrameKind.SERVER,
+        name="search_info",
+        text="Obtain Search Info",
+        row=2,
+        col=0,
+        action="on_search_info",
+    )
+    DOWNLOAD = ButtonSpec(
+        frame=FrameKind.SERVER,
+        name="download_papers",
+        text="Download Papers",
+        row=2,
+        col=2,
+        action="on_download",
+    )
+    SCORE = ButtonSpec(
+        frame=FrameKind.ANALYSIS,
+        name="score_papers",
+        text="Score Papers",
+        row=1,
+        col=0,
+        action="on_score",
+    )
+    FILTER = ButtonSpec(
+        frame=FrameKind.ANALYSIS,
+        name="filter_papers",
+        text="Filter Papers",
+        row=1,
+        col=2,
+        action="on_filter",
+    )
+    OPEN = ButtonSpec(
+        frame=FrameKind.RESULTS,
+        name="open_papers",
+        text="Open Papers",
+        row=2,
+        col=0,
+        action="on_open",
+    )
+    WRITE = ButtonSpec(
+        frame=FrameKind.RESULTS,
+        name="write_papers",
+        text="Write to File",
+        row=2,
+        col=2,
+        action="on_write",
+    )
+
+
+@dataclass(frozen=True)
+class CheckboxSpec:
+    """Defines all parameters required to create and place a checkbox."""
+
+    frame: FrameKind
+    name: str
+    text: str
+    row: int
+    col: int
+    action: ActionName
+
+
+class CheckboxKind(Enum):
+    """Define all checkboxes that will be placed in the GUI."""
+
+    KEEPTEMP = CheckboxSpec(
+        frame=FrameKind.OPTIONS,
+        name="keep_temp",
+        text="Keep Temporary Files",
+        row=1,
+        col=0,
+        action="on_toggle_keep_temp",
+    )
+    NEWWINDOW = CheckboxSpec(
+        frame=FrameKind.RESULTS,
+        name="new_window",
+        text="Open in New Window",
+        row=3,
+        col=0,
+        action="on_toggle_new_window",
+    )
+
+
+@dataclass(frozen=True)
+class EntrySpec:
+    """Defines all parameters required to create and place a text entry field."""
+
+    frame: FrameKind
+    name: str
+    vartext: str
+    placeholdertext: str
+    row: int
+    col: int
+
+
+class EntryKind(Enum):
+    """Define all text entry fields that will be placed in the GUI."""
+
+    STARTDATE = EntrySpec(
+        frame=FrameKind.DATES,
+        name="start_date",
+        vartext="start_date",
+        placeholdertext="Search Start Date (YYYY-mm-dd)",
+        row=1,
+        col=0,
+    )
+    ENDDATE = EntrySpec(
+        frame=FrameKind.DATES,
+        name="end_date",
+        vartext="end_date",
+        placeholdertext="Search End Date (YYYY-mm-dd)",
+        row=1,
+        col=2,
+    )
+
+
+@dataclass(frozen=True)
+class OptionmenuSpec:
+    """Defines all parameters required to create and place a progress bar."""
+
+    frame: FrameKind
+    name: str
+    options: list[str]
+    row: int
+    col: int
 
 
 class OptionsScoreKind(Enum):
@@ -99,11 +250,46 @@ class OptionsWriteKind(Enum):
     IDS = "ID Numbers"
 
 
-class ProgressbarKind(Enum):
-    """Define the kinds of progress bars created for the GUI."""
+class OptionmenuKind(Enum):
+    """Define all option menus that will be placed in the GUI."""
 
-    DOWNLOAD = "download"
-    RESULTS = "results"
+    SCORE = OptionmenuSpec(
+        frame=FrameKind.ANALYSIS,
+        name="score_options",
+        options=[osk.value for osk in OptionsScoreKind],
+        row=2,
+        col=0,
+    )
+    FILTER = OptionmenuSpec(
+        frame=FrameKind.ANALYSIS,
+        name="filter_options",
+        options=[ofk.value for ofk in OptionsFilterKind],
+        row=2,
+        col=2,
+    )
+    WRITESTYLE = OptionmenuSpec(
+        frame=FrameKind.RESULTS,
+        name="write_style",
+        options=[owk.value for owk in OptionsWriteKind],
+        row=3,
+        col=2,
+    )
+
+
+@dataclass(frozen=True)
+class ProgressbarSpec:
+    """Defines all parameters required to create and place a progress bar."""
+
+    frame: FrameKind
+    name: str
+    row: int
+
+
+class ProgressbarKind(Enum):
+    """Define all progress bars to be placed in the GUI."""
+
+    DOWNLOAD = ProgressbarSpec(frame=FrameKind.SERVER, name="download", row=1)
+    RESULTS = ProgressbarSpec(frame=FrameKind.RESULTS, name="results", row=1)
 
 
 @dataclass
@@ -150,10 +336,28 @@ class GUI:
         # Create the spinner
         self._spinner = Spinner()
 
-        # Input callables
+        # Extract actions and place in a map
         self._actions = actions
+        action_map = {
+            "on_refresh": self._actions.on_refresh,
+            "on_check_dates": self._actions.on_check_dates,
+            "on_search_info": self._actions.on_search_info,
+            "on_download": self._actions.on_download,
+            "on_score": self._actions.on_score,
+            "on_filter": self._actions.on_filter,
+            "on_open": self._actions.on_open,
+            "on_write": self._actions.on_write,
+            "on_toggle_keep_temp": self._actions.on_toggle_keep_temp,
+            "on_toggle_new_window": self._actions.on_toggle_new_window,
+        }
 
-        # GUI Elements
+        # Create a map for the search parameters
+        search_param_map = {
+            "start_date": search_params.start_date.isoformat(),
+            "end_date": search_params.end_date.isoformat(),
+        }
+
+        # Define dictionaries to hold each type of element
         self._frames: dict[FrameKind, customtkinter.CTkFrame] = {}
         self._buttons: dict[ButtonKind, customtkinter.CTkButton] = {}
         self._checkboxes: dict[CheckboxKind, customtkinter.CTkCheckBox] = {}
@@ -171,171 +375,64 @@ class GUI:
         # # Create scollable frame that all sub-frames will be placed in
         self._scroll = create_scrollable_frame(self._app)
 
-        # # Config
-        # self.frame_config = create_frame(self.scroll, "Config", len(self._frames.items()))
-        # self.tabview_config = customtkinter.CTkTabview(
-        #     master=self.frame_config, width=460
-        # )
-        # self.tabview_config.grid(row=1, columnspan=3, pady=10, padx=10)
-        # self.tabview_config.add("Authors")
-        # self.tabview_config.add("Included Words")
-        # self.tabview_config.add("Excluded Words")
+        # Create frames
+        for fk in FrameKind:
+            self._frames[fk] = create_frame(self._scroll, fk.value.text, fk.value.pos)
 
-        # # Options
-        self._frames[FrameKind.OPTIONS] = create_frame(
-            self._scroll, None, len(self._frames.items())
-        )
+        # Create buttons
+        for bk in ButtonKind:
+            self._buttons[bk] = create_button(
+                self._frames[bk.value.frame],
+                bk.value.text,
+                bk.value.row,
+                bk.value.col,
+                action_map[bk.value.action],
+            )
 
-        self._checkboxes[CheckboxKind.KEEPTEMP] = create_checkbox(
-            self._frames[FrameKind.OPTIONS],
-            "Keep Temporary Files",
-            1,
-            0,
-            self._actions.on_toggle_keep_temp,
-        )
+        # Create checkboxes
+        for cbk in CheckboxKind:
+            self._checkboxes[cbk] = create_checkbox(
+                self._frames[cbk.value.frame],
+                cbk.value.text,
+                cbk.value.row,
+                cbk.value.col,
+                action_map[cbk.value.action],
+            )
+
+        # Create entries
+        for ek in EntryKind:
+            self._entries[ek] = create_entry(
+                self._frames[ek.value.frame],
+                search_param_map[ek.value.vartext],
+                ek.value.placeholdertext,
+                ek.value.row,
+                ek.value.col,
+            )
+
+        # Create progressbars
+        for pbk in ProgressbarKind:
+            self._progressbars[pbk] = create_progressbar(
+                self._frames[pbk.value.frame], pbk.value.row
+            )
+
+        # Create optionmenus
+        for omk in OptionmenuKind:
+            self._optionmenus[omk] = create_optionmenu(
+                self._frames[omk.value.frame],
+                omk.value.options,
+                omk.value.row,
+                omk.value.col,
+            )
+
+        # Check the checkboxes if certain flags were passed
         if args.keep_temp:
             self._checkboxes[CheckboxKind.KEEPTEMP].select()
-
-        self._buttons[ButtonKind.REFRESH] = create_button(
-            self._frames[FrameKind.OPTIONS],
-            "Refresh Search Pars.",
-            1,
-            2,
-            self._actions.on_refresh,
-        )
-
-        # # Dates
-        self._frames[FrameKind.DATES] = create_frame(
-            self._scroll, "Date Setup", len(self._frames.items())
-        )
-
-        self._entries[EntryKind.STARTDATE] = create_entry(
-            self._frames[FrameKind.DATES],
-            search_params.start_date.isoformat(),
-            "Search Start Date (YYYY-mm-dd)",
-            1,
-            0,
-        )
-
-        self._entries[EntryKind.ENDDATE] = create_entry(
-            self._frames[FrameKind.DATES],
-            search_params.end_date.isoformat(),
-            "Search End Date (YYYY-mm-dd)",
-            1,
-            2,
-        )
-        # Bind tab to switch between the two entries
-        self._bind_tab_to_switch_entries()
-
-        self._buttons[ButtonKind.CHECKDATES] = create_button(
-            self._frames[FrameKind.DATES],
-            "Check Search Dates",
-            3,
-            None,
-            self._actions.on_check_dates,
-        )
-        # Bind enter to the check dates button
-        self._bind_enter_to_check_dates()
-
-        # # Server
-        self._frames[FrameKind.SERVER] = create_frame(
-            self._scroll, "arXiv Server Connections", len(self._frames.items())
-        )
-
-        self._progressbars[ProgressbarKind.DOWNLOAD] = create_progressbar(
-            self._frames[FrameKind.SERVER], 1
-        )
-
-        self._buttons[ButtonKind.SEARCHINFO] = create_button(
-            self._frames[FrameKind.SERVER],
-            "Obtain Search Info",
-            2,
-            0,
-            self._actions.on_search_info,
-        )
-        self._buttons[ButtonKind.DOWNLOAD] = create_button(
-            self._frames[FrameKind.SERVER],
-            "Download Papers",
-            2,
-            2,
-            self._actions.on_download,
-        )
-
-        # # Filter
-        self._frames[FrameKind.ANALYSIS] = create_frame(
-            self._scroll, "Corpus Filtering", len(self._frames.items())
-        )
-
-        self._buttons[ButtonKind.SCORE] = create_button(
-            self._frames[FrameKind.ANALYSIS],
-            "Score Papers",
-            1,
-            0,
-            self._actions.on_score,
-        )
-        self._buttons[ButtonKind.FILTER] = create_button(
-            self._frames[FrameKind.ANALYSIS],
-            "Filter Papers",
-            1,
-            2,
-            self._actions.on_filter,
-        )
-
-        print()
-        self._optionmenus[OptionmenuKind.SCORE] = create_optionmenu(
-            self._frames[FrameKind.ANALYSIS],
-            [sk.value for sk in OptionsScoreKind],
-            2,
-            0,
-        )
-
-        self._optionmenus[OptionmenuKind.FILTER] = create_optionmenu(
-            self._frames[FrameKind.ANALYSIS],
-            [fk.value for fk in OptionsFilterKind],
-            2,
-            2,
-        )
-
-        # # Results
-        self._frames[FrameKind.RESULTS] = create_frame(
-            self._scroll, "Results", len(self._frames.items())
-        )
-
-        self._buttons[ButtonKind.OPEN] = create_button(
-            self._frames[FrameKind.RESULTS],
-            "Open Papers",
-            2,
-            0,
-            self._actions.on_open,
-        )
-        self._buttons[ButtonKind.WRITE] = create_button(
-            self._frames[FrameKind.RESULTS],
-            "Write to File",
-            2,
-            2,
-            self._actions.on_write,
-        )
-
-        self._progressbars[ProgressbarKind.RESULTS] = create_progressbar(
-            self._frames[FrameKind.RESULTS], 1
-        )
-
-        self._checkboxes[CheckboxKind.NEWWINDOW] = create_checkbox(
-            self._frames[FrameKind.RESULTS],
-            "Open in New Window",
-            3,
-            0,
-            self._actions.on_toggle_new_window,
-        )
         if args.new_window:
             self._checkboxes[CheckboxKind.NEWWINDOW].select()
 
-        self._optionmenus[OptionmenuKind.WRITESTYLE] = create_optionmenu(
-            self._frames[FrameKind.RESULTS],
-            [wk.value for wk in OptionsWriteKind],
-            3,
-            2,
-        )
+        # Bind keyboard presses to actions
+        self._bind_tab_to_switch_entries()
+        self._bind_enter_to_check_dates()
 
     def default_focus(self) -> None:
         """Change focus to the main window."""
