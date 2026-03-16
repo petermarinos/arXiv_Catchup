@@ -54,7 +54,7 @@ class CheckboxKind(Enum):
 
 
 class EntryKind(Enum):
-    """Define the kinds of enties created for the GUI."""
+    """Define the kinds of entries created for the GUI."""
 
     STARTDATE = "start_date"
     ENDDATE = "end_date"
@@ -97,7 +97,6 @@ class OptionsWriteKind(Enum):
 
     LINKS = "Links"
     IDS = "ID Numbers"
-    OTHER = "hflksjdfsljdf"
 
 
 class ProgressbarKind(Enum):
@@ -109,7 +108,7 @@ class ProgressbarKind(Enum):
 
 @dataclass
 class Spinner:
-    """Holds the spinner."""
+    """Holds the spinner state and values."""
 
     CYCLER = cycle(["-", "\\", "|", "/"])
 
@@ -139,7 +138,14 @@ class GUI:
         search_params: Config,
         actions: GuiActions,
     ) -> None:
-        """Create the GUI."""
+        """Initialise the GUI and place all elements within.
+
+        inputs
+        ------
+        args : CLI arguments.
+        search_params : Search configuration.
+        action : All functions to be performed when elements in the GUI are interacted with.
+        """
 
         # Create the spinner
         self._spinner = Spinner()
@@ -337,8 +343,13 @@ class GUI:
         self._app.focus_set()
 
     def _bind_tab_to_switch_entries(self) -> None:
+        """Bind the tab key to switch between the two date entry fields (if either one is in focus),
+        placing the cursor at the end."""
 
         def _on_tab_start_to_end(_: Event):
+            """Inner function to switch the focus and place the cursor to the end of the ENDDATE
+            Entry.
+            """
 
             self._entries[EntryKind.ENDDATE].focus_set()
             self._entries[EntryKind.ENDDATE].selection_clear()
@@ -347,6 +358,9 @@ class GUI:
             return "break"
 
         def _on_tab_end_to_start(_: Event):
+            """Inner function to switch the focus and place the cursor to the end of the STARTDATE
+            Entry.
+            """
 
             self._entries[EntryKind.STARTDATE].focus_set()
             self._entries[EntryKind.STARTDATE].selection_clear()
@@ -354,122 +368,234 @@ class GUI:
 
             return "break"
 
+        # Bind the tab key to switch entry fiels. STARTDATE -> ENDDATE -> STARTDATE
         self._entries[EntryKind.STARTDATE].bind("<Tab>", _on_tab_start_to_end)
         self._entries[EntryKind.ENDDATE].bind("<Tab>", _on_tab_end_to_start)
 
     def _bind_enter_to_check_dates(self) -> None:
+        """Bind the enter/return key to run the 'on_check_dates' button if either date entry fields
+        are in focus.
+        """
 
         def _on_enter(_: Event):
+            """Inner function to define what should occur if enter is pressed."""
 
             self._actions.on_check_dates()
 
             return "break"
 
+        # Bind the enter/return key to run if either of the entries are in focus.
         self._entries[EntryKind.STARTDATE].bind("<Return>", _on_enter)
         self._entries[EntryKind.ENDDATE].bind("<Return>", _on_enter)
 
-    def get_bool_from_checkbox(self, key: CheckboxKind) -> bool:
-        """Extract the date from the entry named 'key'."""
+    def get_bool_from_checkbox(self, checkbox: CheckboxKind) -> bool:
+        """Extract state of the checkbox.
 
-        return bool(self._checkboxes[key].get())
+        inputs
+        ------
+        checkbox : The checkbox to find the state of.
 
-    def get_state_from_optionmenu(self, key: OptionmenuKind) -> str:
-        """Obtain the state of an option menu element."""
+        returns
+        -------
+        : True if checkbox is checked, otherwise False.
+        """
 
-        value = self._optionmenus[key].get()
+        return bool(self._checkboxes[checkbox].get())
 
-        return value
+    def get_state_from_optionmenu(self, optionmenu: OptionmenuKind) -> str:
+        """Obtain the state of an option menu element.
 
-    def update_progress_bar(self, key: ProgressbarKind, fraction: float) -> None:
-        """Update the progress bar named 'key'."""
+        inputs
+        ------
+        optionmenu : The option menu to obtain the state from.
 
-        self._progressbars[key].set(fraction)
+        returns
+        -------
+        : The option that is currently selected in the menu
+        """
+
+        return self._optionmenus[optionmenu].get()
+
+    def update_progress_bar(
+        self, progressbar: ProgressbarKind, fraction: float
+    ) -> None:
+        """Update the progress bar.
+
+        inputs
+        ------
+        progressbar : The progress bar to update.
+        fraction : The fraction the progress bar should be filled to
+        """
+
+        self._progressbars[progressbar].set(fraction)
 
     def _tick(self, button: ButtonKind) -> None:
-        """Updates the spinner."""
+        """Updates the spinner.
 
+        inputs
+        ------
+        button : The button that the spinner is being placed on.
+        """
+
+        # Obtain the next spinner character from the cycler
         s = next(self._spinner.CYCLER)
 
+        # Obtain the base text for the spinner based on the button
         if button == ButtonKind.SEARCHINFO:
-            base_text = "Connecting ... "
-        elif button == ButtonKind.DOWNLOAD:
-            base_text = "Downloading ... "
-        elif button == ButtonKind.OPEN:
-            base_text = "Opening ... "
-        else:
-            base_text = "... "
 
+            base_text = "Connecting ... "
+
+        elif button == ButtonKind.DOWNLOAD:
+
+            base_text = "Downloading ... "
+
+        elif button == ButtonKind.OPEN:
+
+            base_text = "Opening ... "
+
+        else:
+
+            raise NotImplementedError(
+                "Atempted to add a spinner to a button that shouldn't have one."
+            )
+
+        # Update the text to include the spinner
         self._buttons[button].configure(text=base_text + s)
 
+        # If the state of the spinner is True, schedule the next tick.
         if self._spinner.is_spinning:
+
             self._spinner.spin_id = self.after(500, lambda: self._tick(button))
 
     def start_spinner(self, button: ButtonKind) -> None:
-        """Starts the spinner."""
+        """Starts the spinner on the button.
 
+        inputs
+        ------
+        button : The button to add the spinner to.
+        """
+
+        # Set the state of the spinner to True
         self._spinner.is_spinning = True
 
+        # Begin ticking the spinner
         self._tick(button)
 
     def stop_spinner(self, button: ButtonKind) -> None:
-        """Clears the spinner."""
+        """Clears the spinner from the button.
 
+        inputs
+        ------
+        button : The button to remove the spinner from.
+        """
+
+        # Set the state of the spinner to False
         self._spinner.is_spinning = False
 
         # Cancel the previous call to after() which may be scheduled
         self._app.after_cancel(self._spinner.spin_id)
 
         # Remove the spinner text
-        # If it is the search_info button, the text was completely overwritten
-        # Other buttons just had some characters appended
+        # Replace the text with something new
         if button == ButtonKind.SEARCHINFO:
+
             base_text = "Obtain Search Info"
+
         elif button == ButtonKind.DOWNLOAD:
+
             base_text = "Download Papers"
+
         elif button == ButtonKind.OPEN:
+
             base_text = "Open Papers"
+
         else:
-            base_text = "..."
+
+            raise NotImplementedError(
+                "Atempted to clear spinner from a button that shouldn't have one."
+            )
 
         self._buttons[button].configure(text=base_text)
 
-    def get_date_from_entry(self, key: EntryKind) -> str:
-        """Extract the date from the entry named 'key'."""
+    def get_date_from_entry(self, entry: EntryKind) -> str:
+        """Extract the date from the entry named.
 
-        return self._entries[key].get().strip()
+        inputs
+        ------
+        entry : The entry to extract the text from.
 
-    def checkbox_set_state(self, key: CheckboxKind, state: bool) -> None:
-        """Set the state of the checkbox named 'key' to either 'normal' or 'disabled'."""
+        returns
+        -------
+        : The text that was in the entry field.
+        """
+
+        return self._entries[entry].get().strip()
+
+    def checkbox_set_state(self, checkbox: CheckboxKind, state: bool) -> None:
+        """Set the state of the checkbox named 'key' to either 'normal' or 'disabled'.
+
+        inputs
+        ------
+        checkbox : The checkbox to set the state of.
+        state : True => set state of the checkbox to normal, False => Disable the checkbox.
+        """
 
         if state:
-            self._checkboxes[key].configure(state="normal")
+            self._checkboxes[checkbox].configure(state="normal")
         else:
-            self._checkboxes[key].configure(state="disabled")
+            self._checkboxes[checkbox].configure(state="disabled")
 
     def all_checkboxes_set_state(self, state: bool) -> None:
-        """Set the state of all checkboxes."""
+        """Set the state of all checkboxes.
+
+        inputs
+        ------
+        state : True => set state of all checkboxes to normal, False => Disable all checkboxes.
+        """
 
         for key, _ in self._checkboxes.items():
 
             self.checkbox_set_state(key, state)
 
-    def button_set_state(self, key: ButtonKind, state: bool) -> None:
-        """Set the state of the button named 'key' to either 'normal' or 'disabled'."""
+    def button_set_state(self, button: ButtonKind, state: bool) -> None:
+        """Set the state of the button to either 'normal' or 'disabled'.
+
+        inputs
+        ------
+        button : The button to set the state of.
+        state : True => set state of the button to normal, False => Disable the button.
+        """
 
         if state:
-            self._buttons[key].configure(state="normal")
+            self._buttons[button].configure(state="normal")
         else:
-            self._buttons[key].configure(state="disabled")
+            self._buttons[button].configure(state="disabled")
 
     def all_buttons_set_state(self, state: bool) -> None:
-        """Set the state of all buttons."""
+        """Set the state of all buttons.
+
+        inputs
+        ------
+        state : True => set state of all buttons to normal, False => Disable all buttons.
+        """
 
         for key, _ in self._buttons.items():
 
             self.button_set_state(key, state)
 
     def after(self, ms: int, func: Callable[[], None]) -> str:
-        """small wrapper to expose after"""
+        """Small wrapper to expose after().
+
+        inputs
+        ------
+        ms : Time to wait before running (in ms)
+        func : Function that will be called
+
+        returns
+        -------
+        : Process ID
+        """
+
         return self._app.after(ms, func)
 
     def run(self) -> None:
