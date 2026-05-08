@@ -318,4 +318,4 @@ class CLI:
 
             self.logger.debug("Opening links in browser.")
 
-            open_links(papers_of_note, sleeptimer, progress_cb)
+            open_links(self.logger, papers_of_note, sleeptimer, progress_cb=progress_cb)

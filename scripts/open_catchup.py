@@ -5,8 +5,8 @@ CLI Arguments
 -v: int -> verbosity level
 """
 
-# # Import standard libraries
-# import argparse
+# Import standard libraries
+import logging
 
 # Import classes
 from arxiv_catchup.storage_manager import Storage
@@ -51,7 +51,7 @@ storage.add_logger()
 papers = storage.read_catchup_file()
 
 # Open the links
-open_links(papers, SLEEP_OPENING)
+open_links(logging.getLogger(__name__), papers, SLEEP_OPENING)
 
 # Ask the user if the file should be deleted
 cli.get_delete_catchup_bool(storage, papers)

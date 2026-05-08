@@ -108,6 +108,7 @@ def pretty_sleep(logger: logging.Logger, sleep_time: float) -> None:
 
 
 def open_links(
+    logger: logging.Logger,
     papers_of_note: list[str],
     sleep_time: float,
     progress_cb: Callable[[int, int], None] | None = None,
@@ -133,6 +134,8 @@ def open_links(
     for arxiv_id in papers_of_note:
 
         link = f"https://arxiv.org/abs/{arxiv_id}"
+
+        logger.debug(f"Opening {link}")
 
         progress_bar(
             request_count, total, (total - request_count) * sleep_time, progress_cb
