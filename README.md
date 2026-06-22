@@ -143,18 +143,9 @@ The logs for the main script will be written to `.run/logs/main.log`, and logs f
 
 #### Daily Mailings
 
-There are no daily listings posted over the weekend or on some USA public holidays.
-
-Weekends are handled by the script, which will raise an error if being executed before the next listing is posted.
-The papers posted on the weekend will be caught when run on Monday.
-
-There are also "deferred mailing" days.
-These days are ones that are important to USAians and are chosen ad-hoc.
-It includes Christmas, their Thanksgiving, and others.
-
-On these days, the search *should* return zero results, and raise an error.
-Hence, no papers *should* be missed from the deferred mailing days, as said papers would appear in the next search (not tested).
-The next deferred mailing where this can be tested will be on Friday 2026/06/19.
+There are no daily listings posted over the weekend and on some USA public holidays.
+This package will wait for the next daily mailing, raising an error if being executed before the next listing is posted.
+For deferred mailing days the script will return zero papers, and any papers submitted on these days will appear after the next daily mailing.
 
 ## Acknowledgements
 
