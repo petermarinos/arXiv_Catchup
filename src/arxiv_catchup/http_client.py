@@ -111,7 +111,7 @@ class HttpClient:
             # If there is a URL error:
             except urllib.error.URLError as error:
 
-                self.url_errorcheck(error)
+                self.url_errorcheck(error, attempt)
 
             # If there is a timeout error:
             except TimeoutError:
@@ -119,7 +119,10 @@ class HttpClient:
                 self.retry_after = 60.0
 
                 self.logger.warning(
-                    "Timeout Error. Retrying in %s seconds ...", self.retry_after
+                    "Timeout error on attempt %s of %s. Retrying in %s seconds ...",
+                    attempt,
+                    self.MAX_RETRIES,
+                    self.retry_after
                 )
 
             # If there was a Retry-After command, replace the wait time
@@ -217,7 +220,7 @@ class HttpClient:
                     self.logger.debug("HTTP header: %s: %s", key, value)
             raise RuntimeError("Received non-retry HTTP error code.")
 
-    def url_errorcheck(self, error: urllib.error.URLError) -> None:
+    def url_errorcheck(self, error: urllib.error.URLError, attempt: int) -> None:
         """Handles the URL errors that could arise.
 
         inputs
@@ -233,9 +236,12 @@ class HttpClient:
 
             # Warn the user that verification failed
             self.logger.warning(
-                "Connection error: %s.\n"
-                "         Updating certificate and retrying in {self.wait_time} seconds ...",
+                "Connection error code %s on attempt %s of %s.\n"
+                "         Updating certificate and retrying in %s seconds ...",
                 error.reason,
+                attempt,
+                self.MAX_RETRIES,
+                self.wait_time,
             )
 
             # Try updating the ssl_context to use the certifi cafile
