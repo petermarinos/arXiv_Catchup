@@ -80,12 +80,18 @@ class HttpClient:
             "Searching for papers %s to %s ...", start_num, start_num + blocksize - 1
         )
 
+        self.logger.debug("Attempting connection to:\n       %s", formatted_url)
+
         # Query the server
         for attempt in range(
             1, self.MAX_RETRIES + 1
         ):  # 1 -> max_retries+1 so that we start counting attempts at 1 in the logger messages
 
-            self.logger.debug("Attempting connection to:\n       %s", formatted_url)
+            self.logger.debug("Attempt: %s", attempt)
+
+            # Sleep before retrying
+            if attempt > 1:
+                pretty_sleep(self.logger, self.wait_time)
 
             try:
 
@@ -129,9 +135,6 @@ class HttpClient:
             if self.retry_after != 0.0:
 
                 self.wait_time = self.retry_after
-
-            # Sleep before retrying
-            pretty_sleep(self.logger, self.wait_time)
 
             # If there was no retry after demand, increase the wait time for the next attempt
             if self.retry_after == 0.0:
